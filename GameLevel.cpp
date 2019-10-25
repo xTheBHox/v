@@ -64,6 +64,10 @@ GameLevel::~GameLevel() {
 
 
 void GameLevel::draw( Camera const &camera ) {
+  draw( camera, camera.make_projection() * camera.transform->make_world_to_local() );
+}
+
+void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 
 	//--- actual drawing ---
 	glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
@@ -73,7 +77,6 @@ void GameLevel::draw( Camera const &camera ) {
 	glDepthFunc(GL_LEQUAL);
 
 	glm::vec3 eye = camera.transform->make_local_to_world()[3];
-	glm::mat4 world_to_clip = camera.make_projection() * camera.transform->make_world_to_local();
 
 	for (auto const &light : lights) {
 		glm::mat4 light_to_world = light.transform->make_local_to_world();
