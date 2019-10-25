@@ -1,4 +1,4 @@
-#include "PlayerTwoMode.hpp"
+#include "PlayerOneMode.hpp"
 #include "DrawLines.hpp"
 #include "Load.hpp"
 #include "data_path.hpp"
@@ -13,18 +13,20 @@
 
 #define PI 3.1415926f
 
-PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::string const &port) : level( level_ ){
+PlayerOneMode::PlayerOneMode( GameLevel *level_ , std::string const &port) : level( level_ ){
   pov.camera = &( level->cameras.front() );
   SDL_SetRelativeMouseMode(SDL_TRUE);
-  client.reset(new Client(host, port));
+  if (port != "") {
+		server.reset(new Server(port));
+	}
 }
 
-PlayerTwoMode::~PlayerTwoMode(){
+PlayerOneMode::~PlayerOneMode(){
   SDL_SetRelativeMouseMode(SDL_FALSE);
   delete level; //TODO VVVBad. Remove when network
 }
 
-bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
+bool PlayerOneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	//----- leave to menu -----
 	if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_m) {
 		Mode::set_current(demo_menu);
@@ -92,7 +94,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 
 }
 
-void PlayerTwoMode::update(float elapsed) {
+void PlayerOneMode::update(float elapsed) {
   if (pause) return;
 
   if (controls.flat) {
@@ -142,26 +144,42 @@ void PlayerTwoMode::update(float elapsed) {
     }
   }
 
-  client->connection.send_buffer.emplace_back('C');
-  for (auto it = level->movables.begin(); it != level->movables.end(); ++it){
-      glm::vec3 position = (*it)->position;
-      glm::quat rotation = (*it)->rotation;
-      client->connection.send(position);
-      client->connection.send(rotation);
+  if (server){
+    /**
+    auto remove_player = [this](Connection *c) {
+			auto f = connection_infos.find(c);
+			if (f != connection_infos.end()) {
+				connection_infos.erase(f);
+			}
+		};**/
+    server->poll([this](Connection *connection, Connection::Event evt){
+			if (evt == Connection::OnRecv) {
+					//extract and erase data from the connection's recv_buffer:
+					std::vector< char > data = connection->recv_buffer;
+					char type = (data[0]);
+					if (type == 'C'){
+            auto start = (&data[0]);
+            for (auto it = level->movables.begin(); it != level->movables.end(); ++it){
+              glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+              glm::quat* rot = reinterpret_cast<glm::quat*> (start + 12);
+              (*it)->position = *pos;
+              (*it)->rotation = *rot;
+              start += 28;
+            }
+					}else{
+						//invalid data type
+					}
+					connection->recv_buffer.clear();
+					//send to other connections:
+
+			}
+	  },
+		1.0 //timeout (in seconds)
+		);
   }
-/**
-	client->poll([this](Connection *, Connection::Event evt){
-		//TODO: eventually, read server state
-    
-	}, 0.0);
-**/
-	//if connection was closed,
-	if (!client->connection) {
-		Mode::set_current(nullptr);
-	}
 }
 
-void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
+void PlayerOneMode::draw(glm::uvec2 const &drawable_size) {
 
   pov.camera->aspect = drawable_size.x / float(drawable_size.y);
 

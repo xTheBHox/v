@@ -20,6 +20,6 @@ struct GameLevel : Scene {
 		MeshBuffer const *buffer;
 	};
 
-  std::list< Transform * >movables;
+  std::list< Scene::Transform * >movables;
 
 };

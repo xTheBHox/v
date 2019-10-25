@@ -18,5 +18,5 @@ struct ServerMode : Mode {
 	//remote connection:
 	std::unique_ptr< Server > server;
 
-	std::unordered_map< Connection const *, PlayerInfo > connection_infos;
+	//std::unordered_map< Connection const *, PlayerInfo > connection_infos;
 };

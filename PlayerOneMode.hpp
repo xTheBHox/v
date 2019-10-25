@@ -11,9 +11,9 @@
 
 
 
-struct PlayerTwoMode : Mode {
-	PlayerTwoMode(GameLevel *level_, std::string const &host, std::string const &port);
-	virtual ~PlayerTwoMode();
+struct PlayerOneMode : Mode {
+	PlayerOneMode(GameLevel *level_, std::string const &server_port = "");
+	virtual ~PlayerOneMode();
 
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
@@ -43,6 +43,8 @@ struct PlayerTwoMode : Mode {
 
   GameLevel *level;
   
-  std::unique_ptr< Client > client;
+  std::unique_ptr< Server > server;
+
+	//std::unordered_map< Connection const *, PlayerInfo > connection_infos;
 
 };
