@@ -1,0 +1,26 @@
+
+BLENDER="Z:\Program Files\Blender Foundation\Blender\blender.exe"
+
+all : \
+	..\dist\level1.pnct \
+	..\dist\level1.scene
+  
+..\dist\level1.scene: level1-mockup.blend export-scene.py
+	$(BLENDER) --background --python export-scene.py -- level1-mockup.blend $@
+
+..\dist\level1.pnct: level1-mockup.blend export-meshes.py
+	$(BLENDER) --background --python export-meshes.py -- level1-mockup.blend $@
+
+#../dist/plant.pnct : plant.blend export-meshes.py
+#	$(BLENDER) --background --python export-meshes.py -- plant.blend '$@'
+
+#../dist/plant.banims : plant.blend export-bone-animations.py
+#	$(BLENDER) --background --python export-bone-animations.py -- '$<' 'Plant' '[0,30]Wind;[100,140]Walk' '$@'
+
+#../dist/pool.scene : pool.blend export-scene.py
+#	$(BLENDER) --background --python export-scene.py -- 'pool.blend:Table 1' '$@'
+
+#hexapod.pnct : hexapod.blend export-meshes.py
+#	$(BLENDER) --background --python export-meshes.py -- hexapod.blend:Main '$@'
+#hexapod.scene : hexapod.blend export-scene.py
+#	$(BLENDER) --background --python export-scene.py -- hexapod.blend:Main '$@'

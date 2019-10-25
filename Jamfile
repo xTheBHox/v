@@ -157,16 +157,11 @@ if $(OS) = NT { #Windows
 #Store the names of all the .cpp files to build into a variable:
 GAME_NAMES =
 	demo_menu
-	DemoLightingMultipassMode
 	BasicMaterialProgram
-	DemoLightingForwardMode
 	BasicMaterialForwardProgram
 	LightMeshes
-	DemoLightingDeferredMode
 	BasicMaterialDeferredProgram
 	CopyToScreenProgram
-	BoneAnimation
-	PlantMode
 	Sound
 	load_wav
 	load_opus
@@ -175,6 +170,8 @@ GAME_NAMES =
 	LitColorTextureProgram
 	BoneLitColorTextureProgram
 	Sprite
+  GameLevel
+  PlayerTwoMode
 	MenuMode
 	main
 	data_path

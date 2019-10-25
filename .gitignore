@@ -10,6 +10,8 @@ dist/demo
 dist/demo.exe
 dist/demo.ilk
 dist/demo.pdb
+dist/*.pnct
+dist/*.scene
 sprites/pack-sprites
 sprites/pack-sprites.exe
 sprites/pack-sprites.ilk

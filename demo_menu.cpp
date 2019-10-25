@@ -3,10 +3,8 @@
 #include "Sprite.hpp"
 #include "data_path.hpp"
 
-#include "PlantMode.hpp"
-#include "DemoLightingMultipassMode.hpp"
-#include "DemoLightingForwardMode.hpp"
-#include "DemoLightingDeferredMode.hpp"
+#include "GameLevel.hpp"
+#include "PlayerTwoMode.hpp"
 
 Load< SpriteAtlas > trade_font_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	return new SpriteAtlas(data_path("trade-font"));
@@ -17,23 +15,11 @@ std::shared_ptr< MenuMode > demo_menu;
 Load< void > load_demo_menu(LoadTagDefault, [](){
 	std::vector< MenuMode::Item > items;
 	items.emplace_back("[[ DEMO MENU ]]");
-	items.emplace_back("plant");
+	items.emplace_back("Level 1");
 	items.back().on_select = [](MenuMode::Item const &){
-		Mode::set_current(std::make_shared< PlantMode >());
+    GameLevel *lv = new GameLevel(data_path("level1.scene"));
+		Mode::set_current(std::make_shared< PlayerTwoMode >(lv));
 	};
-	items.emplace_back("lighting - multipass");
-	items.back().on_select = [](MenuMode::Item const &){
-		Mode::set_current(std::make_shared< DemoLightingMultipassMode >());
-	};
-	items.emplace_back("lighting - forward");
-	items.back().on_select = [](MenuMode::Item const &){
-		Mode::set_current(std::make_shared< DemoLightingForwardMode >());
-	};
-	items.emplace_back("lighting - deferred");
-	items.back().on_select = [](MenuMode::Item const &){
-		Mode::set_current(std::make_shared< DemoLightingDeferredMode >());
-	};
-
 
 	demo_menu = std::make_shared< MenuMode >(items);
 	demo_menu->selected = 1;
