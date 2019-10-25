@@ -166,12 +166,11 @@ void PlayerTwoMode::update(float elapsed) {
       client->connection.send(position);
       client->connection.send(rotation);
   }
-/**
-	client->poll([this](Connection *, Connection::Event evt){
+
+	client->poll([](Connection *, Connection::Event evt){
 		//TODO: eventually, read server state
     
 	}, 0.0);
-**/
 	//if connection was closed,
 	if (!client->connection) {
 		Mode::set_current(nullptr);

@@ -5,6 +5,7 @@
 
 #include "GameLevel.hpp"
 #include "PlayerTwoMode.hpp"
+#include "PlayerOneMode.hpp"
 
 Load< SpriteAtlas > trade_font_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
 	return new SpriteAtlas(data_path("trade-font"));
@@ -15,10 +16,15 @@ std::shared_ptr< MenuMode > demo_menu;
 Load< void > load_demo_menu(LoadTagDefault, [](){
 	std::vector< MenuMode::Item > items;
 	items.emplace_back("[[ DEMO MENU ]]");
-	items.emplace_back("Level 1");
+	items.emplace_back("Client");
 	items.back().on_select = [](MenuMode::Item const &){
     GameLevel *lv = new GameLevel(data_path("level1.scene"));
-		Mode::set_current(std::make_shared< PlayerTwoMode >(lv, "localhost", "1234"));
+		Mode::set_current(std::make_shared< PlayerTwoMode >(lv, "0.0.0.0", "12345"));
+	};
+	items.emplace_back("Server");
+	items.back().on_select = [](MenuMode::Item const &){
+    GameLevel *lv = new GameLevel(data_path("level1.scene"));
+		Mode::set_current(std::make_shared< PlayerOneMode >(lv, "12345"));
 	};
 
 	demo_menu = std::make_shared< MenuMode >(items);
