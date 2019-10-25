@@ -9,23 +9,16 @@ else
 endif
 
 all : \
-	../dist/plant.pnct \
-	../dist/plant.banims \
-	../dist/spheres.pnct \
-	../dist/spheres.scene \
+	../dist/level1.pnct \
+	../dist/level1.scene \
 
 
-../dist/plant.pnct : plant.blend export-meshes.py
-	$(BLENDER) --background --python export-meshes.py -- plant.blend '$@'
 
-../dist/plant.banims : plant.blend export-bone-animations.py
-	$(BLENDER) --background --python export-bone-animations.py -- '$<' 'Plant' '[0,30]Wind;[100,140]Walk' '$@'
+../dist/level1.scene : level1-mockup.blend export-scene.py
+	$(BLENDER) --background --python export-scene.py -- 'level1-mockup.blend' '$@'
 
-../dist/spheres.scene : spheres.blend export-scene.py
-	$(BLENDER) --background --python export-scene.py -- 'spheres.blend' '$@'
-
-../dist/spheres.pnct : spheres.blend export-meshes.py
-	$(BLENDER) --background --python export-meshes.py -- 'spheres.blend' '$@'
+../dist/level1.pnct : level1-mockup.blend export-meshes.py
+	$(BLENDER) --background --python export-meshes.py -- 'level1-mockup.blend' '$@'
 
 #../dist/pool.scene : pool.blend export-scene.py
 #	$(BLENDER) --background --python export-scene.py -- 'pool.blend:Table 1' '$@'

@@ -100,10 +100,12 @@ void PlayerTwoMode::update(float elapsed) {
     float pl_ca = std::cos(pov.azimuth);
     float pl_sa = std::sin(pov.azimuth);
 
+  /**
     glm::mat3 player_frame = glm::mat3_cast(
       glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f)) *
       glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f))
     );
+  **/
 
     // Update player velocity
     {
