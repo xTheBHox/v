@@ -1,4 +1,4 @@
-#include "PlayerTwoMode.hpp"
+#include "GameLevel.hpp"
 #include "DrawLines.hpp"
 #include "Load.hpp"
 #include "data_path.hpp"
@@ -47,6 +47,12 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.start = mesh->start;
     pipeline.count = mesh->count;
 
+    if (transform->name.substr(0, 10) == "MovingRoom") {
+       movables.emplace_back(transform); 
+    }
+    pipeline.set_uniforms = [](){ 
+        glUniform1f(basic_material_program->ROUGHNESS_float, 1.0f);
+    };
   };
 	//Load scene (using Scene::load function), building proper associations as needed:
 	load(scene_file, load_fn);

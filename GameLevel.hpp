@@ -5,9 +5,10 @@
 #include "Mesh.hpp"
 
 #include <string>
+#include <list>
 
 struct GameLevel : Scene {
-	GameLevel(std::string const &scene_file);
+	GameLevel( std::string const &scene_file );
 	virtual ~GameLevel();
 
   void draw( Camera const &camera );
@@ -18,5 +19,7 @@ struct GameLevel : Scene {
 		Mesh const *mesh;
 		MeshBuffer const *buffer;
 	};
+
+  std::list< Transform * >movables;
 
 };

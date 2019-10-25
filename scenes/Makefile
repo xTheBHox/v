@@ -3,7 +3,7 @@
 OS := $(shell uname)
 
 ifeq ($(OS), Linux)
-	BLENDER=../../blender-2.80-linux-glibc217-x86_64/blender
+	BLENDER=../../blender/blender
 else
 	BLENDER=/Applications/Blender.app/Contents/MacOS/Blender
 endif
