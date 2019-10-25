@@ -47,8 +47,9 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.start = mesh->start;
     pipeline.count = mesh->count;
 
-    if (transform->name.substr(0, 10) == "MovingRoom") {
-       movables.emplace_back(transform); 
+    if (transform->name.substr(0, 7) == "Movable") {
+        movables.emplace_back(transform);
+        std::cout << "Movable detected!" << std::endl; 
     }
     pipeline.set_uniforms = [](){ 
         glUniform1f(basic_material_program->ROUGHNESS_float, 1.0f);
