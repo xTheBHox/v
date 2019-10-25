@@ -59,6 +59,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
       controls.backward = (evt.type == SDL_KEYDOWN);
     } else return false;
   } else if (evt.type == SDL_MOUSEMOTION) {
+    
     if (controls.flat) return true;
     //based on trackball camera control from ShowMeshesMode:
     //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
@@ -96,8 +97,9 @@ void PlayerTwoMode::update(float elapsed) {
   if (pause) return;
 
   if (controls.flat) {
+  
 
-  } else { // !flat
+  } else { // !flat 
     float pl_ca = std::cos(pov.azimuth);
     float pl_sa = std::sin(pov.azimuth);
 
@@ -162,9 +164,24 @@ void PlayerTwoMode::update(float elapsed) {
 }
 
 void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
-
+    
   pov.camera->aspect = drawable_size.x / float(drawable_size.y);
 
-  level->draw( *pov.camera );
+  if (controls.flat) {
+    
+    //std::cout << pov.camera->aspect << std::endl;
+    //std::cout << pov.camera->fovy << std::endl;
+    
+    float height = 30.0f;
+    float width = pov.camera->aspect * height;
+    float nearPlaneDist = 30.0f;
+    
+    glm::mat4 proj_ortho = glm::ortho( -width, width, -height, height, nearPlaneDist, 1000.0f);
+    glm::mat4 world_to_clip = proj_ortho * pov.camera->transform->make_world_to_local();
+    level->draw( *pov.camera, world_to_clip );
+    
+  } else {
+    level->draw( *pov.camera );
+  }
 
 }

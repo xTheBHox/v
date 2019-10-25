@@ -12,6 +12,7 @@ struct GameLevel : Scene {
 	virtual ~GameLevel();
 
   void draw( Camera const &camera );
+  void draw( Camera const &camera, glm::mat4 world_to_clip );
 
   struct MeshCollider {
 		MeshCollider(Scene::Transform *transform_, Mesh const &mesh_, MeshBuffer const &buffer_) : transform(transform_), mesh(&mesh_), buffer(&buffer_) { }
