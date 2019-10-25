@@ -12,7 +12,7 @@
 
 
 struct PlayerTwoMode : Mode {
-	PlayerTwoMode(GameLevel *level_, std::string const &host, std::string const &port);
+    PlayerTwoMode(GameLevel *level_, std::string const &host, std::string const &port);
 	virtual ~PlayerTwoMode();
 
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
@@ -32,6 +32,7 @@ struct PlayerTwoMode : Mode {
 	} controls;
 
   bool pause = false;
+  GameLevel::Movable *moving = nullptr;
 
   // Player camera tracked using this structure:
   struct {

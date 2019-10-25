@@ -60,27 +60,42 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     } else return false;
   } else if (evt.type == SDL_MOUSEMOTION) {
     
-    if (controls.flat) return true;
-    //based on trackball camera control from ShowMeshesMode:
-    //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
-    glm::vec2 delta;
-    delta.x = evt.motion.xrel / float(window_size.x) * 2.0f;
-    delta.x *= float(window_size.y) / float(window_size.x);
-    delta.y = evt.motion.yrel / float(window_size.y) * -2.0f;
+    if (controls.flat) {
+      
+      if (evt.motion.state & SDL_BUTTON_LMASK) {
+         
+        if (moving != nullptr) {
+            
+          float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
+          moving->offset += dy;
+          moving->update();
+          
+        }
+          
+          
+      }
+    
+    } else { // !controls.flat
+      //based on trackball camera control from ShowMeshesMode:
+      //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
+      glm::vec2 delta;
+      delta.x = evt.motion.xrel / float(window_size.x) * 2.0f;
+      delta.x *= float(window_size.y) / float(window_size.x);
+      delta.y = evt.motion.yrel / float(window_size.y) * -2.0f;
 
-    delta *= controls.mouse_sensitivity;
+      delta *= controls.mouse_sensitivity;
+ 
+      pov.azimuth -= delta.x;
+      pov.elevation -= delta.y;
 
-    pov.azimuth -= delta.x;
-    pov.elevation -= delta.y;
-
-    // Normalize to [-pi, pi)
-    pov.azimuth /= 2.0f * PI;
-    pov.azimuth -= std::round(pov.azimuth);
-    pov.azimuth *= 2.0f * PI;
-
-    // Clamp to [-89deg, 89deg]
-    pov.elevation = std::max(-89.0f / 180.0f * PI, pov.elevation);
-    pov.elevation = std::min( 89.0f / 180.0f * PI, pov.elevation);
+      // Normalize to [-pi, pi)
+      pov.azimuth /= 2.0f * PI;
+      pov.azimuth -= std::round(pov.azimuth);
+      pov.azimuth *= 2.0f * PI;
+      // Clamp to [-89deg, 89deg]
+      pov.elevation = std::max(-89.0f / 180.0f * PI, pov.elevation);
+      pov.elevation = std::min( 89.0f / 180.0f * PI, pov.elevation);
+    }
 
   } else if (evt.type == SDL_MOUSEBUTTONDOWN || evt.type == SDL_MOUSEBUTTONUP) {
     if (evt.button.button == SDL_BUTTON_LEFT) {

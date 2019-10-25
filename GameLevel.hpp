@@ -16,13 +16,16 @@ struct GameLevel : Scene {
   void draw( Camera const &camera, glm::mat4 world_to_clip );
 
   struct MeshCollider {
-		MeshCollider(Scene::Transform *transform_, Mesh const &mesh_, MeshBuffer const &buffer_) : transform(transform_), mesh(&mesh_), buffer(&buffer_) { }
-		Scene::Transform *transform;
-		Mesh const *mesh;
-		MeshBuffer const *buffer;
+    MeshCollider(Scene::Transform *transform_, Mesh const &mesh_, MeshBuffer const &buffer_) : transform(transform_), mesh(&mesh_), buffer(&buffer_) { }
+    Scene::Transform *transform;
+    Mesh const *mesh;
+    MeshBuffer const *buffer;
   };
   
   struct Movable {
+  
+    void update();
+  
     Transform *transform = nullptr;
     // The movement axis, direction away from player 2
     glm::vec3 axis = glm::vec3(0.0f);

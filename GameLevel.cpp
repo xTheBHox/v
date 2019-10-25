@@ -109,3 +109,10 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 		glBlendEquation(GL_FUNC_ADD);
 	}
 }
+
+void GameLevel::Movable::update() {
+  
+  
+  
+  
+}
