@@ -172,6 +172,7 @@ GAME_NAMES =
 	Sprite
   GameLevel
   PlayerTwoMode
+  PlayerOneMode
 	MenuMode
 	main
 	data_path

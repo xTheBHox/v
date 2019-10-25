@@ -18,7 +18,7 @@ Load< void > load_demo_menu(LoadTagDefault, [](){
 	items.emplace_back("Level 1");
 	items.back().on_select = [](MenuMode::Item const &){
     GameLevel *lv = new GameLevel(data_path("level1.scene"));
-		Mode::set_current(std::make_shared< PlayerTwoMode >(lv));
+		Mode::set_current(std::make_shared< PlayerTwoMode >(lv, "localhost", "1234"));
 	};
 
 	demo_menu = std::make_shared< MenuMode >(items);
