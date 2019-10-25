@@ -178,18 +178,19 @@ GAME_NAMES =
 	;
 
 #Uncomment if you want to build a second "client" program for multiplayer stuff
-#CLIENT_NAMES =
-#	ClientMode
-#	Sound
-#	load_wav
-#	load_opus
-#	DrawSprites
-#	ColorTextureProgram
-#	LitColorTextureProgram
-#	Sprite
-#	client
-#	data_path
-#	;
+CLIENT_NAMES =
+	ClientMode
+	Sound
+	load_wav
+	load_opus
+	DrawSprites
+	ColorTextureProgram
+	LitColorTextureProgram
+	Sprite
+	client
+	data_path
+	ServerMode
+	;
 
 COMMON_NAMES =
 	Connection
