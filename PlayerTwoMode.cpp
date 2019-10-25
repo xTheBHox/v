@@ -173,7 +173,7 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
     
     float height = 30.0f;
     float width = pov.camera->aspect * height;
-    float nearPlaneDist = 30.0f;
+    float nearPlaneDist = 40.0f;
     
     glm::mat4 proj_ortho = glm::ortho( -width, width, -height, height, nearPlaneDist, 1000.0f);
     glm::mat4 world_to_clip = proj_ortho * pov.camera->transform->make_world_to_local();

@@ -48,8 +48,11 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.count = mesh->count;
 
     if (transform->name.substr(0, 7) == "Movable") {
+        std::cout << "Movable detected!" << std::endl;
         movables.emplace_back(transform);
-        std::cout << "Movable detected!" << std::endl; 
+        movable_data.emplace_back();
+        //Movable data = movable_data.back();
+        //data.move_axis = 
     }
     pipeline.set_uniforms = [](){ 
         glUniform1f(basic_material_program->ROUGHNESS_float, 1.0f);
@@ -70,7 +73,7 @@ void GameLevel::draw( Camera const &camera ) {
 void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 
 	//--- actual drawing ---
-	glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
+	glClearColor(0.8f, 0.8f, 0.95f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
