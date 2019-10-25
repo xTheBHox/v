@@ -10,7 +10,7 @@
 #include <iostream>
 #include <algorithm>
 
-
+using namespace std;
 #define PI 3.1415926f
 
 PlayerOneMode::PlayerOneMode( GameLevel *level_ , std::string const &port) : level( level_ ){
@@ -161,10 +161,10 @@ void PlayerOneMode::update(float elapsed) {
             auto start = (&data[0]);
             for (auto it = level->movables.begin(); it != level->movables.end(); ++it){
               glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-              glm::quat* rot = reinterpret_cast<glm::quat*> (start + 12);
+              glm::quat* rot = reinterpret_cast<glm::quat*> (start + sizeof(glm::vec3));
               (*it)->position = *pos;
               (*it)->rotation = *rot;
-              start += 28;
+              start += sizeof(glm::vec3) + sizeof(glm::quat);
             }
 					}else{
 						//invalid data type
@@ -174,7 +174,7 @@ void PlayerOneMode::update(float elapsed) {
 
 			}
 	  },
-		1.0 //timeout (in seconds)
+		0.0 //timeout (in seconds)
 		);
   }
 }
