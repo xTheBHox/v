@@ -14,9 +14,9 @@
 #define PI 3.1415926f
 
 PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::string const &port) : level( level_ ){
-  pov.camera = &( level->cameras.front() );
+  pov.camera = &( level->cameras.back() );
   SDL_SetRelativeMouseMode(SDL_TRUE);
-  client.reset(new Client(host, port));
+  //client.reset(new Client(host, port));
 }
 
 PlayerTwoMode::~PlayerTwoMode(){
@@ -43,11 +43,16 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
   } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2) {
     pov.camera = &( level->cameras.back() );
   } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_SPACE) {
-    controls.flat = true;
-    SDL_SetRelativeMouseMode(SDL_FALSE);
+    if (!controls.flat) {
+      controls.flat = true;
+      SDL_SetRelativeMouseMode(SDL_FALSE);
+      moving = level->movable_get( pov.camera );
+      if (moving) std::cout << "Got movable!\n" << std::endl;
+    }
   } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_SPACE) {
     controls.flat = false;
     SDL_SetRelativeMouseMode(SDL_TRUE);
+    moving = nullptr;
   } else if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP) {
     if (evt.key.keysym.scancode == SDL_SCANCODE_A) {
       controls.left = (evt.type == SDL_KEYDOWN);
@@ -59,22 +64,15 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
       controls.backward = (evt.type == SDL_KEYDOWN);
     } else return false;
   } else if (evt.type == SDL_MOUSEMOTION) {
-    
+
     if (controls.flat) {
-      
       if (evt.motion.state & SDL_BUTTON_LMASK) {
-         
-        if (moving != nullptr) {
-            
+        if (moving) {
           float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
-          moving->offset += dy;
+          moving->offset += 10.0f * dy;
           moving->update();
-          
         }
-          
-          
       }
-    
     } else { // !controls.flat
       //based on trackball camera control from ShowMeshesMode:
       //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
@@ -84,7 +82,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
       delta.y = evt.motion.yrel / float(window_size.y) * -2.0f;
 
       delta *= controls.mouse_sensitivity;
- 
+
       pov.azimuth -= delta.x;
       pov.elevation -= delta.y;
 
@@ -112,9 +110,9 @@ void PlayerTwoMode::update(float elapsed) {
   if (pause) return;
 
   if (controls.flat) {
-  
 
-  } else { // !flat 
+
+  } else { // !flat
     float pl_ca = std::cos(pov.azimuth);
     float pl_sa = std::sin(pov.azimuth);
 
@@ -159,41 +157,44 @@ void PlayerTwoMode::update(float elapsed) {
     }
   }
 
-  client->connection.send_buffer.emplace_back('C');
-  for (auto it = level->movables.begin(); it != level->movables.end(); ++it){
-      glm::vec3 position = (*it)->position;
-      glm::quat rotation = (*it)->rotation;
-      client->connection.send(position);
-      client->connection.send(rotation);
-  }
+  if (client) {
 
-	client->poll([](Connection *, Connection::Event evt){
-		//TODO: eventually, read server state
-    
-	}, 0.0);
-	//if connection was closed,
-	if (!client->connection) {
-		Mode::set_current(nullptr);
-	}
+    client->connection.send_buffer.emplace_back('C');
+    for (auto it = level->movables.begin(); it != level->movables.end(); ++it){
+        glm::vec3 position = (*it)->position;
+        glm::quat rotation = (*it)->rotation;
+        client->connection.send(position);
+        client->connection.send(rotation);
+    }
+
+  	client->poll([](Connection *, Connection::Event evt){
+  		//TODO: eventually, read server state
+
+  	}, 0.0);
+  	//if connection was closed,
+  	if (!client->connection) {
+  		Mode::set_current(nullptr);
+  	}
+  }
 }
 
 void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
-    
+
   pov.camera->aspect = drawable_size.x / float(drawable_size.y);
 
   if (controls.flat) {
-    
+
     //std::cout << pov.camera->aspect << std::endl;
     //std::cout << pov.camera->fovy << std::endl;
-    
+
     float height = 30.0f;
     float width = pov.camera->aspect * height;
     float nearPlaneDist = 40.0f;
-    
+
     glm::mat4 proj_ortho = glm::ortho( -width, width, -height, height, nearPlaneDist, 1000.0f);
     glm::mat4 world_to_clip = proj_ortho * pov.camera->transform->make_world_to_local();
     level->draw( *pov.camera, world_to_clip );
-    
+
   } else {
     level->draw( *pov.camera );
   }

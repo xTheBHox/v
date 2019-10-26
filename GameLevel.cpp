@@ -51,10 +51,13 @@ GameLevel::GameLevel(std::string const &scene_file) {
         std::cout << "Movable detected!" << std::endl;
         movables.emplace_back(transform);
         movable_data.emplace_back();
-        //Movable data = movable_data.back();
-        //data.move_axis = 
+        Movable &data = movable_data.back();
+        data.transform = transform;
+        data.axis = glm::vec3(0.0f, -1.0f, 0.0f);
+        data.mover_pos = glm::vec3(-15.0f, 105.0f, 0.0f);
+        data.init_pos = transform->position;
     }
-    pipeline.set_uniforms = [](){ 
+    pipeline.set_uniforms = [](){
         glUniform1f(basic_material_program->ROUGHNESS_float, 1.0f);
     };
   };
@@ -111,8 +114,19 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 }
 
 void GameLevel::Movable::update() {
-  
-  
-  
-  
+  transform->position = init_pos + offset * axis;
+}
+
+GameLevel::Movable *GameLevel::movable_get( Camera const *cam ) {
+
+  for (Movable &m : movable_data) {
+
+    glm::vec3 dist = m.mover_pos - cam->transform->position;
+    if ( glm::dot( dist, dist ) <= m.pos_tolerance * m.pos_tolerance ){
+      return &m;
+    }
+  }
+
+  return nullptr;
+
 }

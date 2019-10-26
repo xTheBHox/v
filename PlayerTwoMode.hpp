@@ -43,7 +43,7 @@ struct PlayerTwoMode : Mode {
   } pov;
 
   GameLevel *level;
-  
-  std::unique_ptr< Client > client;
+
+  std::unique_ptr< Client > client = nullptr;
 
 };

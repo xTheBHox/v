@@ -28,7 +28,6 @@ struct PlayerOneMode : Mode {
     bool mouse_locked = true;
     bool mouse_down = false;
     float mouse_sensitivity = 4.0f;
-    bool flat = false;
 	} controls;
 
   bool pause = false;
@@ -42,7 +41,7 @@ struct PlayerOneMode : Mode {
   } pov;
 
   GameLevel *level;
-  
+
   std::unique_ptr< Server > server;
 
 	//std::unordered_map< Connection const *, PlayerInfo > connection_infos;

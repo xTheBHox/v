@@ -44,12 +44,6 @@ bool PlayerOneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     pov.camera = &( level->cameras.front() );
   } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2) {
     pov.camera = &( level->cameras.back() );
-  } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_SPACE) {
-    controls.flat = true;
-    SDL_SetRelativeMouseMode(SDL_FALSE);
-  } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_SPACE) {
-    controls.flat = false;
-    SDL_SetRelativeMouseMode(SDL_TRUE);
   } else if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP) {
     if (evt.key.keysym.scancode == SDL_SCANCODE_A) {
       controls.left = (evt.type == SDL_KEYDOWN);
@@ -61,7 +55,6 @@ bool PlayerOneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
       controls.backward = (evt.type == SDL_KEYDOWN);
     } else return false;
   } else if (evt.type == SDL_MOUSEMOTION) {
-    if (controls.flat) return true;
     //based on trackball camera control from ShowMeshesMode:
     //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
     glm::vec2 delta;
@@ -96,52 +89,40 @@ bool PlayerOneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 
 void PlayerOneMode::update(float elapsed) {
   if (pause) return;
+  float pl_ca = std::cos(pov.azimuth);
+  float pl_sa = std::sin(pov.azimuth);
 
-  if (controls.flat) {
+  // Update player velocity
+  {
+    glm::vec3 pl_dvel = glm::vec3(0.0f);
+    if (controls.left) pl_dvel.x -= 1.0f;
+    if (controls.right) pl_dvel.x += 1.0f;
+    if (controls.backward) pl_dvel.y -= 1.0f;
+    if (controls.forward) pl_dvel.y += 1.0f;
 
-  } else { // !flat
-    float pl_ca = std::cos(pov.azimuth);
-    float pl_sa = std::sin(pov.azimuth);
+    if (pl_dvel != glm::vec3(0.0f)) {
+      pl_dvel = glm::normalize(pl_dvel);
+      pl_dvel =
+        glm::vec3(pl_ca, pl_sa, 0.0f) * pl_dvel.x +
+        glm::vec3(-pl_sa, pl_ca, 0.0f) * pl_dvel.y;
+      float pl_accel = 0.1f;
+      pov.vel += pl_accel * pl_dvel;
+    }
+    pov.vel *= std::pow(0.5f, elapsed / 0.05f); // friction
+  }
 
-  /**
-    glm::mat3 player_frame = glm::mat3_cast(
-      glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f)) *
-      glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f))
+  // Update player position
+  pov.camera->transform->position += pov.vel;
+
+  // Update camera rotation
+  {
+    pov.camera->transform->rotation = glm::angleAxis(
+      pov.azimuth,
+      glm::vec3( 0.0f, 0.0f, 1.0f )
+    ) * glm::angleAxis(
+      -pov.elevation + 0.5f * PI,
+      glm::vec3( 1.0f, 0.0f, 0.0f )
     );
-  **/
-
-    // Update player velocity
-    {
-      glm::vec3 pl_dvel = glm::vec3(0.0f);
-      if (controls.left) pl_dvel.x -= 1.0f;
-      if (controls.right) pl_dvel.x += 1.0f;
-      if (controls.backward) pl_dvel.y -= 1.0f;
-      if (controls.forward) pl_dvel.y += 1.0f;
-
-      if (pl_dvel != glm::vec3(0.0f)) {
-        pl_dvel = glm::normalize(pl_dvel);
-        pl_dvel =
-          glm::vec3(pl_ca, pl_sa, 0.0f) * pl_dvel.x +
-          glm::vec3(-pl_sa, pl_ca, 0.0f) * pl_dvel.y;
-        float pl_accel = 0.1f;
-        pov.vel += pl_accel * pl_dvel;
-      }
-      pov.vel *= std::pow(0.5f, elapsed / 0.05f); // friction
-    }
-
-    // Update player position
-    pov.camera->transform->position += pov.vel;
-
-    // Update camera rotation
-    {
-      pov.camera->transform->rotation = glm::angleAxis(
-        pov.azimuth,
-        glm::vec3( 0.0f, 0.0f, 1.0f )
-      ) * glm::angleAxis(
-        -pov.elevation + 0.5f * PI,
-        glm::vec3( 1.0f, 0.0f, 0.0f )
-      );
-    }
   }
 
   if (server){

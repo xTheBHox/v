@@ -21,11 +21,16 @@ struct GameLevel : Scene {
     Mesh const *mesh;
     MeshBuffer const *buffer;
   };
-  
+
   struct Movable {
-  
+
+    // The margin of error in position (units)
+    float pos_tolerance = 3.0f;
+    // The margin of error in viewing direction
+    // static const float AXIS_TOLERANCE = 0.2;
+
     void update();
-  
+
     Transform *transform = nullptr;
     // The movement axis, direction away from player 2
     glm::vec3 axis = glm::vec3(0.0f);
@@ -42,7 +47,8 @@ struct GameLevel : Scene {
   };
 
   std::list< Transform * >movables;
-  
   std::list< Movable >movable_data;
+
+  Movable *movable_get( Camera const *cam );
 
 };
