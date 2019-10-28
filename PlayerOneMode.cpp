@@ -139,7 +139,7 @@ void PlayerOneMode::update(float elapsed) {
 					std::vector< char > data = connection->recv_buffer;
 					char type = (data[0]);
 					if (type == 'C'){
-            auto start = (&data[0]);
+            auto start = (&data[1]);
             for (auto it = level->movables.begin(); it != level->movables.end(); ++it){
               glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
               glm::quat* rot = reinterpret_cast<glm::quat*> (start + sizeof(glm::vec3));
