@@ -67,7 +67,7 @@ if $(OS) = NT { #Windows
 	LINK = clang++ ;
 	LINKFLAGS = -std=c++14 -g -Wall -Werror ;
 	LINKLIBS = ;
-	
+
 	#SDL2:
 	C++FLAGS += `'$(NEST_LIBS)/SDL2/bin/sdl2-config' --prefix='$(NEST_LIBS)/SDL2' --cflags` ;
 	LINKLIBS += `'$(NEST_LIBS)/SDL2/bin/sdl2-config' --prefix='$(NEST_LIBS)/SDL2' --static-libs` -framework OpenGL ;
@@ -111,7 +111,7 @@ if $(OS) = NT { #Windows
 	LINK = g++ -no-pie ;
 	LINKFLAGS = -std=c++17 -g -Wall -Werror ;
 	LINKLIBS = ;
-	
+
 	#various nest libs, split into their own lines for ease of commenting-out-when-not-needed:
 
 	#SDL2:
@@ -156,6 +156,7 @@ if $(OS) = NT { #Windows
 
 #Store the names of all the .cpp files to build into a variable:
 GAME_NAMES =
+    collide
 	demo_menu
 	BasicMaterialProgram
 	BasicMaterialForwardProgram
@@ -170,9 +171,9 @@ GAME_NAMES =
 	LitColorTextureProgram
 	BoneLitColorTextureProgram
 	Sprite
-  GameLevel
-  PlayerTwoMode
-  PlayerOneMode
+    GameLevel
+    PlayerTwoMode
+    PlayerOneMode
 	MenuMode
 	main
 	data_path

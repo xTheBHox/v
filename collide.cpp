@@ -148,7 +148,7 @@ bool collide_ray_vs_cylinder(
 bool collide_swept_sphere_vs_triangle(
 	glm::vec3 const &sphere_from, glm::vec3 const &sphere_to, float sphere_radius,
 	glm::vec3 const &triangle_a, glm::vec3 const &triangle_b, glm::vec3 const &triangle_c,
-	float *collision_t, glm::vec3 *collision_at, glm::vec3 *collision_out
+	float *collision_t, glm::vec3 *collision_at, glm::vec3 *collision_out, bool *is_surface_collision
 ) {
 
 	float t = 2.0f;
@@ -203,11 +203,13 @@ bool collide_swept_sphere_vs_triangle(
 				if (collision_t) *collision_t = at_t;
 				if (collision_out) *collision_out = careful_normalize(at - close);
 				if (collision_at) *collision_at = close;
+        if(is_surface_collision) *is_surface_collision = true;
 				return true;
 			}
 		}
 	}
 
+  if(is_surface_collision) *is_surface_collision = false;
 	//Plane check hasn't been able to reject sphere sweep, move on to checking edges and vertices:
 	bool collided = false;
 

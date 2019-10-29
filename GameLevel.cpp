@@ -9,13 +9,32 @@
 
 #include <iostream>
 
+//used for lookup later:
+Mesh const *mesh_Goal = nullptr;
+Mesh const *mesh_Body_P1 = nullptr;
+Mesh const *mesh_Body_P2 = nullptr;
+
+//names of mesh-to-collider-mesh:
+std::unordered_map< Mesh const *, Mesh const * > mesh_to_collider;
+
 GLuint vao_level = -1U;
 
 Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 	MeshBuffer *ret = new MeshBuffer(data_path("level1.pnct"));
 	vao_level = ret->make_vao_for_program(basic_material_program->program);
+
+  //key objects:
+  mesh_Goal = &ret->lookup("Goal");
+  mesh_Body_P1 = &ret->lookup("Body1");
+  mesh_Body_P2 = &ret->lookup("Body2");
+
+  //collidable objects:
+  mesh_to_collider.insert(std::make_pair(&ret->lookup("Room"), &ret->lookup("Room")));
+  mesh_to_collider.insert(std::make_pair(&ret->lookup("Cube"), &ret->lookup("Cube")));
+
 	return ret;
 });
+
 /*
 Load< Scene > level1_scene(LoadTagLate, []() -> Scene const * {
 	return new Scene(data_path("level1.scene"), [](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
@@ -32,10 +51,11 @@ Load< Scene > level1_scene(LoadTagLate, []() -> Scene const * {
 	});
 });*/
 
-
 GameLevel::GameLevel(std::string const &scene_file) {
-  auto load_fn = [ this ]( Scene &, Transform *transform, std::string const &mesh_name ){
-    Mesh const *mesh = &level1_meshes->lookup( mesh_name );
+  uint32_t decorations = 0;
+
+  auto load_fn = [this, &decorations](Scene &, Transform *transform, std::string const &mesh_name){
+    Mesh const *mesh = &level1_meshes->lookup(mesh_name);
 
     drawables.emplace_back(transform);
     Drawable::Pipeline &pipeline = drawables.back().pipeline;
@@ -48,15 +68,29 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.count = mesh->count;
 
     if (transform->name.substr(0, 7) == "Movable") {
-        std::cout << "Movable detected!" << std::endl;
-        movables.emplace_back(transform);
-        movable_data.emplace_back();
-        Movable &data = movable_data.back();
-        data.transform = transform;
-        data.axis = glm::vec3(0.0f, -1.0f, 0.0f);
-        data.mover_pos = glm::vec3(-15.0f, 105.0f, 0.0f);
-        data.init_pos = transform->position;
+      std::cout << "Movable detected!" << std::endl;
+      movables.emplace_back(transform);
+      movable_data.emplace_back();
+      Movable &data = movable_data.back();
+      data.transform = transform;
+      data.axis = glm::vec3(0.0f, -1.0f, 0.0f);
+      data.mover_pos = glm::vec3(-30.0f, 105.0f, -8.0f);
+      data.init_pos = transform->position;
+    } else if (transform->name.substr(0, 4) == "Goal") {
+      goals.emplace_back(transform);
+    } else if (transform->name.substr(0, 5) == "Body1") {
+      body_P1_transform = transform;
+    } else if (transform->name.substr(0, 5) == "Body2") {
+      body_P2_transform = transform;
+    } else {
+      auto f = mesh_to_collider.find(mesh);
+      if (f != mesh_to_collider.end()) {
+        mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
+      } else {
+        decorations++;
+      }
     }
+
     pipeline.set_uniforms = [](){
         glUniform1f(basic_material_program->ROUGHNESS_float, 1.0f);
     };
