@@ -17,7 +17,7 @@ PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::
   pov.camera = &( level->cameras.back() );
   pov.body_transform = level->body_P2_transform;
   SDL_SetRelativeMouseMode(SDL_TRUE);
-  //client.reset(new Client(host, port));
+  client.reset(new Client(host, port));
 }
 
 PlayerTwoMode::~PlayerTwoMode(){
