@@ -15,10 +15,10 @@ all : \
 
 
 ../dist/level1.scene : level1-mockup.blend export-scene.py
-	$(BLENDER) --background --python export-scene.py -- 'level1-mockup.blend' '$@'
+	$(BLENDER) --background --python export-scene.py -- level1-mockup.blend:Collection '$@'
 
 ../dist/level1.pnct : level1-mockup.blend export-meshes.py
-	$(BLENDER) --background --python export-meshes.py -- 'level1-mockup.blend' '$@'
+	$(BLENDER) --background --python export-meshes.py -- level1-mockup.blend:Collection '$@'
 
 #../dist/pool.scene : pool.blend export-scene.py
 #	$(BLENDER) --background --python export-scene.py -- 'pool.blend:Table 1' '$@'
