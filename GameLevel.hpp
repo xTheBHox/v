@@ -24,11 +24,6 @@ struct GameLevel : Scene {
 
   struct Movable {
 
-    // The margin of error in position (units)
-    float pos_tolerance = 3.0f;
-    // The margin of error in viewing direction
-    // static const float AXIS_TOLERANCE = 0.2;
-
     void update();
 
     Transform *transform = nullptr;
@@ -44,10 +39,17 @@ struct GameLevel : Scene {
     glm::u8vec4 highlight = glm::u8vec4(0, 0, 255, 127);
     // Pointer to P1's camera if P1 is in the object
     Camera *cam_one = nullptr;
+
+    // The margin of error in position (distance units)
+    float pos_tolerance = 3.0f;
+    // The margin of error in viewing direction (degrees)
+    // float axis_tolerance = 0.2f;
+
   };
 
   std::list< Transform * >movables;
   std::list< Movable >movable_data;
+  std::list< MeshCollider >colliders;
 
   Movable *movable_get( Camera const *cam );
 
