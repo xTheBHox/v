@@ -11,7 +11,6 @@
 #include <iostream>
 #include <algorithm>
 
-
 #define PI 3.1415926f
 
 PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::string const &port) : level( level_ ){
@@ -342,7 +341,7 @@ void PlayerTwoMode::update(float elapsed) {
 			* glm::angleAxis(-pov.elevation + 0.5f * 3.1415926f, glm::vec3(1.0f, 0.0f, 0.0f) )
 		;
 		// glm::vec3 in = pov.camera->transform->rotation * glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 top = pov.body_transform->position - pov.gravity * 1.0f;
+    glm::vec3 top = pov.body_transform->position - pov.gravity * 1.5f;
 		pov.camera->transform->position = top; // - 10.0f * in;
 	}
 

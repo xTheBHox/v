@@ -30,7 +30,6 @@ Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 
   //collidable objects:
   mesh_to_collider.insert(std::make_pair(&ret->lookup("Room"), &ret->lookup("Room")));
-  mesh_to_collider.insert(std::make_pair(&ret->lookup("Cube"), &ret->lookup("Cube")));
 
 	return ret;
 });
