@@ -28,6 +28,7 @@ struct PlayerTwoMode : Mode {
     bool mouse_locked = true;
     bool mouse_down = false;
     float mouse_sensitivity = 4.0f;
+    float drag_sensitivity = 20.0f;
     bool flat = false;
 	} controls;
 

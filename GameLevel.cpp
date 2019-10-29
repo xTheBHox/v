@@ -34,22 +34,6 @@ Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 	return ret;
 });
 
-/*
-Load< Scene > level1_scene(LoadTagLate, []() -> Scene const * {
-	return new Scene(data_path("level1.scene"), [](Scene &scene, Scene::Transform *transform, std::string const &mesh_name){
-		Mesh const &mesh = level1_meshes->lookup(mesh_name);
-
-		scene.drawables.emplace_back(transform);
-		Scene::Drawable::Pipeline &pipeline = scene.drawables.back().pipeline;
-		pipeline = basic_material_program_pipeline;
-		pipeline.vao = vao_level;
-		pipeline.type = mesh.type;
-		pipeline.start = mesh.start;
-		pipeline.count = mesh.count;
-
-	});
-});*/
-
 GameLevel::GameLevel(std::string const &scene_file) {
   uint32_t decorations = 0;
 
@@ -73,7 +57,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
       Movable &data = movable_data.back();
       data.transform = transform;
       data.axis = glm::vec3(0.0f, -1.0f, 0.0f);
-      data.mover_pos = glm::vec3(-30.0f, 105.0f, -8.0f);
+      data.mover_pos = glm::vec3(-30.0f, 240.0f, -7.0f);
       data.init_pos = transform->position;
     } else if (transform->name.substr(0, 4) == "Goal") {
       goals.emplace_back(transform);
@@ -150,11 +134,11 @@ void GameLevel::Movable::update() {
   transform->position = init_pos + offset * axis;
 }
 
-GameLevel::Movable *GameLevel::movable_get( Camera const *cam ) {
+GameLevel::Movable *GameLevel::movable_get( glm::vec3 const pos ) {
 
   for (Movable &m : movable_data) {
 
-    glm::vec3 dist = m.mover_pos - cam->transform->position;
+    glm::vec3 dist = m.mover_pos - pos;
     if ( glm::dot( dist, dist ) <= m.pos_tolerance * m.pos_tolerance ){
       return &m;
     }

@@ -47,7 +47,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     if (!controls.flat) {
       controls.flat = true;
       SDL_SetRelativeMouseMode(SDL_FALSE);
-      moving = level->movable_get( pov.camera );
+      moving = level->movable_get( pov.body_transform->position );
       if (moving) std::cout << "Got movable!\n" << std::endl;
     }
   } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_LCTRL) {
@@ -73,7 +73,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
       if (evt.motion.state & SDL_BUTTON_LMASK) {
         if (moving) {
           float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
-          moving->offset += 10.0f * dy;
+          moving->offset += controls.drag_sensitivity * dy;
           moving->update();
         }
       }

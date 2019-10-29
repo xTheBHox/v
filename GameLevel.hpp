@@ -53,7 +53,7 @@ struct GameLevel : Scene {
     Camera *cam_one = nullptr;
 
     // The margin of error in position (distance units)
-    float pos_tolerance = 3.0f;
+    float pos_tolerance = 9.0f;
     // The margin of error in viewing direction (degrees)
     // float axis_tolerance = 0.2f;
 
@@ -62,6 +62,6 @@ struct GameLevel : Scene {
   std::list< Transform * > movables;
   std::list< Movable > movable_data;
 
-  Movable *movable_get( Camera const *cam );
+  Movable *movable_get( glm::vec3 const pos );
 
 };
