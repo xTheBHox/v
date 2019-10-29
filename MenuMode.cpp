@@ -55,7 +55,10 @@ MenuMode::~MenuMode() {
 
 bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	if (evt.type == SDL_KEYDOWN) {
-		if (evt.key.keysym.sym == SDLK_UP) {
+    if (evt.key.keysym.sym == SDLK_ESCAPE){
+      Mode::set_current(nullptr);
+    }
+		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
 			//skip non-selectable items:
 			for (uint32_t i = selected - 1; i < items.size(); --i) {
 				if (items[i].on_select) {
@@ -65,7 +68,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 				}
 			}
 			return true;
-		} else if (evt.key.keysym.sym == SDLK_DOWN) {
+		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
 			//note: skips non-selectable items:
 			for (uint32_t i = selected + 1; i < items.size(); ++i) {
 				if (items[i].on_select) {
@@ -75,7 +78,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 				}
 			}
 			return true;
-		} else if (evt.key.keysym.sym == SDLK_RETURN) {
+		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
 			if (selected < items.size() && items[selected].on_select) {
 				Sound::play(*sound_clonk);
 				items[selected].on_select(items[selected]);
@@ -151,7 +154,7 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 					draw_sprites.draw(*right_select, glm::vec2(right + bounce, item.at.y) + right_select_offset, item.scale, right_select_tint);
 				}
 			}
-			
+
 		}
 	} //<-- gets drawn here!
 

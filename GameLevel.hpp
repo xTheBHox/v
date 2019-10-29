@@ -22,6 +22,18 @@ struct GameLevel : Scene {
     MeshBuffer const *buffer;
   };
 
+	//Goal objects(s) tracked using this structure:
+	struct Goal {
+		Goal(Scene::Transform *transform_) : transform(transform_) { };
+		Scene::Transform *transform;
+		float spin_acc = 0.0f;
+	};
+
+	std::vector< MeshCollider > mesh_colliders;
+	std::vector< Goal > goals;
+  Scene::Transform *body_P1_transform;
+  Scene::Transform *body_P2_transform;
+
   struct Movable {
 
     void update();
@@ -47,9 +59,8 @@ struct GameLevel : Scene {
 
   };
 
-  std::list< Transform * >movables;
-  std::list< Movable >movable_data;
-  std::list< MeshCollider >colliders;
+  std::list< Transform * > movables;
+  std::list< Movable > movable_data;
 
   Movable *movable_get( Camera const *cam );
 

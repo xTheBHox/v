@@ -33,7 +33,7 @@ struct BasicMaterialProgram {
 	GLuint LIGHT_DIRECTION_vec3 = -1U;
 	GLuint LIGHT_ENERGY_vec3 = -1U;
 	GLuint LIGHT_CUTOFF_float = -1U;
-	
+
 	//Textures:
 	//TEXTURE0 - texture that is accessed by TexCoord
 };

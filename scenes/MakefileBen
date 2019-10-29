@@ -4,12 +4,12 @@ BLENDER="Z:\Program Files\Blender Foundation\Blender\blender.exe"
 all : \
 	..\dist\level1.pnct \
 	..\dist\level1.scene
-  
+
 ..\dist\level1.scene: level1-mockup.blend export-scene.py
-	$(BLENDER) --background --python export-scene.py -- level1-mockup.blend $@
+	$(BLENDER) --background --python export-scene.py -- level1-mockup.blend:Collection $@
 
 ..\dist\level1.pnct: level1-mockup.blend export-meshes.py
-	$(BLENDER) --background --python export-meshes.py -- level1-mockup.blend $@
+	$(BLENDER) --background --python export-meshes.py -- level1-mockup.blend:Collection $@
 
 #../dist/plant.pnct : plant.blend export-meshes.py
 #	$(BLENDER) --background --python export-meshes.py -- plant.blend '$@'

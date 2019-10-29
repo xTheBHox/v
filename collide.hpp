@@ -25,5 +25,6 @@ bool collide_swept_sphere_vs_triangle(
 	//output:
 	float *collision_t = nullptr, //[optional,in+out] first time where sphere touches triangle
 	glm::vec3 *collision_at = nullptr, //[optional,out] point where sphere touches triangle
-	glm::vec3 *collision_out = nullptr //[optional,out] direction to move sphere to get away from triangle as quickly as possible (basically, the outward normal)
+	glm::vec3 *collision_out = nullptr, //[optional,out] direction to move sphere to get away from triangle as quickly as possible (basically, the outward normal)
+  bool *is_surface_collision = nullptr
 );
