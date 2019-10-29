@@ -27,6 +27,10 @@
 #include <algorithm>
 
 int main(int argc, char **argv) {
+
+  if (argc == 2) {
+    connect_ip = argv[1];
+  }
 #ifdef _WIN32
 	//when compiled on windows, unhandled exceptions don't have their message printed, which can make debugging simple issues difficult.
 	try {

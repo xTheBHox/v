@@ -59,6 +59,8 @@ GameLevel::GameLevel(std::string const &scene_file) {
       data.axis = glm::vec3(0.0f, -1.0f, 0.0f);
       data.mover_pos = glm::vec3(-30.0f, 240.0f, -7.0f);
       data.init_pos = transform->position;
+      auto f = mesh_to_collider.find(mesh);
+      mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
     } else if (transform->name.substr(0, 4) == "Goal") {
       goals.emplace_back(transform);
     } else if (transform->name.substr(0, 5) == "Body1") {
