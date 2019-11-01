@@ -144,9 +144,13 @@ void GameLevel::Movable::update() {
 
 GameLevel::Movable *GameLevel::movable_get( glm::vec3 const pos ) {
 
+  std::cout << "Pos: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
+
   for (Movable &m : movable_data) {
+    std::cout << "Mover: " << m.mover_pos.x << "\t" << m.mover_pos.y << "\t" << m.mover_pos.z << std::endl;
 
     glm::vec3 dist = m.mover_pos - pos;
+    std::cout << glm::dot( dist, dist ) << std::endl;
     if ( glm::dot( dist, dist ) <= m.pos_tolerance * m.pos_tolerance ){
       return &m;
     }

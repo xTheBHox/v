@@ -132,7 +132,7 @@ void PlayerOneMode::update(float elapsed) {
     if (controls.jump) {
       if (!pov.in_air) {
         pov.in_air = true;
-        pl_vel += -0.5f * pov.gravity; // jumping force, constant
+        pl_vel += -0.3f * pov.gravity; // jumping force, constant
       }
       controls.jump = false;
     }
@@ -257,8 +257,7 @@ void PlayerOneMode::update(float elapsed) {
           pl_vel -= (1.0f - std::pow(0.5f, remain / 0.05f)) * (pl_vel - d * collision_out);
           pl_vel -= 1.01f * d * collision_out;
         }
-        std::cout << "Vel:" << pl_vel.x << " " << pl_vel.y << " " << pl_vel.z << std::endl;
-        // Friction
+
         // if (DEBUG_draw_lines && DEBUG_show_collision) {
         //   //draw a little gadget at the collision point:
         //   glm::vec3 p1;
