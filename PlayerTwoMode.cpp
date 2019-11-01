@@ -46,9 +46,9 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
   } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2) {
     pov.camera = &( level->cameras.back() );
   } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_LCTRL) {
-    controls.flat = true;
+    controls_shift.flat = true;
   } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_LCTRL) {
-    controls.flat = false;
+    controls_shift.flat = false;
   } else if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP) {
     if (evt.key.keysym.scancode == SDL_SCANCODE_A) {
       controls.left = (evt.type == SDL_KEYDOWN);
@@ -68,7 +68,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
       if (evt.motion.state & SDL_BUTTON_LMASK) {
         if (shift.moving) {
           float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
-          shift.moving->offset += controls.drag_sensitivity * dy;
+          shift.moving->offset += controls_shift.drag_sensitivity * dy;
           shift.moving->update();
         }
       }
@@ -108,7 +108,7 @@ void PlayerTwoMode::update(float elapsed) {
 
   if (pause) return;
 
-  if (controls.flat) {
+  if (controls_shift.flat) {
     if (shift.progress == 0.0f) {
       shift.moving = level->movable_get( pov.camera->transform->make_local_to_world()[3] );
       if (shift.moving) {
@@ -120,7 +120,7 @@ void PlayerTwoMode::update(float elapsed) {
       shift.progress = std::min(shift.progress + shift.speed * elapsed, 1.0f);
     }
   }
-  else { // !controls.flat
+  else { // !controls_shift.flat
     if (shift.progress > 0.0f) {
       shift.progress = std::max(shift.progress - shift.speed * elapsed, 0.0f);
       if (shift.progress == 0.0f) {

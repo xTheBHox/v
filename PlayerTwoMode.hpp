@@ -26,10 +26,13 @@ struct PlayerTwoMode : Mode {
     bool sprint = false;
     bool jump = false;
     bool mouse_down = false;
-    bool flat = false;
     float mouse_sensitivity = 4.0f;
-    float drag_sensitivity = 20.0f;
 	} controls;
+
+  struct {
+    bool flat = false;
+    float drag_sensitivity = 20.0f;
+  } controls_shift;
 
 	bool DEBUG_fly = false;  //fly around for collsion debug
   bool pause = false;
@@ -50,7 +53,6 @@ struct PlayerTwoMode : Mode {
     // How much the camera has shifted
     float progress = 0.0f;
     float speed = 4.0f; // 1/t, t is the time taken to shift
-
   } shift;
 
   GameLevel *level;
