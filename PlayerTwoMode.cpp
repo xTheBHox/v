@@ -181,21 +181,21 @@ void print_vec4(glm::vec4 const &v) {
 
 void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
 
-  pov.camera->aspect = drawable_size.x / float(drawable_size.y);
+  float aspect = drawable_size.x / float(drawable_size.y);
 
   if (shift.progress > 0.0f) {
-    float height = 50.0f;
-    float width = pov.camera->aspect * height;
-    float flat_near = 40.0f;
+    Scene::OrthoCam *cf = shift.moving->cam_flat;
+    float h = cf->scale;
+    float w = aspect * h;
 
-    glm::mat4 proj = glm::ortho(-width, width, -height, height, flat_near, 1000000.0f);
+    glm::mat4 proj = glm::ortho(-w, w, -h, h, cf->near, cf->far);
     glm::mat4 w2l = shift.moving->cam_flat->transform->make_world_to_local();
 
     if (shift.progress < 1.0f) {
       float f = 1.0f - shift.progress;
       float f3 = f * f * f;
       float interp = 1.0f - f3 * f3;
-      float near_p = (flat_near * interp) + (0.01f * (1.0f - interp));
+      float near_p = (cf->near * interp) + (0.01f * (1.0f - interp));
       glm::mat4 reg_proj = glm::infinitePerspective(pov.camera->fovy, pov.camera->aspect, near_p);
 
       glm::mat4 reg_w2l = pov.camera->transform->make_world_to_local();
