@@ -256,15 +256,21 @@ void Scene::load(std::string const &filename,
 		if (c.transform >= hierarchy_transforms.size()) {
 			throw std::runtime_error("scene file '" + filename + "' contains camera entry with invalid transform index (" + std::to_string(c.transform) + ")");
 		}
-		if (std::string(c.type, 4) != "pers") {
-			std::cout << "Ignoring non-perspective camera (" + std::string(c.type, 4) + ") stored in file." << std::endl;
-			continue;
-		}
-		this->cameras.emplace_back(hierarchy_transforms[c.transform]);
-		Camera *camera = &this->cameras.back();
-		camera->fovy = c.data / 180.0f * 3.1415926f; //FOV is stored in degrees; convert to radians.
-		camera->near = c.clip_near;
-		//N.b. far plane is ignored because cameras use infinite perspective matrices.
+		if (std::string(c.type, 4) == "pers") {
+  		this->cameras.emplace_back(hierarchy_transforms[c.transform]);
+  		Camera *camera = &this->cameras.back();
+  		camera->fovy = c.data / 180.0f * 3.1415926f; //FOV is stored in degrees; convert to radians.
+  		camera->near = c.clip_near;
+  		//N.b. far plane is ignored because cameras use infinite perspective matrices.
+		} else if (std::string(c.type, 4) == "orth") {
+      this->orthocams.emplace_back(hierarchy_transforms[c.transform]);
+  		OrthoCam *orthocam = &this->orthocams.back();
+      orthocam->scale = c.data;
+      orthocam->near = c.clip_near;
+      orthocam->far = c.clip_far;
+    } else {
+      throw std::runtime_error("scene file '" + filename + "' contains camera entry with invalid type (" + std::string(c.type, 4) + ")");
+    }
 	}
 
 	for (auto const &l : lights) {

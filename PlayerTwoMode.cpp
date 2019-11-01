@@ -16,7 +16,7 @@
 #define PI 3.1415926f
 
 PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::string const &port) : level( level_ ){
-  pov.camera = &( level->cameras.back() );
+  pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
   SDL_SetRelativeMouseMode(SDL_TRUE);
   //client.reset(new Client(host, port));
@@ -333,17 +333,12 @@ void PlayerTwoMode::update(float elapsed) {
     //pov.vel.x = glm::mix(pl_force.x, pov.vel.x, std::pow(0.5f, elapsed / 0.01f));
     //pov.vel.y = glm::mix(pl_force.y, pov.vel.y, std::pow(0.5f, elapsed / 0.01f));
 
-  	{ //camera update:
+    { //camera update:
       pov.camera->transform->rotation =
         // glm::angleAxis(gravity_to_z_angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
-  			glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f)) *
+        glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f)) *
         glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
-
-      // TODO We can make this based on the transform hierarchy instead.
-      // Make the player body the camera's parent.
-      glm::vec3 top = pov.body->position + glm::vec3(0.0f, 0.0f, 10.0f);
-      pov.camera->transform->position = top;
-  	}
+    }
   }
 
   if (client) {
@@ -395,7 +390,7 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
     float flat_near = 40.0f;
 
     glm::mat4 proj = glm::ortho(-width, width, -height, height, flat_near, 1000000.0f);
-    glm::mat4 w2l = shift.moving->cam_two.make_world_to_local();
+    glm::mat4 w2l = shift.moving->cam_flat->transform->make_world_to_local();
 
     if (shift.progress < 1.0f) {
       float f = 1.0f - shift.progress;

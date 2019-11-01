@@ -14,7 +14,7 @@
 #define PI 3.1415926f
 
 PlayerOneMode::PlayerOneMode( GameLevel *level_ , std::string const &port) : level( level_ ){
-  pov.camera = &( level->cameras.front() );
+  pov.camera = level->cam_P1;
   pov.body = level->body_P1_transform;
   SDL_SetRelativeMouseMode(SDL_TRUE);
   if (port != "") {
@@ -101,29 +101,6 @@ void PlayerOneMode::update(float elapsed) {
   glm::vec3 pl_pos = pov.body->position;
   glm::vec3 pl_vel = pov.vel;
 
-  { // Movement forces
-    glm::vec3 pl_vel_move = glm::vec3(0.0f);
-    if (controls.left) pl_vel_move.x -= 1.0f;
-    if (controls.right) pl_vel_move.x += 1.0f;
-    if (controls.backward) pl_vel_move.y -= 1.0f;
-    if (controls.forward) pl_vel_move.y += 1.0f;
-
-    if (pl_vel_move != glm::vec3(0.0f)) {
-      pl_vel_move = glm::normalize(pl_vel_move);
-      pl_vel_move =
-        glm::vec3(pl_cosazi, pl_sinazi, 0.0f) * pl_vel_move.x +
-        glm::vec3(-pl_sinazi, pl_cosazi, 0.0f) * pl_vel_move.y;
-      if (pov.in_air) pl_vel_move *= 1.0f;
-      else pl_vel_move *= 10.0f; // player movement velocity magnitude, constant
-      if (controls.sprint) pl_vel_move *= 1.5f; // sprint force multiplier, constant
-      pl_vel += pl_vel_move;
-    }
-    else {
-
-    }
-    // pov.vel *= std::pow(0.5f, elapsed / 0.01f); // friction
-  }
-
   { // Gravitational accel
     pl_vel += elapsed * pov.gravity;
   }
@@ -137,6 +114,31 @@ void PlayerOneMode::update(float elapsed) {
       controls.jump = false;
     }
   }
+
+  if (!pov.in_air) { // Movement forces
+    glm::vec3 pl_vel_move = glm::vec3(0.0f);
+    if (controls.left) pl_vel_move.x -= 1.0f;
+    if (controls.right) pl_vel_move.x += 1.0f;
+    if (controls.backward) pl_vel_move.y -= 1.0f;
+    if (controls.forward) pl_vel_move.y += 1.0f;
+
+    if (pl_vel_move != glm::vec3(0.0f)) {
+      pl_vel_move = glm::normalize(pl_vel_move);
+      pl_vel_move =
+        glm::vec3(pl_cosazi, pl_sinazi, 0.0f) * pl_vel_move.x +
+        glm::vec3(-pl_sinazi, pl_cosazi, 0.0f) * pl_vel_move.y;
+      pl_vel_move *= 70.0f; // player movement velocity magnitude, constant
+      if (controls.sprint) pl_vel_move *= 1.5f; // sprint force multiplier, constant
+      //pl_vel += pl_vel_move;
+      pl_vel.x = glm::mix(pl_vel.x, pl_vel_move.x, std::pow(0.5f, elapsed / 0.02f));
+      pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / 0.02f));
+    }
+    else {
+
+    }
+    // pov.vel *= std::pow(0.5f, elapsed / 0.01f); // friction
+  }
+
 
   // Compute collisions for normal contact force
   {
@@ -254,7 +256,7 @@ void PlayerOneMode::update(float elapsed) {
         float d = glm::dot(pl_vel, collision_out); // collision_out already normalized
         // Adjust for surface friction
         if (d < 0.0f) {
-          pl_vel -= (1.0f - std::pow(0.5f, remain / 0.05f)) * (pl_vel - d * collision_out);
+          pl_vel -= (1.0f - std::pow(0.5f, remain / 0.01f)) * (pl_vel - d * collision_out);
           pl_vel -= 1.01f * d * collision_out;
         }
 
@@ -290,20 +292,11 @@ void PlayerOneMode::update(float elapsed) {
     pov.vel = pl_vel;
   } // end collision compute
 
-
-  //pov.vel.x = glm::mix(pl_force.x, pov.vel.x, std::pow(0.5f, elapsed / 0.01f));
-  //pov.vel.y = glm::mix(pl_force.y, pov.vel.y, std::pow(0.5f, elapsed / 0.01f));
-
 	{ //camera update:
     pov.camera->transform->rotation =
       // glm::angleAxis(gravity_to_z_angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f)) *
       glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
-
-    // TODO We can make this based on the transform hierarchy instead.
-    // Make the player body the camera's parent.
-    glm::vec3 top = pov.body->position - pov.gravity * 0.2f;
-    pov.camera->transform->position = top;
 	}
 
   if (server) {

@@ -29,31 +29,23 @@ struct GameLevel : Scene {
 		float spin_acc = 0.0f;
 	};
 
-	std::vector< MeshCollider > mesh_colliders;
-	std::vector< Goal > goals;
-  Scene::Transform *body_P1_transform;
-  Scene::Transform *body_P2_transform;
-
   struct Movable {
 
     void update();
+    void init_cam(OrthoCam *cam);
 
-    Transform *transform = nullptr;
+    OrthoCam *cam_flat = nullptr;
     // The movement axis, direction away from player 2
     glm::vec3 axis = glm::vec3(0.0f);
     // The position player 2 needs to stand to move the object
     glm::vec3 mover_pos = glm::vec3(0.0f);
+
+    // The object's transform.
+    Transform *transform = nullptr;
     // The original position of the object
     glm::vec3 init_pos = glm::vec3(0.0f);
     // The current offset (along axis) of the object
     float offset = 0.0f;
-    // The object's highlight color
-    glm::u8vec4 highlight = glm::u8vec4(0, 0, 255, 127);
-    // Pointer to P1's camera if P1 is in the object
-    Camera *cam_one = nullptr;
-
-    // The camera transform of P2 at the correct position.
-    Transform cam_two;
 
     // The margin of error in position (distance units)
     float pos_tolerance = 9.0f;
@@ -62,9 +54,17 @@ struct GameLevel : Scene {
 
   };
 
+  Movable *movable_get( glm::vec3 const pos );
+
+  std::vector< MeshCollider > mesh_colliders;
+  std::vector< Goal > goals;
   std::list< Transform * > movables;
   std::list< Movable > movable_data;
 
-  Movable *movable_get( glm::vec3 const pos );
+  Transform *body_P1_transform;
+  Camera *cam_P1;
+  Transform *body_P2_transform;
+  Camera *cam_P2;
+
 
 };

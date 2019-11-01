@@ -13,8 +13,8 @@
 
 //used for lookup later:
 Mesh const *mesh_Goal = nullptr;
-Mesh const *mesh_Body_P1 = nullptr;
-Mesh const *mesh_Body_P2 = nullptr;
+//Mesh const *mesh_Body_P1 = nullptr;
+//Mesh const *mesh_Body_P2 = nullptr;
 
 //names of mesh-to-collider-mesh:
 std::unordered_map< Mesh const *, Mesh const * > mesh_to_collider;
@@ -27,8 +27,8 @@ Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 
   //key objects:
   mesh_Goal = &ret->lookup("Goal");
-  mesh_Body_P1 = &ret->lookup("Body1");
-  mesh_Body_P2 = &ret->lookup("Body2");
+  //mesh_Body_P1 = &ret->lookup("Body1");
+  //mesh_Body_P2 = &ret->lookup("Body2");
 
   //collidable objects:
   mesh_to_collider.insert(std::make_pair(&ret->lookup("Room"), &ret->lookup("Room")));
@@ -52,19 +52,13 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.start = mesh->start;
     pipeline.count = mesh->count;
 
-    if (transform->name.substr(0, 7) == "Movable") {
+    if (transform->name.substr(0, 4) == "Move") {
       std::cout << "Movable detected!" << std::endl;
       movables.emplace_back(transform);
       movable_data.emplace_back();
       Movable &data = movable_data.back();
       data.transform = transform;
-      data.axis = glm::vec3(0.0f, -1.0f, 0.0f);
-      data.mover_pos = glm::vec3(-30.0f, 240.0f, 0.0f);
       data.init_pos = transform->position;
-      data.cam_two.position = data.mover_pos;
-      data.cam_two.rotation =
-        glm::angleAxis( PI, glm::vec3(0.0f, 0.0f, 1.0f) ) *
-        glm::angleAxis( 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f) );
       auto f = mesh_to_collider.find(mesh);
       mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
     } else if (transform->name.substr(0, 4) == "Goal") {
@@ -88,6 +82,27 @@ GameLevel::GameLevel(std::string const &scene_file) {
   };
 	//Load scene (using Scene::load function), building proper associations as needed:
 	load(scene_file, load_fn);
+
+  // Build the mapping between movables and orthographic cameras
+  for (auto &m : movable_data) {
+    std::string &xf_name = m.transform->name;
+    for (auto &oc : orthocams) {
+      if (oc.transform->name.substr(0, xf_name.size()) == xf_name) {
+        m.init_cam(&oc);
+        break;
+      }
+    }
+  }
+
+  // Get the player cameras
+  for (auto &c : cameras) {
+    if (c.transform->name.substr(0, 7) == "Player1") {
+      cam_P1 = &c;
+    } else if (c.transform->name.substr(0, 7) == "Player2") {
+      cam_P2 = &c;
+    }
+  }
+
 }
 
 GameLevel::~GameLevel() {
@@ -136,6 +151,18 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 		glBlendFunc(GL_ONE, GL_ONE);
 		glBlendEquation(GL_FUNC_ADD);
 	}
+}
+
+void GameLevel::Movable::init_cam(OrthoCam *cam) {
+  cam_flat = cam;
+
+  std::cout << "One" << std::endl;
+  // Cameras are directed along the -z axis. Get the transformed z-axis.
+  axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+
+  // Get the transformed origin;
+  mover_pos = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+  std::cout << "Two" << std::endl;
 }
 
 void GameLevel::Movable::update() {

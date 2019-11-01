@@ -97,6 +97,21 @@ struct Scene {
 		glm::mat4 make_projection() const;
 	};
 
+	struct OrthoCam {
+		//a 'Camera' attaches camera data to a transform:
+		OrthoCam(Transform *transform_) : transform(transform_) { assert(transform); }
+		Transform * transform;
+		//NOTE: cameras are directed along their -z axis
+
+		//perspective camera parameters:
+		float scale = 50.0f;
+		float aspect = 1.0f; //x / y
+		float near = 0.01f; //near plane
+    float far = 10000.0f;
+		//computed from the above:
+		glm::mat4 make_projection() const;
+	};
+
 	struct Light {
 		//a 'Light' attaches light data to a transform:
 		Light(Transform *transform_) : transform(transform_) { assert(transform); }
@@ -121,6 +136,7 @@ struct Scene {
 	std::list< Transform > transforms;
 	std::list< Drawable > drawables;
 	std::list< Camera > cameras;
+	std::list< OrthoCam > orthocams;
 	std::list< Light > lights;
 
 	//The "draw" function provides a convenient way to pass all the things in a scene to OpenGL:
