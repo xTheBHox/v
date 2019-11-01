@@ -9,6 +9,8 @@
 
 #include <iostream>
 
+#define PI 3.1415926f
+
 //used for lookup later:
 Mesh const *mesh_Goal = nullptr;
 Mesh const *mesh_Body_P1 = nullptr;
@@ -57,8 +59,12 @@ GameLevel::GameLevel(std::string const &scene_file) {
       Movable &data = movable_data.back();
       data.transform = transform;
       data.axis = glm::vec3(0.0f, -1.0f, 0.0f);
-      data.mover_pos = glm::vec3(-30.0f, 240.0f, -7.0f);
+      data.mover_pos = glm::vec3(-30.0f, 240.0f, 0.0f);
       data.init_pos = transform->position;
+      data.cam_two.position = data.mover_pos;
+      data.cam_two.rotation =
+        glm::angleAxis( PI, glm::vec3(0.0f, 0.0f, 1.0f) ) *
+        glm::angleAxis( 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f) );
       auto f = mesh_to_collider.find(mesh);
       mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
     } else if (transform->name.substr(0, 4) == "Goal") {

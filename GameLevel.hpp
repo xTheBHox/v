@@ -52,10 +52,13 @@ struct GameLevel : Scene {
     // Pointer to P1's camera if P1 is in the object
     Camera *cam_one = nullptr;
 
+    // The camera transform of P2 at the correct position.
+    Transform cam_two;
+
     // The margin of error in position (distance units)
     float pos_tolerance = 9.0f;
     // The margin of error in viewing direction (degrees)
-    // float axis_tolerance = 0.2f;
+    float axis_tolerance = 0.2f;
 
   };
 

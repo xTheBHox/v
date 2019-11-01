@@ -25,28 +25,34 @@ struct PlayerTwoMode : Mode {
 		bool right = false;
     bool sprint = false;
     bool jump = false;
-    bool mouse_locked = true;
     bool mouse_down = false;
+    bool flat = false;
     float mouse_sensitivity = 4.0f;
     float drag_sensitivity = 20.0f;
-    bool flat = false;
 	} controls;
 
 	bool DEBUG_fly = false;  //fly around for collsion debug
   bool pause = false;
-  GameLevel::Movable *moving = nullptr;
 
   // Player camera tracked using this structure:
   struct {
     Scene::Camera *camera = nullptr;
     Scene::Transform *body_transform = nullptr;
+    Scene::Transform *body = nullptr;
     glm::vec3 vel = glm::vec3(0.0f, 0.0f, 0.0f);
     glm::vec3 gravity = glm::vec3(0.0f, 0.0f, -10.0f);
 		glm::vec3 rotational_velocity = glm::vec3(0.0f, 0.0f, 0.0f);
-    float azimuth = 0.0f;
-    float elevation = 30.0f / 180.0f * 3.1415926f;
+    float azimuth = 3.14f;
+    float elevation = 0.01f / 180.0f * 3.1415926f;
     bool in_air = false;
   } pov;
+
+  struct {
+    GameLevel::Movable *moving = nullptr;
+    // How much the camera has shifted
+    float progress = 0.0f;
+
+  } shift;
 
   GameLevel *level;
 

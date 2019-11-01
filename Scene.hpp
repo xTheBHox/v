@@ -8,7 +8,7 @@
  *  - Camera information (via "Camera")
  *  - Light information (via "Light")
  *
- * This associated information 
+ * This associated information
  *
  */
 
@@ -90,7 +90,7 @@ struct Scene {
 		//NOTE: cameras are directed along their -z axis
 
 		//perspective camera parameters:
-		float fovy = glm::radians(60.0f); //vertical fov (in radians)
+		float fovy = glm::radians(80.0f); //vertical fov (in radians)
 		float aspect = 1.0f; //x / y
 		float near = 0.01f; //near plane
 		//computed from the above:

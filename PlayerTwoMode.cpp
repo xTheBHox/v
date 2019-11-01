@@ -5,11 +5,13 @@
 #include "demo_menu.hpp"
 #include "BasicMaterialProgram.hpp"
 #include "collide.hpp"
+#include "GameLevel.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 #include <algorithm>
+#include <iomanip>
 
 #define PI 3.1415926f
 
@@ -17,7 +19,7 @@ PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::
   pov.camera = &( level->cameras.back() );
   pov.body_transform = level->body_P2_transform;
   SDL_SetRelativeMouseMode(SDL_TRUE);
-  client.reset(new Client(host, port));
+  //client.reset(new Client(host, port));
 }
 
 PlayerTwoMode::~PlayerTwoMode(){
@@ -44,16 +46,9 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
   } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2) {
     pov.camera = &( level->cameras.back() );
   } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_LCTRL) {
-    if (!controls.flat) {
-      controls.flat = true;
-      SDL_SetRelativeMouseMode(SDL_FALSE);
-      moving = level->movable_get( pov.body_transform->position );
-      if (moving) std::cout << "Got movable!\n" << std::endl;
-    }
+    controls.flat = true;
   } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_LCTRL) {
     controls.flat = false;
-    SDL_SetRelativeMouseMode(SDL_TRUE);
-    moving = nullptr;
   } else if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP) {
     if (evt.key.keysym.scancode == SDL_SCANCODE_A) {
       controls.left = (evt.type == SDL_KEYDOWN);
@@ -69,15 +64,15 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
       controls.jump = (evt.type == SDL_KEYDOWN);
     } else return false;
   } else if (evt.type == SDL_MOUSEMOTION) {
-    if (controls.flat) {
+    if (shift.progress == 1.0f) {
       if (evt.motion.state & SDL_BUTTON_LMASK) {
-        if (moving) {
+        if (shift.moving) {
           float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
-          moving->offset += controls.drag_sensitivity * dy;
-          moving->update();
+          shift.moving->offset += controls.drag_sensitivity * dy;
+          shift.moving->update();
         }
       }
-    } else { // !controls.flat
+    } else { // Shift not in progress
       //based on trackball camera control from ShowMeshesMode:
       //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
       glm::vec2 delta;
@@ -110,6 +105,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 }
 
 void PlayerTwoMode::update(float elapsed) {
+
   if (pause) return;
 
   glm::vec3 &position = pov.body_transform->position;
@@ -118,8 +114,31 @@ void PlayerTwoMode::update(float elapsed) {
   glm::vec3 &rotational_velocity = pov.rotational_velocity;
 
   if (controls.flat) {
+    if (shift.progress == 0.0f) {
+      shift.moving = level->movable_get( pov.camera->transform->make_local_to_world()[3] );
+      if (shift.moving) {
+        std::cout << "Got movable!\n" << std::endl;
+        shift.progress = std::min(shift.progress + elapsed, 1.0f);
+        SDL_SetRelativeMouseMode(SDL_FALSE);
+      }
+    } else {
+      shift.progress = std::min(shift.progress + elapsed, 1.0f);
+    }
+  }
+  else { // !controls.flat
+    if (shift.progress > 0.0f) {
+      shift.progress = std::max(shift.progress - elapsed, 0.0f);
+      if (shift.progress == 0.0f) {
+        shift.moving = nullptr;
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+      }
+    }
+  }
 
-  } else { // !flat
+  if (shift.progress > 0.0f) {
+
+  } else { // Shift not in progress
+
     float pl_ca = std::cos(pov.azimuth);
     float pl_sa = std::sin(pov.azimuth);
 
@@ -338,8 +357,7 @@ void PlayerTwoMode::update(float elapsed) {
     pov.camera->transform->rotation =
       // glm::angleAxis(gravity_to_z_angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
 			glm::angleAxis( pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f) )
-			* glm::angleAxis(-pov.elevation + 0.5f * 3.1415926f, glm::vec3(1.0f, 0.0f, 0.0f) )
-		;
+			* glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f) );
 		// glm::vec3 in = pov.camera->transform->rotation * glm::vec3(0.0f, 0.0f, -1.0f);
     glm::vec3 top = pov.body_transform->position - pov.gravity * 1.5f;
 		pov.camera->transform->position = top; // - 10.0f * in;
@@ -366,25 +384,51 @@ void PlayerTwoMode::update(float elapsed) {
   }
 }
 
+void print_mat4(glm::mat4 const &M) {
+  std::cout << std::setprecision(4);
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      std::cout << M[j][i] << "\t";
+    }
+    std::cout << std::endl;
+  }
+}
+
+void print_vec4(glm::vec4 const &v) {
+  std::cout << std::setprecision(4);
+  for (int i = 0; i < 4; i++) {
+    std::cout << v[i] << "\t";
+    std::cout << std::endl;
+  }
+}
+
 void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
 
   pov.camera->aspect = drawable_size.x / float(drawable_size.y);
 
-  if (controls.flat) {
-
-    //std::cout << pov.camera->aspect << std::endl;
-    //std::cout << pov.camera->fovy << std::endl;
-
-    float height = 30.0f;
+  if (shift.progress > 0.0f) {
+    float height = 50.0f;
     float width = pov.camera->aspect * height;
-    float nearPlaneDist = 40.0f;
+    float flat_near = 40.0f;
 
-    glm::mat4 proj_ortho = glm::ortho( -width, width, -height, height, nearPlaneDist, 1000.0f);
-    glm::mat4 world_to_clip = proj_ortho * pov.camera->transform->make_world_to_local();
-    level->draw( *pov.camera, world_to_clip );
+    glm::mat4 proj = glm::ortho(-width, width, -height, height, flat_near, 1000000.0f);
+    glm::mat4 w2l = shift.moving->cam_two.make_world_to_local();
+
+    if (shift.progress < 1.0f) {
+      float interp = 1.0f - (1.0f - shift.progress) * (1.0f - shift.progress);
+
+      float near_p = (flat_near * interp) + (0.01f * (1.0f - interp));
+      glm::mat4 reg_proj = glm::infinitePerspective(pov.camera->fovy, pov.camera->aspect, near_p);
+
+      glm::mat4 reg_w2l = pov.camera->transform->make_world_to_local();
+
+      w2l = (w2l * interp) + (reg_w2l * (1.0f - interp));
+      proj = (proj * interp) + (reg_proj * (1.0f - interp));
+    }
+    level->draw(*pov.camera, proj * w2l);
 
   } else {
-    level->draw( *pov.camera );
+    level->draw(*pov.camera);
   }
 
 }

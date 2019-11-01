@@ -15,7 +15,7 @@
 
 PlayerOneMode::PlayerOneMode( GameLevel *level_ , std::string const &port) : level( level_ ){
   pov.camera = &( level->cameras.front() );
-  pov.body_transform = level->body_P1_transform;
+  pov.body = level->body_P1_transform;
   SDL_SetRelativeMouseMode(SDL_TRUE);
   if (port != "") {
 		server.reset(new Server(port));
@@ -92,87 +92,79 @@ bool PlayerOneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 }
 
 void PlayerOneMode::update(float elapsed) {
+
   if (pause) return;
 
-  glm::vec3 &position = pov.body_transform->position;
-  glm::vec3 &velocity = pov.vel;
-  glm::quat &rotation = pov.body_transform->rotation;
-  glm::vec3 &rotational_velocity = pov.rotational_velocity;
+  float pl_cosazi = std::cos(pov.azimuth);
+  float pl_sinazi = std::sin(pov.azimuth);
 
-  float pl_ca = std::cos(pov.azimuth);
-  float pl_sa = std::sin(pov.azimuth);
+  glm::vec3 pl_pos = pov.body->position;
+  glm::vec3 pl_vel = pov.vel;
 
-  // Update player velocity
-  {
-    glm::vec3 pl_dvel = glm::vec3(0.0f);
-    if (controls.left) pl_dvel.x -= 1.0f;
-    if (controls.right) pl_dvel.x += 1.0f;
-    if (controls.backward) pl_dvel.y -= 1.0f;
-    if (controls.forward) pl_dvel.y += 1.0f;
+  { // Movement forces
+    glm::vec3 pl_vel_move = glm::vec3(0.0f);
+    if (controls.left) pl_vel_move.x -= 1.0f;
+    if (controls.right) pl_vel_move.x += 1.0f;
+    if (controls.backward) pl_vel_move.y -= 1.0f;
+    if (controls.forward) pl_vel_move.y += 1.0f;
 
-    if (pl_dvel != glm::vec3(0.0f)) {
-      pl_dvel = glm::normalize(pl_dvel);
-      pl_dvel =
-        glm::vec3(pl_ca, pl_sa, 0.0f) * pl_dvel.x +
-        glm::vec3(-pl_sa, pl_ca, 0.0f) * pl_dvel.y;
-      float pl_accel = 50.0f;
-      // pov.vel += pl_accel * pl_dvel;
-      pl_dvel *= pl_accel;
+    if (pl_vel_move != glm::vec3(0.0f)) {
+      pl_vel_move = glm::normalize(pl_vel_move);
+      pl_vel_move =
+        glm::vec3(pl_cosazi, pl_sinazi, 0.0f) * pl_vel_move.x +
+        glm::vec3(-pl_sinazi, pl_cosazi, 0.0f) * pl_vel_move.y;
+      if (pov.in_air) pl_vel_move *= 1.0f;
+      else pl_vel_move *= 10.0f; // player movement velocity magnitude, constant
+      if (controls.sprint) pl_vel_move *= 1.5f; // sprint force multiplier, constant
+      pl_vel += pl_vel_move;
+    }
+    else {
+
     }
     // pov.vel *= std::pow(0.5f, elapsed / 0.01f); // friction
-    pov.vel.x = glm::mix(pl_dvel.x, pov.vel.x, std::pow(0.5f, elapsed / 0.01f));
-    pov.vel.y = glm::mix(pl_dvel.y, pov.vel.y, std::pow(0.5f, elapsed / 0.01f));
   }
 
-	rotational_velocity *= std::pow(0.5f, elapsed / 2.0f);
-  //gravity, sprinting and jumping
-  velocity += pov.gravity * elapsed * 9.0f;
-  if (controls.sprint){
-    pov.vel.x *= 1.5f; pov.vel.y *= 1.5f;
+  { // Gravitational accel
+    pl_vel += elapsed * pov.gravity;
   }
-  if (controls.jump) {
-    if (!pov.in_air){ velocity += -3.0f * pov.gravity; pov.in_air = true; }
-    controls.jump = false;
+
+  { // Jumping force
+    if (controls.jump) {
+      if (!pov.in_air) {
+        pov.in_air = true;
+        pl_vel += -0.5f * pov.gravity; // jumping force, constant
+      }
+      controls.jump = false;
+    }
   }
-  // Update player position
-  // pov.body_transform->position += pov.vel;
 
-  // Update camera rotation
-  // {
-  //   pov.camera->transform->rotation = glm::angleAxis(
-  //     pov.azimuth,
-  //     glm::vec3( 0.0f, 0.0f, 1.0f )
-  //   ) * glm::angleAxis(
-  //     -pov.elevation + 0.5f * PI,
-  //     glm::vec3( 1.0f, 0.0f, 0.0f )
-  //   );
-  // }
-
-  // Compute collisions
+  // Compute collisions for normal contact force
   {
     float remain = elapsed;
-    for (int32_t iter = 0; iter < 10; ++iter) {
+
+    // Iterate for multiple bounces. Stop at a certain number.
+    for (int32_t iter = 0; iter < 5; ++iter) {
       if (remain == 0.0f) break;
 
-      float sphere_radius = 5.0f; //player sphere is radius-1
-      glm::vec3 sphere_sweep_from = position;
-      glm::vec3 sphere_sweep_to = position + velocity * remain;
-
-      glm::vec3 sphere_sweep_min = glm::min(sphere_sweep_from, sphere_sweep_to) - glm::vec3(sphere_radius);
-      glm::vec3 sphere_sweep_max = glm::max(sphere_sweep_from, sphere_sweep_to) + glm::vec3(sphere_radius);
+      float sphere_radius = 5.0f; // player sphere is radius-1
+      glm::vec3 sphere_from = pl_pos;
+      glm::vec3 sphere_to = pl_pos + pl_vel * remain;
 
       bool collided = false;
       float collision_t = 1.0f;
       glm::vec3 collision_at = glm::vec3(0.0f);
       glm::vec3 collision_out = glm::vec3(0.0f);
       bool is_surface_collision = false;
+
+      glm::vec3 sphere_min = glm::min(sphere_from, sphere_to) - glm::vec3(sphere_radius);
+      glm::vec3 sphere_max = glm::max(sphere_from, sphere_to) + glm::vec3(sphere_radius);
       for (auto const &collider : level->mesh_colliders) {
         glm::mat4x3 collider_to_world = collider.transform->make_local_to_world();
 
-        { //Early discard:
+        { // Early discard:
           // check if AABB of collider overlaps AABB of swept sphere:
 
-          //(1) compute bounding box of collider in world space:
+          // (1) compute bounding box of collider in world space:
           glm::vec3 local_center = 0.5f * (collider.mesh->max + collider.mesh->min);
           glm::vec3 local_radius = 0.5f * (collider.mesh->max - collider.mesh->min);
 
@@ -185,10 +177,10 @@ void PlayerOneMode::update(float elapsed) {
             + glm::abs(local_radius.y * collider_to_world[1])
             + glm::abs(local_radius.z * collider_to_world[2]);
 
-          //(2) check if bounding boxes overlap:
-          bool can_skip = !collide_AABB_vs_AABB(sphere_sweep_min, sphere_sweep_max, world_min, world_max);
+          // (2) check if bounding boxes overlap:
+          bool can_skip = !collide_AABB_vs_AABB(sphere_min, sphere_max, world_min, world_max);
 
-          //draw to indicate result of check:
+          // draw to indicate result of check:
           // if (iter == 0 && DEBUG_draw_lines && DEBUG_show_geometry) {
           //   DEBUG_draw_lines->draw_box(glm::mat4x3(
           //     0.5f * (world_max.x - world_min.x), 0.0f, 0.0f,
@@ -199,30 +191,29 @@ void PlayerOneMode::update(float elapsed) {
           // }
 
           if (can_skip) {
-            //AABBs do not overlap; skip detailed check:
+            // AABBs do not overlap; skip detailed check:
             continue;
           }
         }
 
-        //Full (all triangles) test:
+        // Full (all triangles) test:
         assert(collider.mesh->type == GL_TRIANGLES); //only have code for TRIANGLES not other primitive types
+
         for (GLuint v = 0; v + 2 < collider.mesh->count; v += 3) {
-          //get vertex positions from associated positions buffer:
-          //  (and transform to world space)
+          // get vertex positions from associated positions buffer:
+          // (and transform to world space)
           glm::vec3 a = collider_to_world * glm::vec4(collider.buffer->positions[collider.mesh->start+v+0], 1.0f);
           glm::vec3 b = collider_to_world * glm::vec4(collider.buffer->positions[collider.mesh->start+v+1], 1.0f);
           glm::vec3 c = collider_to_world * glm::vec4(collider.buffer->positions[collider.mesh->start+v+2], 1.0f);
-          //check triangle:
+          // check triangle:
           bool did_collide = collide_swept_sphere_vs_triangle(
-            sphere_sweep_from, sphere_sweep_to, sphere_radius,
-            a,b,c,
-            &collision_t, &collision_at, &collision_out, &is_surface_collision);
+            sphere_from, sphere_to, sphere_radius,
+            a, b, c,
+            &collision_t, &collision_at, &collision_out, &is_surface_collision
+          );
 
           if (did_collide) {
             collided = true;
-            //allow jumping if collision is with triangle with normal in positive z direction
-            glm::vec3 normal = glm::normalize(glm::cross(b-a, c-a));
-            if (normal.z > 0.0f) { pov.in_air = false; }
           }
 
           //draw to indicate result of check:
@@ -245,25 +236,29 @@ void PlayerOneMode::update(float elapsed) {
       }
 
       if (!collided) {
-        position = sphere_sweep_to;
+        pl_pos = sphere_to;
         remain = 0.0f;
         break;
       } else {
-        position = glm::mix(sphere_sweep_from, sphere_sweep_to, collision_t);
-        // if (is_surface_collision) pov.gravity = -collision_out;
-        float d = glm::dot(velocity, collision_out);
-        if (d < 0.0f) {
-          velocity -= (1.1f * d) * collision_out;
 
-          //update rotational velocity to reflect relative motion:
-          glm::vec3 slip = glm::cross(rotational_velocity, collision_at - position) + velocity;
-          //DEBUG: std::cout << "slip: " << slip.x << " " << slip.y << " " << slip.z << std::endl;
-          /*if (DEBUG_draw_lines) {
-            DEBUG_draw_lines->draw(collision_at, collision_at + slip, glm::u8vec4(0x00, 0xff, 0x00, 0xff));
-          }*/
-          glm::vec3 change = glm::cross(slip, collision_at - position);
-          rotational_velocity += change;
+        // allow jumping if collision is with triangle with normal in positive z direction
+        // glm::vec3 normal = glm::normalize(glm::cross(b-a, c-a));
+        if (collision_out.z > 0.0f) {
+          pov.in_air = false;
         }
+        // Get intermediate position
+        pl_pos = glm::mix(sphere_from, sphere_to, collision_t);
+        // Get remaining elapsed time
+        remain = (1.0f - collision_t) * remain;
+        // Get normal vector
+        float d = glm::dot(pl_vel, collision_out); // collision_out already normalized
+        // Adjust for surface friction
+        if (d < 0.0f) {
+          pl_vel -= (1.0f - std::pow(0.5f, remain / 0.05f)) * (pl_vel - d * collision_out);
+          pl_vel -= 1.01f * d * collision_out;
+        }
+        std::cout << "Vel:" << pl_vel.x << " " << pl_vel.y << " " << pl_vel.z << std::endl;
+        // Friction
         // if (DEBUG_draw_lines && DEBUG_show_collision) {
         //   //draw a little gadget at the collision point:
         //   glm::vec3 p1;
@@ -290,33 +285,29 @@ void PlayerOneMode::update(float elapsed) {
         //   std::cout << collision_out.x << ", " << collision_out.y << ", " << collision_out.z
         //   << " / " << velocity.x << ", " << velocity.y << ", " << velocity.z << std::endl; //DEBUG
         // }
-        remain = (1.0f - collision_t) * remain;
       }
     }
-
-		//update player rotation (purely cosmetic):
-		rotation = glm::normalize(
-			  glm::angleAxis(elapsed * rotational_velocity.x, glm::vec3(1.0f, 0.0f, 0.0f))
-			* glm::angleAxis(elapsed * rotational_velocity.y, glm::vec3(0.0f, 1.0f, 0.0f))
-			* glm::angleAxis(elapsed * rotational_velocity.z, glm::vec3(0.0f, 0.0f, 1.0f))
-			* rotation
-		);
+    pov.body->position = pl_pos + pl_vel * remain;
+    pov.vel = pl_vel;
   } // end collision compute
 
+
+  //pov.vel.x = glm::mix(pl_force.x, pov.vel.x, std::pow(0.5f, elapsed / 0.01f));
+  //pov.vel.y = glm::mix(pl_force.y, pov.vel.y, std::pow(0.5f, elapsed / 0.01f));
+
 	{ //camera update:
-    // float gravity_to_z_angle = glm::acos(glm::dot(-pov.gravity, glm::vec3(0.0f, 0.0f, 1.0f)));
-    // if (-pov.gravity.x < 0.0f) gravity_to_z_angle = -gravity_to_z_angle;
     pov.camera->transform->rotation =
       // glm::angleAxis(gravity_to_z_angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::angleAxis( pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f) )
-			* glm::angleAxis(-pov.elevation + 0.5f * 3.1415926f, glm::vec3(1.0f, 0.0f, 0.0f) )
-		;
-		// glm::vec3 in = pov.camera->transform->rotation * glm::vec3(0.0f, 0.0f, -1.0f);
-    glm::vec3 top = pov.body_transform->position - pov.gravity * 1.5f;
-		pov.camera->transform->position = top; // - 10.0f * in;
+			glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f)) *
+      glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
+
+    // TODO We can make this based on the transform hierarchy instead.
+    // Make the player body the camera's parent.
+    glm::vec3 top = pov.body->position - pov.gravity * 0.2f;
+    pov.camera->transform->position = top;
 	}
 
-  if (server){
+  if (server) {
     /**
     auto remove_player = [this](Connection *c) {
 			auto f = connection_infos.find(c);
@@ -338,7 +329,7 @@ void PlayerOneMode::update(float elapsed) {
               (*it)->rotation = *rot;
               start += sizeof(glm::vec3) + sizeof(glm::quat);
             }
-					}else{
+					} else {
 						//invalid data type
 					}
 					connection->recv_buffer.clear();

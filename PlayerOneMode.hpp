@@ -37,9 +37,9 @@ struct PlayerOneMode : Mode {
   struct {
     Scene::Camera *camera = nullptr;
     Scene::Transform *body_transform = nullptr;
+    Scene::Transform *body = nullptr;
     glm::vec3 vel = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 gravity = glm::vec3(0.0f, 0.0f, -10.0f);
-		glm::vec3 rotational_velocity = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 gravity = glm::vec3(0.0f, 0.0f, -100.0f);
     float azimuth = 0.0f;
     float elevation = 30.0f / 180.0f * 3.1415926f;
     bool in_air = false;
