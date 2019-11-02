@@ -1,13 +1,8 @@
 #pragma once
 
 #include "Mode.hpp"
-#include "Scene.hpp"
-#include "Mesh.hpp"
 #include "GameLevel.hpp"
 #include "Connection.hpp"
-#include "GameLevel.hpp"
-
-#include <list>
 
 struct PlayerOneMode : Mode {
 	PlayerOneMode(GameLevel *level_, std::string const &server_port = "");

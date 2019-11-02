@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Mode.hpp"
 #include "Scene.hpp"
 #include "Mesh.hpp"
 
@@ -15,13 +14,6 @@ struct GameLevel : Scene {
   void draw( Camera const &camera );
   void draw( Camera const &camera, glm::mat4 world_to_clip );
 
-  struct MeshCollider {
-    MeshCollider(Scene::Transform *transform_, Mesh const &mesh_, MeshBuffer const &buffer_) : transform(transform_), mesh(&mesh_), buffer(&buffer_) { }
-    Scene::Transform *transform;
-    Mesh const *mesh;
-    MeshBuffer const *buffer;
-  };
-
 	//Goal objects(s) tracked using this structure:
 	struct Goal {
 		Goal(Scene::Transform *transform_) : transform(transform_) { };
@@ -31,6 +23,7 @@ struct GameLevel : Scene {
 
   struct Movable {
 
+    Movable(Transform *transform_);
     void update();
     void init_cam(OrthoCam *cam);
 
@@ -47,11 +40,31 @@ struct GameLevel : Scene {
     // The current offset (along axis) of the object
     float offset = 0.0f;
 
+    Transform *player = nullptr;
+
     // The margin of error in position (distance units)
     float pos_tolerance = 9.0f;
-    // The margin of error in viewing direction (degrees)
-    float axis_tolerance = 0.2f;
+    // The margin of error in viewing direction (radians)
+    float axis_tolerance = glm::radians(20.0f);
 
+  };
+
+  struct MeshCollider {
+    MeshCollider(
+      Transform *transform_,
+      Mesh const &mesh_,
+      MeshBuffer const &buffer_,
+      Movable *movable_ = nullptr
+    ) :
+      transform(transform_),
+      mesh(&mesh_),
+      buffer(&buffer_),
+      movable(movable_)
+    {};
+    Scene::Transform *transform;
+    Mesh const *mesh;
+    MeshBuffer const *buffer;
+    Movable *movable = nullptr;
   };
 
   Movable *movable_get( glm::vec3 const pos );
@@ -59,7 +72,7 @@ struct GameLevel : Scene {
   std::vector< MeshCollider > mesh_colliders;
   std::vector< Goal > goals;
   std::list< Transform * > movables;
-  std::list< Movable > movable_data;
+  std::vector< Movable > movable_data;
 
   Transform *body_P1_transform;
   Camera *cam_P1;

@@ -111,12 +111,12 @@ void poll_connections(
 	for (auto &c : connections) {
 		//don't bother with connections unless they are valid, have something to send, and are marked writable:
 		if (c.socket == INVALID_SOCKET || c.send_buffer.empty() || !FD_ISSET(c.socket, &write_fds)) continue;
-		
+
 		#ifdef _WIN32
 		ssize_t ret = send(c.socket, reinterpret_cast< char const * >(c.send_buffer.data()), int(c.send_buffer.size()), MSG_DONTWAIT);
 		#else
 		ssize_t ret = send(c.socket, reinterpret_cast< char const * >(c.send_buffer.data()), c.send_buffer.size(), MSG_DONTWAIT);
-		#endif 
+		#endif
 		if (ret < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
 			//~no problem~, but don't keep trying
 			break;
@@ -133,7 +133,7 @@ void poll_connections(
 		}
 	}
 
-		
+
 }
 
 //---------------------------------
@@ -313,4 +313,3 @@ Client::Client(std::string const &host, std::string const &port) : connections(1
 void Client::poll(std::function< void(Connection *, Connection::Event event) > const &on_event, double timeout) {
 	poll_connections("Client::poll", connections, on_event, timeout, INVALID_SOCKET);
 }
-

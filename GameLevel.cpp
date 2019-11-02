@@ -53,14 +53,18 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.count = mesh->count;
 
     if (transform->name.substr(0, 4) == "Move") {
-      std::cout << "Movable detected!" << std::endl;
+
+      std::cout << "Movable detected: " << transform->name << std::endl;
+
       movables.emplace_back(transform);
-      movable_data.emplace_back();
+
+      movable_data.emplace_back(transform);
       Movable &data = movable_data.back();
-      data.transform = transform;
-      data.init_pos = transform->position;
+
       auto f = mesh_to_collider.find(mesh);
-      mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
+      mesh_colliders.emplace_back(transform, *f->second, *level1_meshes, &data);
+      std::cout << mesh_colliders.back().movable << std::endl;
+
     } else if (transform->name.substr(0, 4) == "Goal") {
       goals.emplace_back(transform);
     } else if (transform->name.substr(0, 5) == "Body1") {
@@ -153,20 +157,37 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 	}
 }
 
+GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
+
+  init_pos = transform->position;
+
+}
+
 void GameLevel::Movable::init_cam(OrthoCam *cam) {
   cam_flat = cam;
 
-  std::cout << "One" << std::endl;
   // Cameras are directed along the -z axis. Get the transformed z-axis.
   axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
 
   // Get the transformed origin;
   mover_pos = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-  std::cout << "Two" << std::endl;
+
 }
 
 void GameLevel::Movable::update() {
-  transform->position = init_pos + offset * axis;
+
+  if (player) {
+    glm::vec3 start = transform->position;
+    glm::vec3 end = init_pos + offset * axis;
+    //glm::vec4 move = glm::vec4(end - start, 1.0f);
+    //player->position += glm::vec3(player->make_world_to_local() * move);
+    player->position += end - start;
+    transform->position = end;
+  }
+  else {
+    transform->position = init_pos + offset * axis;
+  }
+
 }
 
 GameLevel::Movable *GameLevel::movable_get( glm::vec3 const pos ) {

@@ -1,12 +1,6 @@
 #include "PlayerOneMode.hpp"
-#include "DrawLines.hpp"
-#include "Load.hpp"
-#include "data_path.hpp"
 #include "demo_menu.hpp"
-#include "BasicMaterialProgram.hpp"
 #include "collide.hpp"
-
-#include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
 #include <algorithm>
@@ -216,6 +210,10 @@ void PlayerOneMode::update(float elapsed) {
 
           if (did_collide) {
             collided = true;
+            if (collider.movable) {
+              collider.movable->player = pov.body;
+              std::cout << "Player caught movable" << std::endl;
+            }
           }
 
           //draw to indicate result of check:
@@ -311,15 +309,15 @@ void PlayerOneMode::update(float elapsed) {
 			if (evt == Connection::OnRecv) {
 					//extract and erase data from the connection's recv_buffer:
 					std::vector< char > data = connection->recv_buffer;
-					char type = (data[0]);
+					char type = data[0];
 					if (type == 'C'){
-            auto start = (&data[1]);
-            for (auto it = level->movables.begin(); it != level->movables.end(); ++it){
-              glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-              glm::quat* rot = reinterpret_cast<glm::quat*> (start + sizeof(glm::vec3));
-              (*it)->position = *pos;
-              (*it)->rotation = *rot;
-              start += sizeof(glm::vec3) + sizeof(glm::quat);
+            char *start = &data[1];
+            //td::cout << (int)start[0] << " " << (int)start[1] << " " << (int)start[2] << " " << (int)start[3] << std::endl;
+            for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+              float* pos = reinterpret_cast<float*> (start);
+              it->offset = *pos;
+              it->update();
+              start += sizeof(float);
             }
 					} else {
 						//invalid data type

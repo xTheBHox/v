@@ -1,16 +1,16 @@
 #include "PlayerTwoMode.hpp"
-#include "DrawLines.hpp"
+//#include "DrawLines.hpp"
 #include "Load.hpp"
 #include "data_path.hpp"
 #include "demo_menu.hpp"
 #include "BasicMaterialProgram.hpp"
 #include "collide.hpp"
 #include "GameLevel.hpp"
+#include "Scene.hpp"
 
-#include <glm/gtc/type_ptr.hpp>
+#include <algorithm>
 
 #include <iostream>
-#include <algorithm>
 #include <iomanip>
 
 #define PI 3.1415926f
@@ -20,7 +20,7 @@ PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
   SDL_SetRelativeMouseMode(SDL_TRUE);
-  //client.reset(new Client(host, port));
+  client.reset(new Client(host, port));
 }
 
 PlayerTwoMode::~PlayerTwoMode(){
@@ -72,6 +72,25 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
           float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
           shift.moving->offset += controls_shift.drag_sensitivity * dy;
           shift.moving->update();
+          //TEMP
+          if (client) {
+
+            client->connection.send('C');
+            for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+                float offset = it->offset;
+                client->connection.send(offset);
+            }
+
+          	client->poll([](Connection *, Connection::Event evt){
+          		//TODO: eventually, read server state
+
+          	}, 0.0);
+          	//if connection was closed,
+          	if (!client->connection) {
+          		Mode::set_current(nullptr);
+          	}
+          }
+          //END TEMP
         }
       }
     } else { // Shift not in progress
@@ -137,27 +156,7 @@ void PlayerTwoMode::update(float elapsed) {
   } else { // Shift not in progress
 
     PlayerOneMode::update(elapsed);
-    
-  }
 
-  if (client) {
-
-    client->connection.send_buffer.emplace_back('C');
-    for (auto it = level->movables.begin(); it != level->movables.end(); ++it){
-        glm::vec3 position = (*it)->position;
-        glm::quat rotation = (*it)->rotation;
-        client->connection.send(position);
-        client->connection.send(rotation);
-    }
-
-  	client->poll([](Connection *, Connection::Event evt){
-  		//TODO: eventually, read server state
-
-  	}, 0.0);
-  	//if connection was closed,
-  	if (!client->connection) {
-  		Mode::set_current(nullptr);
-  	}
   }
 }
 
@@ -187,15 +186,20 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
     Scene::OrthoCam *cf = shift.moving->cam_flat;
     float h = cf->scale;
     float w = aspect * h;
+    float fp = cf->clip_far;
+    float np = cf->clip_near;
 
-    glm::mat4 proj = glm::ortho(-w, w, -h, h, cf->near, cf->far);
+    glm::mat4 proj = glm::ortho(-w, w, -h, h, np ,fp);
     glm::mat4 w2l = shift.moving->cam_flat->transform->make_world_to_local();
 
     if (shift.progress < 1.0f) {
+
+      float e43 = std::pow(2 * pov.camera->near, 1.0f - shift.progress);
+
       float f = 1.0f - shift.progress;
       float f3 = f * f * f;
       float interp = 1.0f - f3 * f3;
-      float near_p = (cf->near * interp) + (0.01f * (1.0f - interp));
+      float near_p = (np * interp) + (0.01f * (1.0f - interp));
       glm::mat4 reg_proj = glm::infinitePerspective(pov.camera->fovy, pov.camera->aspect, near_p);
 
       glm::mat4 reg_w2l = pov.camera->transform->make_world_to_local();

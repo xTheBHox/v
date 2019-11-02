@@ -266,8 +266,8 @@ void Scene::load(std::string const &filename,
       this->orthocams.emplace_back(hierarchy_transforms[c.transform]);
   		OrthoCam *orthocam = &this->orthocams.back();
       orthocam->scale = c.data;
-      orthocam->near = c.clip_near;
-      orthocam->far = c.clip_far;
+      orthocam->clip_near = c.clip_near;
+      orthocam->clip_far = c.clip_far;
     } else {
       throw std::runtime_error("scene file '" + filename + "' contains camera entry with invalid type (" + std::string(c.type, 4) + ")");
     }
