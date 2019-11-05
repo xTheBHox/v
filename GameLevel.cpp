@@ -56,8 +56,6 @@ GameLevel::GameLevel(std::string const &scene_file) {
 
       std::cout << "Movable detected: " << transform->name << std::endl;
 
-      movables.emplace_back(transform);
-
       movable_data.emplace_back(transform);
       Movable &data = movable_data.back();
 
@@ -167,7 +165,8 @@ void GameLevel::Movable::init_cam(OrthoCam *cam) {
   cam_flat = cam;
 
   // Cameras are directed along the -z axis. Get the transformed z-axis.
-  axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+  axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
+  if (axis != glm::vec3(0.0f)) axis = glm::normalize(axis);
 
   // Get the transformed origin;
   mover_pos = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
@@ -190,17 +189,27 @@ void GameLevel::Movable::update() {
 
 }
 
-GameLevel::Movable *GameLevel::movable_get( glm::vec3 const pos ) {
+GameLevel::Movable *GameLevel::movable_get(Transform *transform) {
+
+  glm::vec3 pos = transform->make_local_to_world()[3]; // * (0,0,0,1)
+  glm::vec3 axis = transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+  if (axis == glm::vec3(0.0f)) return nullptr;
+  axis = glm::normalize(axis);
 
   std::cout << "Pos: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
+  std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
 
   for (Movable &m : movable_data) {
     std::cout << "Mover: " << m.mover_pos.x << "\t" << m.mover_pos.y << "\t" << m.mover_pos.z << std::endl;
 
     glm::vec3 dist = m.mover_pos - pos;
     std::cout << glm::dot( dist, dist ) << std::endl;
-    if ( glm::dot( dist, dist ) <= m.pos_tolerance * m.pos_tolerance ){
-      return &m;
+    if (glm::dot(dist, dist) <= m.pos_tolerance * m.pos_tolerance) {
+      std::cout << "Position within threshhold. Checking axis..." << std::endl;
+      std::cout << "Dot: " << glm::dot(axis, m.axis) << std::endl;
+      if (glm::dot(axis, m.axis) > m.axis_tolerance) {
+        return &m;
+      }
     }
   }
 

@@ -44,8 +44,8 @@ struct GameLevel : Scene {
 
     // The margin of error in position (distance units)
     float pos_tolerance = 9.0f;
-    // The margin of error in viewing direction (radians)
-    float axis_tolerance = glm::radians(20.0f);
+    // The margin of error in viewing direction (cos(max error angle))
+    float axis_tolerance = 0.85f;
 
   };
 
@@ -67,11 +67,10 @@ struct GameLevel : Scene {
     Movable *movable = nullptr;
   };
 
-  Movable *movable_get( glm::vec3 const pos );
+  Movable *movable_get(Transform *transform);
 
   std::vector< MeshCollider > mesh_colliders;
   std::vector< Goal > goals;
-  std::list< Transform * > movables;
   std::vector< Movable > movable_data;
 
   Transform *body_P1_transform;

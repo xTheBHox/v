@@ -20,7 +20,7 @@ PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
   SDL_SetRelativeMouseMode(SDL_TRUE);
-  client.reset(new Client(host, port));
+  //client.reset(new Client(host, port));
 }
 
 PlayerTwoMode::~PlayerTwoMode(){
@@ -43,11 +43,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
   }
   if (pause) return false;
 
-  if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_1) {
-    pov.camera = &( level->cameras.front() );
-  } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2) {
-    pov.camera = &( level->cameras.back() );
-  } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_LCTRL) {
+  if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_LCTRL) {
     controls_shift.flat = true;
   } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_LCTRL) {
     controls_shift.flat = false;
@@ -93,7 +89,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
           //END TEMP
         }
       }
-    } else { // Shift not in progress
+    } else if (shift.progress == 0.0f){ // Shift not in progress
       //based on trackball camera control from ShowMeshesMode:
       //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
       glm::vec2 delta;
@@ -131,7 +127,7 @@ void PlayerTwoMode::update(float elapsed) {
 
   if (controls_shift.flat) {
     if (shift.progress == 0.0f) {
-      shift.moving = level->movable_get( pov.camera->transform->make_local_to_world()[3] );
+      shift.moving = level->movable_get(pov.camera->transform);
       if (shift.moving) {
         std::cout << "Got movable!\n" << std::endl;
         shift.progress = std::min(shift.progress + shift.speed * elapsed, 1.0f);
@@ -198,14 +194,14 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
 
       float f = 1.0f - shift.progress;
       float f3 = f * f * f;
-      float interp = 1.0f - f3 * f3;
-      float near_p = (np * interp) + (0.01f * (1.0f - interp));
+      float f6 = f3 * f3;
+      float near_p = (np * (1.0f - f6)) + (0.01f * f6);
       glm::mat4 reg_proj = glm::infinitePerspective(pov.camera->fovy, pov.camera->aspect, near_p);
 
       glm::mat4 reg_w2l = pov.camera->transform->make_world_to_local();
 
-      w2l = (w2l * shift.progress) + (reg_w2l * (1.0f - shift.progress));
-      proj = (proj * interp) + (reg_proj * (1.0f - interp));
+      w2l = (w2l * (1.0f - f3)) + (reg_w2l * f3);
+      proj = (proj * (1.0f - f6)) + (reg_proj * f6);
     }
     level->draw(*pov.camera, proj * w2l);
 
