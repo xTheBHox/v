@@ -15,107 +15,51 @@
 
 #define PI 3.1415926f
 
-PlayerTwoMode::PlayerTwoMode( GameLevel *level_ , std::string const &host, std::string const &port)
-  : PlayerOneMode(level_, "") {
+PlayerTwoMode::PlayerTwoMode(GameLevel *level_ , std::string const &host, std::string const &port)
+  : PlayerMode(level_) {
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
-  SDL_SetRelativeMouseMode(SDL_TRUE);
-  //client.reset(new Client(host, port));
-}
-
-PlayerTwoMode::~PlayerTwoMode(){
-  SDL_SetRelativeMouseMode(SDL_FALSE);
-  delete level; //TODO VVVBad. Remove when network
+  client.reset(new Client(host, port));
 }
 
 bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 
-	//----- leave to menu -----
-	if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_M) {
-		Mode::set_current(demo_menu);
-		return true;
-	}
-  if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE) {
-    pause = !pause;
-    if (pause) SDL_SetRelativeMouseMode(SDL_FALSE);
-    else SDL_SetRelativeMouseMode(SDL_TRUE);
-    return true;
-  }
-  if (pause) return false;
+	if (handle_ui(evt, window_size)) return true;
 
   if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_LCTRL) {
     controls_shift.flat = true;
   } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_LCTRL) {
     controls_shift.flat = false;
-  } else if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP) {
-    if (evt.key.keysym.scancode == SDL_SCANCODE_A) {
-      controls.left = (evt.type == SDL_KEYDOWN);
-    } else if (evt.key.keysym.scancode == SDL_SCANCODE_D) {
-      controls.right = (evt.type == SDL_KEYDOWN);
-    } else if (evt.key.keysym.scancode == SDL_SCANCODE_W) {
-      controls.forward = (evt.type == SDL_KEYDOWN);
-    } else if (evt.key.keysym.scancode == SDL_SCANCODE_S) {
-      controls.backward = (evt.type == SDL_KEYDOWN);
-    } else if (evt.key.keysym.sym == SDLK_LSHIFT) {
-      controls.sprint = (evt.type == SDL_KEYDOWN);
-    } else if (evt.key.keysym.sym == SDLK_SPACE) {
-      controls.jump = (evt.type == SDL_KEYDOWN);
-    } else return false;
-  } else if (evt.type == SDL_MOUSEMOTION) {
-    if (shift.progress == 1.0f) {
-      if (evt.motion.state & SDL_BUTTON_LMASK) {
-        if (shift.moving) {
-          float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
-          shift.moving->offset += controls_shift.drag_sensitivity * dy;
-          shift.moving->update();
-          //TEMP
-          if (client) {
+  } else if (
+    evt.type == SDL_MOUSEMOTION
+    && shift.progress == 1.0f
+    && evt.motion.state & SDL_BUTTON_LMASK
+  ) {
+    float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
+    shift.moving->offset += controls_shift.drag_sensitivity * dy;
+    shift.moving->update();
+    //TEMP
+    if (client) {
 
-            client->connection.send('C');
-            for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
-                float offset = it->offset;
-                client->connection.send(offset);
-            }
-
-          	client->poll([](Connection *, Connection::Event evt){
-          		//TODO: eventually, read server state
-
-          	}, 0.0);
-          	//if connection was closed,
-          	if (!client->connection) {
-          		Mode::set_current(nullptr);
-          	}
-          }
-          //END TEMP
-        }
+      client->connection.send('C');
+      for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+          float offset = it->offset;
+          client->connection.send(offset);
       }
-    } else if (shift.progress == 0.0f){ // Shift not in progress
-      //based on trackball camera control from ShowMeshesMode:
-      //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
-      glm::vec2 delta;
-      delta.x = evt.motion.xrel / float(window_size.x) * 2.0f;
-      delta.x *= float(window_size.y) / float(window_size.x);
-      delta.y = evt.motion.yrel / float(window_size.y) * -2.0f;
 
-      delta *= controls.mouse_sensitivity;
+    	client->poll([](Connection *, Connection::Event evt){
+    		//TODO: eventually, read server state
 
-      pov.azimuth -= delta.x;
-      pov.elevation -= delta.y;
-
-      // Normalize to [-pi, pi)
-      pov.azimuth /= 2.0f * PI;
-      pov.azimuth -= std::round(pov.azimuth);
-      pov.azimuth *= 2.0f * PI;
-      // Clamp to [-89deg, 89deg]
-      pov.elevation = std::max(-89.0f / 180.0f * PI, pov.elevation);
-      pov.elevation = std::min( 89.0f / 180.0f * PI, pov.elevation);
+    	}, 0.0);
+    	//if connection was closed,
+    	if (!client->connection) {
+    		Mode::set_current(nullptr);
+    	}
     }
-
-  } else if (evt.type == SDL_MOUSEBUTTONDOWN || evt.type == SDL_MOUSEBUTTONUP) {
-    if (evt.button.button == SDL_BUTTON_LEFT) {
-      controls.mouse_down = (evt.type == SDL_MOUSEBUTTONDOWN);
-    }
-  } else return false;
+    //END TEMP
+  } else {
+    return PlayerMode::handle_event(evt, window_size);
+  }
 
   return true;
 
@@ -151,7 +95,7 @@ void PlayerTwoMode::update(float elapsed) {
 
   } else { // Shift not in progress
 
-    PlayerOneMode::update(elapsed);
+    PlayerMode::update(elapsed);
 
   }
 }
@@ -206,7 +150,7 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
     level->draw(*pov.camera, proj * w2l);
 
   } else {
-    level->draw(*pov.camera);
+    PlayerMode::draw(drawable_size);
   }
 
 }

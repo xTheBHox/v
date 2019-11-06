@@ -108,8 +108,15 @@ GameLevel::GameLevel(std::string const &scene_file) {
 }
 
 GameLevel::~GameLevel() {
+
 }
 
+void GameLevel::reset() {
+  for (Movable &m : movable_data) {
+    m.offset = 0.0f;
+    m.update();
+  }
+}
 
 void GameLevel::draw( Camera const &camera ) {
   draw( camera, camera.make_projection() * camera.transform->make_world_to_local() );
@@ -165,11 +172,14 @@ void GameLevel::Movable::init_cam(OrthoCam *cam) {
   cam_flat = cam;
 
   // Cameras are directed along the -z axis. Get the transformed z-axis.
-  axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
+  axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
   if (axis != glm::vec3(0.0f)) axis = glm::normalize(axis);
+
+  std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
 
   // Get the transformed origin;
   mover_pos = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+  std::cout << "Position: " << mover_pos.x << "\t" << mover_pos.y << "\t" << mover_pos.z << std::endl;
 
 }
 
@@ -192,7 +202,7 @@ void GameLevel::Movable::update() {
 GameLevel::Movable *GameLevel::movable_get(Transform *transform) {
 
   glm::vec3 pos = transform->make_local_to_world()[3]; // * (0,0,0,1)
-  glm::vec3 axis = transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f);
+  glm::vec3 axis = transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
   if (axis == glm::vec3(0.0f)) return nullptr;
   axis = glm::normalize(axis);
 

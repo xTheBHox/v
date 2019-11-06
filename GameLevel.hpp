@@ -14,6 +14,8 @@ struct GameLevel : Scene {
   void draw( Camera const &camera );
   void draw( Camera const &camera, glm::mat4 world_to_clip );
 
+  void reset();
+
 	//Goal objects(s) tracked using this structure:
 	struct Goal {
 		Goal(Scene::Transform *transform_) : transform(transform_) { };
