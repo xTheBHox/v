@@ -18,27 +18,14 @@ struct OutlineProgram0{
 
 	//Uniform (per-invocation variable) locations:
 	GLuint OBJECT_TO_CLIP_mat4 = -1U;
-	GLuint OBJECT_TO_LIGHT_mat4x3 = -1U;
-	GLuint NORMAL_TO_LIGHT_mat3 = -1U;
-
-	//  material uniforms:
-	GLuint ROUGHNESS_float = -1U;
-
-	//  lighting uniforms:
-	GLuint EYE_vec3 = -1U; //camera position in lighting space
-
-	GLuint LIGHT_TYPE_int = -1U;
-	GLuint LIGHT_LOCATION_vec3 = -1U;
-	GLuint LIGHT_DIRECTION_vec3 = -1U;
-	GLuint LIGHT_ENERGY_vec3 = -1U;
-	GLuint LIGHT_CUTOFF_float = -1U;
 
 	//Textures:
 	//TEXTURE0 - texture that is accessed by TexCoord
 };
 
-extern Load< OutlineProgram > outline_program;
-
+extern Load< OutlineProgram0 > outline_program_0;
+extern Load< OutlineProgram1 > outline_program_1;
+extern GLuint empty_vao;
 //For convenient scene-graph setup, copy this object:
 // NOTE: by default, has texture bound to 1-pixel white texture -- so it's okay to use with vertex-color-only meshes.
 extern Scene::Drawable::Pipeline outline_program_pipeline;

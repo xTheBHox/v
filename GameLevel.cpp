@@ -4,6 +4,7 @@
 #include "data_path.hpp"
 #include "demo_menu.hpp"
 #include "OutlineProgram.hpp"
+#include "BasicMaterialProgram.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -23,7 +24,7 @@ GLuint vao_level = -1U;
 
 Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 	MeshBuffer *ret = new MeshBuffer(data_path("level1.pnct"));
-	vao_level = ret->make_vao_for_program(outline_program->program);
+	vao_level = ret->make_vao_for_program(basic_material_program->program);
 
   //key objects:
   mesh_Goal = &ret->lookup("Goal");
@@ -124,12 +125,13 @@ struct FB {
 	GLuint normal_z_tex = 0;
 
 	//output image gets written to this texture:
-	GLuint output_tex = 0;
+	GLuint color_tex = 0;
 
 	//depth buffer is shared between objects + lights pass:
 	GLuint depth_rb = 0;
 
-	GLuint fb0 = 0; //(output + normal & z) + depth
+	GLuint fb_color = 0; // (color + depth)
+  GLuint fb_outline = 0; // (color + depth)
 
 	glm::uvec2 size = glm::uvec2(0);
 
@@ -159,10 +161,10 @@ struct FB {
     };
 
 		//set up normal_roughness_tex as a 16-bit floating point RGBA texture:
-		alloc_recttex(normal_roughness_tex, GL_RGBA16F);
+		alloc_recttex(normal_z_tex, GL_RGBA16F);
 
 		//set up output_tex as an 8-bit fixed point RGBA texture:
-		alloc_recttex(output_tex, GL_RGBA8);
+		alloc_recttex(color_tex, GL_RGBA8);
 
 		//if depth_rb does not have a name, name it:
 		if (depth_rb == 0) glGenRenderbuffers(1, &depth_rb);
@@ -171,19 +173,29 @@ struct FB {
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size.x, size.y);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
 
-		//if objects framebuffer doesn't have a name, name it and attach textures:
-		if (fb0 == 0) {
-			glGenFramebuffers(1, &fb0);
+		//if color framebuffer doesn't have a name, name it and attach textures:
+		if (fb_color == 0) {
+			glGenFramebuffers(1, &fb_color);
 			//set up framebuffer: (don't need to do when resizing)
-			glBindFramebuffer(GL_FRAMEBUFFER, fb0);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, output_tex, 0);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_2D, normal_z_tex, 0);
+			glBindFramebuffer(GL_FRAMEBUFFER, fb_color);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
-			GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-			glDrawBuffers(2, bufs);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			check_fb();
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
+
+    //if color framebuffer doesn't have a name, name it and attach textures:
+    if (fb_outline == 0) {
+      glGenFramebuffers(1, &fb_outline);
+      //set up framebuffer: (don't need to do when resizing)
+      glBindFramebuffer(GL_FRAMEBUFFER, fb_outline);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, normal_z_tex, 0);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
+      glDrawBuffer(GL_COLOR_ATTACHMENT0);
+      check_fb();
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 	}
 } fb;
 
@@ -194,15 +206,15 @@ void GameLevel::draw( Camera const &camera ) {
 void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 
   fb.resize(drawable_size);
-  
-	//--- actual drawing ---
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glm::vec3 eye = camera.transform->make_local_to_world()[3];
+  // Color drawing
+
+  glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_color);
+  GLfloat zeros[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  glClearBufferfv(GL_COLOR, 0, zeros);
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-
-	glm::vec3 eye = camera.transform->make_local_to_world()[3];
 
 	for (auto const &light : lights) {
 		glm::mat4 light_to_world = light.transform->make_local_to_world();
@@ -230,7 +242,58 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_ONE, GL_ONE);
 		glBlendEquation(GL_FUNC_ADD);
+
 	}
+
+  // Draw the outlines
+  glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_outline);
+  glClearBufferfv(GL_COLOR, 0, zeros);
+
+  glDisable(GL_BLEND);
+
+  glUseProgram(outline_program_0->program);
+  glBindVertexArray(vao_level);
+
+  for (auto const &drawable : drawables) {
+
+		assert(drawable.transform); //drawables *must* have a transform
+		glm::mat4 object_to_world = drawable.transform->make_local_to_world();
+
+    if (outline_program_0->OBJECT_TO_CLIP_mat4 != -1U) {
+      glm::mat4 object_to_clip = world_to_clip * object_to_world;
+      glUniformMatrix4fv(outline_program_0->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(object_to_clip));
+    }
+
+    // Use the same pipeline as the basic material program
+    Scene::Drawable::Pipeline const &pipeline = drawable.pipeline;
+    glDrawArrays(pipeline.type, pipeline.start, pipeline.count);
+
+  }
+
+  // Draw to screen
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glClearColor(0.8f, 0.8f, 1.0f, 0.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glDisable(GL_DEPTH_TEST);
+
+  glUseProgram(outline_program_1->program);
+  glBindVertexArray(vao_empty);
+
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_RECTANGLE, fb.color_tex);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_RECTANGLE, fb.normal_z_tex);
+  glDrawArrays(GL_TRIANGLES, 0, 3);
+	GL_ERRORS();
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+  glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glBindVertexArray(0);
+	glUseProgram(0);
+	GL_ERRORS();
 }
 
 GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
