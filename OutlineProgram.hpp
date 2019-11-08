@@ -23,9 +23,17 @@ struct OutlineProgram0{
 	//TEXTURE0 - texture that is accessed by TexCoord
 };
 
+struct OutlineProgram1 {
+	OutlineProgram1();
+	~OutlineProgram1();
+
+	GLuint program = 0;
+
+};
+
 extern Load< OutlineProgram0 > outline_program_0;
 extern Load< OutlineProgram1 > outline_program_1;
-extern GLuint empty_vao;
+extern GLuint vao_empty;
 //For convenient scene-graph setup, copy this object:
 // NOTE: by default, has texture bound to 1-pixel white texture -- so it's okay to use with vertex-color-only meshes.
 extern Scene::Drawable::Pipeline outline_program_pipeline;

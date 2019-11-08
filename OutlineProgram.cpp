@@ -9,11 +9,9 @@ Load< OutlineProgram0 > outline_program_0(LoadTagEarly, []() -> OutlineProgram0 
 	OutlineProgram0 *ret = new OutlineProgram0();
 
 	//----- build the pipeline template -----
-	basic_material_program_pipeline.program = ret->program;
+	outline_program_pipeline.program = ret->program;
 
-	basic_material_program_pipeline.OBJECT_TO_CLIP_mat4 = ret->OBJECT_TO_CLIP_mat4;
-	basic_material_program_pipeline.OBJECT_TO_LIGHT_mat4x3 = ret->OBJECT_TO_LIGHT_mat4x3;
-	basic_material_program_pipeline.NORMAL_TO_LIGHT_mat3 = ret->NORMAL_TO_LIGHT_mat3;
+	outline_program_pipeline.OBJECT_TO_CLIP_mat4 = ret->OBJECT_TO_CLIP_mat4;
 
 	//make a 1-pixel white texture to bind by default:
 	GLuint tex;
@@ -28,8 +26,8 @@ Load< OutlineProgram0 > outline_program_0(LoadTagEarly, []() -> OutlineProgram0 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	basic_material_program_pipeline.textures[0].texture = tex;
-	basic_material_program_pipeline.textures[0].target = GL_TEXTURE_2D;
+	outline_program_pipeline.textures[0].texture = tex;
+	outline_program_pipeline.textures[0].target = GL_TEXTURE_2D;
 
 	return ret;
 });
@@ -44,7 +42,7 @@ OutlineProgram0::OutlineProgram0() {
 		"in vec3 Normal;\n"
 		"in vec4 Color;\n"
 		"in vec2 TexCoord;\n"
-    "out vec3 normal\n"
+    "out vec3 normal;\n"
 		"void main() {\n"
 		"	gl_Position = OBJECT_TO_CLIP * Position;\n"
     " normal = Normal;\n"
@@ -52,7 +50,7 @@ OutlineProgram0::OutlineProgram0() {
 	,
 		//fragment shader:
 		"#version 330\n"
-    "in vec3 normal\n"
+    "in vec3 normal;\n"
 		"out vec4 fragNormalZ;\n"
 		"void main() {\n"
     " fragNormalZ = vec4(normalize(normal), gl_FragCoord.z);\n"
@@ -72,8 +70,6 @@ OutlineProgram0::OutlineProgram0() {
 
 	//set TEX to always refer to texture binding zero:
 	glUseProgram(program); //bind program -- glUniform* calls refer to this program now
-
-	glUniform1i(TEX_sampler2D, 0); //set TEX to sample from GL_TEXTURE0
 
 	glUseProgram(0); //unbind program -- glUniform* calls refer to ??? now
 }
@@ -110,18 +106,18 @@ OutlineProgram1::OutlineProgram1() {
 		"uniform sampler2DRect NORMAL_Z_TEX;\n"
 		"out vec4 fragColor;\n"
 		"void main() {\n"
-    " vec2 pos = ivec2(gl_FragCoord);\n"
+    " ivec2 pos = ivec2(gl_FragCoord);\n"
     " vec4 x0 = texelFetch(NORMAL_Z_TEX, ivec2(pos.x - 1, pos.y));\n"
     " vec4 x1 = texelFetch(NORMAL_Z_TEX, ivec2(pos.x + 1, pos.y));\n"
     " vec4 y0 = texelFetch(NORMAL_Z_TEX, ivec2(pos.x, pos.y - 1));\n"
     " vec4 y1 = texelFetch(NORMAL_Z_TEX, ivec2(pos.x, pos.y + 1));\n"
-    " vec4 cin = texelFetch(COLOR_TEX, ivec2(gl_FragCoord), 0);\n"
+    " vec4 cin = texelFetch(COLOR_TEX, pos);\n"
     " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
     " if (dot(x0.xyz, x1.xyz) > 0.9 &&\n"
     "  dot(y0.xyz, y1.xyz) > 0.9 &&\n"
     "  abs(x0.w - x1.w) < 9.0 &&\n"
     "  abs(y0.w - y1.w) < 9.0) {\n"
-    "  cout += cin;\n"
+    "  cout = cin;\n"
     " }\n"
 		"	fragColor = cout;\n"
 		"}\n"

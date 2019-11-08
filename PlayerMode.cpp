@@ -295,6 +295,8 @@ void PlayerMode::update(float elapsed) {
 void PlayerMode::draw(glm::uvec2 const &drawable_size) {
 
   pov.camera->aspect = drawable_size.x / float(drawable_size.y);
-  level->draw( *pov.camera );
+  glm::vec4 eye = pov.camera->transform->make_local_to_world()[3];
+  glm::mat4 world_to_clip = pov.camera->make_projection() * pov.camera->transform->make_world_to_local();
+  level->draw(drawable_size, eye, world_to_clip);
 
 }

@@ -156,13 +156,11 @@ if $(OS) = NT { #Windows
 
 #Store the names of all the .cpp files to build into a variable:
 GAME_NAMES =
-    collide
+  collide
 	demo_menu
 	BasicMaterialProgram
-	BasicMaterialForwardProgram
 	LightMeshes
-	BasicMaterialDeferredProgram
-	CopyToScreenProgram
+	OutlineProgram
 	Sound
 	load_wav
 	load_opus

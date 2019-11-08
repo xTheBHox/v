@@ -5,6 +5,9 @@
 #include "demo_menu.hpp"
 #include "OutlineProgram.hpp"
 #include "BasicMaterialProgram.hpp"
+#include "gl_errors.hpp"
+#include "check_fb.hpp"
+#include "CopyToScreenProgram.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -47,7 +50,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
     Drawable::Pipeline &pipeline = drawables.back().pipeline;
 
     //set up drawable to draw mesh from buffer:
-    pipeline = outline_program_pipeline;
+    pipeline = basic_material_program_pipeline;
     pipeline.vao = vao_level;
     pipeline.type = mesh->type;
     pipeline.start = mesh->start;
@@ -80,7 +83,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
     }
 
     pipeline.set_uniforms = [](){
-      glUniform1f(outline_program->ROUGHNESS_float, 1.0f);
+      glUniform1f(basic_material_program->ROUGHNESS_float, 1.0f);
     };
   };
 	//Load scene (using Scene::load function), building proper associations as needed:
@@ -166,31 +169,35 @@ struct FB {
 		//set up output_tex as an 8-bit fixed point RGBA texture:
 		alloc_recttex(color_tex, GL_RGBA8);
 
+    GL_ERRORS();
+
 		//if depth_rb does not have a name, name it:
 		if (depth_rb == 0) glGenRenderbuffers(1, &depth_rb);
 		//set up depth_rb as a 24-bit fixed-point depth buffer:
 		glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size.x, size.y);
 		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    GL_ERRORS();
 
 		//if color framebuffer doesn't have a name, name it and attach textures:
 		if (fb_color == 0) {
 			glGenFramebuffers(1, &fb_color);
 			//set up framebuffer: (don't need to do when resizing)
 			glBindFramebuffer(GL_FRAMEBUFFER, fb_color);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_tex, 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, color_tex, 0);
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
 			glDrawBuffer(GL_COLOR_ATTACHMENT0);
 			check_fb();
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
+    GL_ERRORS();
 
     //if color framebuffer doesn't have a name, name it and attach textures:
     if (fb_outline == 0) {
       glGenFramebuffers(1, &fb_outline);
       //set up framebuffer: (don't need to do when resizing)
       glBindFramebuffer(GL_FRAMEBUFFER, fb_outline);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, normal_z_tex, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, normal_z_tex, 0);
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
       glDrawBuffer(GL_COLOR_ATTACHMENT0);
       check_fb();
@@ -199,19 +206,21 @@ struct FB {
 	}
 } fb;
 
-void GameLevel::draw( Camera const &camera ) {
-  draw( camera, camera.make_projection() * camera.transform->make_world_to_local() );
-}
-
-void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
+void GameLevel::draw(
+  glm::vec2 const &drawable_size,
+  glm::vec3 const &eye,
+  glm::mat4 const &world_to_clip
+) {
 
   fb.resize(drawable_size);
-  glm::vec3 eye = camera.transform->make_local_to_world()[3];
+  GL_ERRORS();
   // Color drawing
 
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_color);
-  GLfloat zeros[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  GLfloat zeros[4] = {0.8f, 0.8f, 1.0f, 0.0f};
   glClearBufferfv(GL_COLOR, 0, zeros);
+  glClear(GL_DEPTH_BUFFER_BIT);
+
 	glDisable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
@@ -219,23 +228,23 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 	for (auto const &light : lights) {
 		glm::mat4 light_to_world = light.transform->make_local_to_world();
 		//set up lighting information for this light:
-		glUseProgram(outline_program_0->program);
-		glUniform3fv(outline_program_0->EYE_vec3, 1, glm::value_ptr(eye));
-		glUniform3fv(outline_program_0->LIGHT_LOCATION_vec3, 1, glm::value_ptr(glm::vec3(light_to_world[3])));
-		glUniform3fv(outline_program_0->LIGHT_DIRECTION_vec3, 1, glm::value_ptr(glm::vec3(-light_to_world[2])));
-		glUniform3fv(outline_program_0->LIGHT_ENERGY_vec3, 1, glm::value_ptr(light.energy));
+		glUseProgram(basic_material_program->program);
+		glUniform3fv(basic_material_program->EYE_vec3, 1, glm::value_ptr(eye));
+		glUniform3fv(basic_material_program->LIGHT_LOCATION_vec3, 1, glm::value_ptr(glm::vec3(light_to_world[3])));
+		glUniform3fv(basic_material_program->LIGHT_DIRECTION_vec3, 1, glm::value_ptr(glm::vec3(-light_to_world[2])));
+		glUniform3fv(basic_material_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(light.energy));
 		if (light.type == Scene::Light::Point) {
-			glUniform1i(outline_program_0->LIGHT_TYPE_int, 0);
-			glUniform1f(outline_program_0->LIGHT_CUTOFF_float, 1.0f);
+			glUniform1i(basic_material_program->LIGHT_TYPE_int, 0);
+			glUniform1f(basic_material_program->LIGHT_CUTOFF_float, 1.0f);
 		} else if (light.type == Scene::Light::Hemisphere) {
-			glUniform1i(outline_program_0->LIGHT_TYPE_int, 1);
-			glUniform1f(outline_program_0->LIGHT_CUTOFF_float, 1.0f);
+			glUniform1i(basic_material_program->LIGHT_TYPE_int, 1);
+			glUniform1f(basic_material_program->LIGHT_CUTOFF_float, 1.0f);
 		} else if (light.type == Scene::Light::Spot) {
-			glUniform1i(outline_program_0->LIGHT_TYPE_int, 2);
-			glUniform1f(outline_program_0->LIGHT_CUTOFF_float, std::cos(0.5f * light.spot_fov));
+			glUniform1i(basic_material_program->LIGHT_TYPE_int, 2);
+			glUniform1f(basic_material_program->LIGHT_CUTOFF_float, std::cos(0.5f * light.spot_fov));
 		} else if (light.type == Scene::Light::Directional) {
-			glUniform1i(outline_program_0->LIGHT_TYPE_int, 3);
-			glUniform1f(outline_program_0->LIGHT_CUTOFF_float, 1.0f);
+			glUniform1i(basic_material_program->LIGHT_TYPE_int, 3);
+			glUniform1f(basic_material_program->LIGHT_CUTOFF_float, 1.0f);
 		}
 		Scene::draw(world_to_clip);
 
@@ -244,6 +253,7 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 		glBlendEquation(GL_FUNC_ADD);
 
 	}
+  GL_ERRORS();
 
   // Draw the outlines
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_outline);
@@ -269,15 +279,15 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
     glDrawArrays(pipeline.type, pipeline.start, pipeline.count);
 
   }
-
+  GL_ERRORS();
   // Draw to screen
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   glClearColor(0.8f, 0.8f, 1.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
 
-  glUseProgram(outline_program_1->program);
   glBindVertexArray(vao_empty);
+  glUseProgram(outline_program_1->program);
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_RECTANGLE, fb.color_tex);
@@ -294,6 +304,7 @@ void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
 	glBindVertexArray(0);
 	glUseProgram(0);
 	GL_ERRORS();
+
 }
 
 GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
