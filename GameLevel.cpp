@@ -143,16 +143,6 @@ struct FB {
 		size = drawable_size;
 
 		//helper to allocate a texture:
-		auto alloc_tex = [&] (GLuint &tex, GLenum internal_format) {
-			if (tex == 0) glGenTextures(1, &tex);
-			glBindTexture(GL_TEXTURE_2D, tex);
-			glTexImage2D(GL_TEXTURE_2D, 0, internal_format, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-			glBindTexture(GL_TEXTURE_2D, 0);
-		};
 
     auto alloc_recttex = [&] (GLuint &tex, GLenum internal_format) {
       if (tex == 0) glGenTextures(1, &tex);

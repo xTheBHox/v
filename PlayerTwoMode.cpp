@@ -134,8 +134,6 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
 
     if (shift.progress < 1.0f) {
 
-      float e43 = std::pow(2 * pov.camera->near, 1.0f - shift.progress);
-
       float f = 1.0f - shift.progress;
       float f3 = f * f * f;
       float f6 = f3 * f3;

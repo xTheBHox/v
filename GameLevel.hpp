@@ -11,7 +11,7 @@ struct GameLevel : Scene {
   GameLevel( std::string const &scene_file );
   virtual ~GameLevel();
 
-  void GameLevel::draw(
+  void draw(
     glm::vec2 const &drawable_size,
     glm::vec3 const &eye,
     glm::mat4 const &world_to_clip
