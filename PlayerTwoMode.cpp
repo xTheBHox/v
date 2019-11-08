@@ -19,7 +19,7 @@ PlayerTwoMode::PlayerTwoMode(GameLevel *level_ , std::string const &host, std::s
   : PlayerMode(level_) {
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
-  client.reset(new Client(host, port));
+  //client.reset(new Client(host, port));
 }
 
 bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -134,7 +134,7 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
 
     if (shift.progress < 1.0f) {
 
-      float e43 = std::pow(2 * pov.camera->near, 1.0f - shift.progress);
+      //float e43 = std::pow(2 * pov.camera->near, 1.0f - shift.progress);
 
       float f = 1.0f - shift.progress;
       float f3 = f * f * f;
