@@ -19,7 +19,7 @@ struct PlayerTwoMode : PlayerMode {
   } controls_shift;
 
   struct {
-    GameLevel::Movable *moving = nullptr;
+    GameLevel::Standpoint *stpt = nullptr;
     // How much the camera has shifted
     float progress = 0.0f;
     float speed = 4.0f; // 1/t, t is the time taken to shift

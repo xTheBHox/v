@@ -65,8 +65,8 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
     pov.azimuth *= 2.0f * PI;
 
     // Clamp to [-89deg, 89deg]
-    pov.elevation = std::max(-89.0f / 180.0f * PI, pov.elevation);
-    pov.elevation = std::min( 89.0f / 180.0f * PI, pov.elevation);
+    pov.elevation = std::max(-85.0f / 180.0f * PI, pov.elevation);
+    pov.elevation = std::min(60.0f / 180.0f * PI, pov.elevation);
 
   } else if (evt.type == SDL_MOUSEBUTTONDOWN || evt.type == SDL_MOUSEBUTTONUP) {
     if (evt.button.button == SDL_BUTTON_LEFT) {
@@ -205,7 +205,6 @@ void PlayerMode::update(float elapsed) {
             collided = true;
             if (collider.movable) {
               collider.movable->player = pov.body;
-              std::cout << "Player caught movable" << std::endl;
             }
           }
 
@@ -283,11 +282,13 @@ void PlayerMode::update(float elapsed) {
     pov.vel = pl_vel;
   } // end collision compute
 
-	{ //camera update:
+	{
+    // body rotation update:
+    glm::quat rot_h = glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f));
+    pov.body->rotation = rot_h;
+    //camera update:
     pov.camera->transform->rotation =
-      // glm::angleAxis(gravity_to_z_angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f)) *
-      glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
+			glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
 	}
 
 }

@@ -35,7 +35,7 @@ void PlayerOneMode::update(float elapsed) {
 					if (type == 'C'){
             char *start = &data[1];
             //td::cout << (int)start[0] << " " << (int)start[1] << " " << (int)start[2] << " " << (int)start[3] << std::endl;
-            for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+            for (auto it = level->standpoints.begin(); it != level->standpoints.end(); ++it){
               float* pos = reinterpret_cast<float*> (start);
               it->offset = *pos;
               it->update();

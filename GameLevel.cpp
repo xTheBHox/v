@@ -57,16 +57,23 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.count = mesh->count;
 
     if (transform->name.substr(0, 4) == "Move") {
+      if (transform->name.substr(transform->name.size() - 6, transform->name.size()) == "Screen") {
+        std::cout << "Screen detected: " << transform->name << std::endl;
 
-      std::cout << "Movable detected: " << transform->name << std::endl;
+        screens.emplace_back(transform, &pipeline);
 
-      movable_data.emplace_back(transform);
-      Movable &data = movable_data.back();
+      }
+      else {
+        std::cout << "Movable detected: " << transform->name << std::endl;
 
-      auto f = mesh_to_collider.find(mesh);
-      mesh_colliders.emplace_back(transform, *f->second, *level1_meshes, &data);
-      std::cout << mesh_colliders.back().movable << std::endl;
+        movable_data.emplace_back(transform);
+        Movable &data = movable_data.back();
 
+        auto f = mesh_to_collider.find(mesh);
+        // TODO NOT FOUND CHECK!
+        mesh_colliders.emplace_back(transform, *f->second, *level1_meshes, &data);
+        std::cout << mesh_colliders.back().movable << std::endl;
+      }
     } else if (transform->name.substr(0, 4) == "Goal") {
       goals.emplace_back(transform);
     } else if (transform->name.substr(0, 5) == "Body1") {
@@ -90,11 +97,11 @@ GameLevel::GameLevel(std::string const &scene_file) {
 	load(scene_file, load_fn);
 
   // Build the mapping between movables and orthographic cameras
-  for (auto &m : movable_data) {
-    std::string &xf_name = m.transform->name;
-    for (auto &oc : orthocams) {
+  for (auto &oc : orthocams) {
+    for (auto &m : movable_data) {
+      std::string &xf_name = m.transform->name;
       if (oc.transform->name.substr(0, xf_name.size()) == xf_name) {
-        m.init_cam(&oc);
+        standpoints.emplace_back(&oc, &m);
         break;
       }
     }
@@ -116,9 +123,9 @@ GameLevel::~GameLevel() {
 }
 
 void GameLevel::reset() {
-  for (Movable &m : movable_data) {
-    m.offset = 0.0f;
-    m.update();
+  for (Standpoint &s : standpoints) {
+    s.offset = 0.0f;
+    s.movable->update(s.axis, s.offset);
   }
 }
 
@@ -133,8 +140,9 @@ struct FB {
 	//depth buffer is shared between objects + lights pass:
 	GLuint depth_rb = 0;
 
-	GLuint fb_color = 0; // (color + depth)
-  GLuint fb_outline = 0; // (color + depth)
+	GLuint fb_color = 0;
+  GLuint fb_outline = 0;
+  GLuint fb_output = 0;
 
 	glm::uvec2 size = glm::uvec2(0);
 
@@ -182,7 +190,7 @@ struct FB {
 		}
     GL_ERRORS();
 
-    //if color framebuffer doesn't have a name, name it and attach textures:
+    //if outline framebuffer doesn't have a name, name it and attach textures:
     if (fb_outline == 0) {
       glGenFramebuffers(1, &fb_outline);
       //set up framebuffer: (don't need to do when resizing)
@@ -193,6 +201,16 @@ struct FB {
       check_fb();
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
+    // The output framebuffer is used to hold the flattened textures when rendering
+    // the orthographic windows.
+    if (fb_output == 0) {
+      glGenFramebuffers(1, &fb_output);
+      //set up framebuffer: (don't need to do when resizing)
+      glBindFramebuffer(GL_FRAMEBUFFER, fb_output);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
 	}
 } fb;
 
@@ -201,13 +219,22 @@ void GameLevel::draw(
   glm::vec3 const &eye,
   glm::mat4 const &world_to_clip
 ) {
+  draw(drawable_size, eye, world_to_clip, 0);
+}
+
+void GameLevel::draw(
+  glm::vec2 const &drawable_size,
+  glm::vec3 const &eye,
+  glm::mat4 const &world_to_clip,
+  GLuint output_fb
+) {
 
   fb.resize(drawable_size);
   GL_ERRORS();
   // Color drawing
 
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_color);
-  GLfloat zeros[4] = {0.8f, 0.8f, 1.0f, 0.0f};
+  GLfloat zeros[4] = {0.0f, 0.0f, 0.0f, 0.0f};
   glClearBufferfv(GL_COLOR, 0, zeros);
   glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -272,7 +299,7 @@ void GameLevel::draw(
   }
   GL_ERRORS();
   // Draw to screen
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, output_fb);
   glClearColor(0.8f, 0.8f, 1.0f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
@@ -304,22 +331,7 @@ GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
 
 }
 
-void GameLevel::Movable::init_cam(OrthoCam *cam) {
-  cam_flat = cam;
-
-  // Cameras are directed along the -z axis. Get the transformed z-axis.
-  axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
-  if (axis != glm::vec3(0.0f)) axis = glm::normalize(axis);
-
-  std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
-
-  // Get the transformed origin;
-  mover_pos = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-  std::cout << "Position: " << mover_pos.x << "\t" << mover_pos.y << "\t" << mover_pos.z << std::endl;
-
-}
-
-void GameLevel::Movable::update() {
+void GameLevel::Movable::update(glm::vec3 &axis, float &offset) {
 
   if (player) {
     glm::vec3 start = transform->position;
@@ -335,7 +347,26 @@ void GameLevel::Movable::update() {
 
 }
 
-GameLevel::Movable *GameLevel::movable_get(Transform *transform) {
+GameLevel::Standpoint::Standpoint(OrthoCam *cam_, Movable *movable_)
+  : cam(cam_), movable(movable_) {
+
+  // Cameras are directed along the -z axis. Get the transformed z-axis.
+  axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+  if (axis != glm::vec3(0.0f)) axis = glm::normalize(axis);
+
+  std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
+
+  // Get the transformed origin;
+  pos = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+  std::cout << "Position: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
+
+}
+
+void GameLevel::Standpoint::update() {
+  movable->update(axis, offset);
+}
+
+GameLevel::Standpoint *GameLevel::standpoint_get(Transform *transform) {
 
   glm::vec3 pos = transform->make_local_to_world()[3]; // * (0,0,0,1)
   glm::vec3 axis = transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
@@ -345,20 +376,54 @@ GameLevel::Movable *GameLevel::movable_get(Transform *transform) {
   std::cout << "Pos: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
   std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
 
-  for (Movable &m : movable_data) {
-    std::cout << "Mover: " << m.mover_pos.x << "\t" << m.mover_pos.y << "\t" << m.mover_pos.z << std::endl;
+  for (Standpoint &s : standpoints) {
+    std::cout << "Mover: " << s.pos.x << "\t" << s.pos.y << "\t" << s.pos.z << std::endl;
 
-    glm::vec3 dist = m.mover_pos - pos;
-    std::cout << glm::dot( dist, dist ) << std::endl;
-    if (glm::dot(dist, dist) <= m.pos_tolerance * m.pos_tolerance) {
+    glm::vec3 dist = s.pos - pos;
+    std::cout << glm::dot(dist, dist) << std::endl;
+    if (glm::dot(dist, dist) <= s.pos_tolerance * s.pos_tolerance) {
       std::cout << "Position within threshhold. Checking axis..." << std::endl;
-      std::cout << "Dot: " << glm::dot(axis, m.axis) << std::endl;
-      if (glm::dot(axis, m.axis) > m.axis_tolerance) {
-        return &m;
+      std::cout << "Dot: " << glm::dot(axis, s.axis) << std::endl;
+      if (glm::dot(axis, s.axis) > s.axis_tolerance) {
+        return &s;
       }
     }
   }
 
   return nullptr;
+
+}
+
+void GameLevel::Standpoint::resize_texture(glm::uvec2 &new_size) {
+
+  if (size == new_size) return;
+  size = new_size;
+  if (tex == 0) glGenTextures(1, &tex);
+
+  glBindTexture(GL_TEXTURE_2D, tex);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+  glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glBindTexture(GL_TEXTURE_RECTANGLE, 0);
+
+}
+
+void GameLevel::Standpoint::update_texture(GameLevel *level) {
+
+  float tex_h = cam->scale;
+  float tex_w = (w / h) * tex_h;
+  float fp = cam->clip_far;
+  float np = cam->clip_near;
+
+  glm::mat4 proj = glm::ortho(-tex_w, tex_w, -tex_h, tex_h, np ,fp);
+  glm::mat4 w2l = cam->transform->make_world_to_local();
+
+  glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_output);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, tex, 0);
+  glDrawBuffer(GL_COLOR_ATTACHMENT0);
+  check_fb();
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  level->draw(size, pos, proj * w2l, fb.fb_output);
 
 }
