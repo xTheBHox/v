@@ -17,6 +17,7 @@
 
 PlayerTwoMode::PlayerTwoMode(GameLevel *level_ , std::string const &host, std::string const &port)
   : PlayerMode(level_) {
+  player_num = 2;
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
   //client.reset(new Client(host, port));

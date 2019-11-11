@@ -18,7 +18,7 @@ PlayerMode::~PlayerMode(){
 
 bool PlayerMode::handle_ui(SDL_Event const &evt, glm::uvec2 const &window_size) {
   if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_M) {
-		Mode::set_current(demo_menu);
+		MenuMode::set_current(nullptr);
 	} else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE) {
     pause = !pause;
     if (pause) SDL_SetRelativeMouseMode(SDL_FALSE);
