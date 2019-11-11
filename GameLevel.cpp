@@ -27,7 +27,7 @@ GLuint vao_level = -1U;
 
 Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 	MeshBuffer *ret = new MeshBuffer(data_path("level1.pnct"));
-	vao_level = ret->make_vao_for_program(basic_material_program->program);
+	vao_level = ret->make_vao_for_program(flat_program->program);
 
   //key objects:
   mesh_Goal = &ret->lookup("Goal");
@@ -50,20 +50,24 @@ GameLevel::GameLevel(std::string const &scene_file) {
     Drawable::Pipeline &pipeline = drawables.back().pipeline;
 
     //set up drawable to draw mesh from buffer:
-    pipeline = basic_material_program_pipeline;
+    pipeline = flat_program_pipeline;
     pipeline.vao = vao_level;
     pipeline.type = mesh->type;
     pipeline.start = mesh->start;
     pipeline.count = mesh->count;
 
+    pipeline.set_uniforms = [](){
+      glUniform1ui(flat_program->USE_TEX_bool, 0);
+    };
+
     if (transform->name.substr(0, 4) == "Move") {
       if (transform->name.substr(transform->name.size() - 6, transform->name.size()) == "Screen") {
         std::cout << "Screen detected: " << transform->name << std::endl;
-
         screens.emplace_back(transform, &pipeline);
-
-      }
-      else {
+        pipeline.set_uniforms = [](){
+          glUniform1ui(flat_program->USE_TEX_bool, 1);
+        };
+      } else {
         std::cout << "Movable detected: " << transform->name << std::endl;
 
         movable_data.emplace_back(transform);
@@ -72,7 +76,6 @@ GameLevel::GameLevel(std::string const &scene_file) {
         auto f = mesh_to_collider.find(mesh);
         // TODO NOT FOUND CHECK!
         mesh_colliders.emplace_back(transform, *f->second, *level1_meshes, &data);
-        std::cout << mesh_colliders.back().movable << std::endl;
       }
     } else if (transform->name.substr(0, 4) == "Goal") {
       goals.emplace_back(transform);
@@ -88,21 +91,33 @@ GameLevel::GameLevel(std::string const &scene_file) {
         decorations++;
       }
     }
-
-    pipeline.set_uniforms = [](){
-      glUniform1f(basic_material_program->ROUGHNESS_float, 1.0f);
-    };
   };
 	//Load scene (using Scene::load function), building proper associations as needed:
 	load(scene_file, load_fn);
 
   // Build the mapping between movables and orthographic cameras
+
   for (auto &oc : orthocams) {
     for (auto &m : movable_data) {
       std::string &xf_name = m.transform->name;
       if (oc.transform->name.substr(0, xf_name.size()) == xf_name) {
+        std::cout << "Matched " << xf_name << " to " << oc.transform->name << std::endl;
         standpoints.emplace_back(&oc, &m);
         break;
+      }
+    }
+  }
+
+  for (auto &sc : screens) {
+    for (auto &stpt : standpoints) {
+      std::string &cam_name = stpt.cam->transform->name; // xyzCam
+      std::string &sc_name = sc.transform->name; // xyzScreen
+      if (cam_name.substr(0, cam_name.size()-3) == sc_name.substr(0, sc_name.size()-6)) {
+        std::cout << "Matched " << cam_name << " to " << sc_name << std::endl;
+        sc.stpt = &stpt;
+        std::cout << "Texture #" << stpt.tex << std::endl;
+        sc.pipeline->textures[0].texture = stpt.tex;
+        sc.pipeline->textures[0].target = GL_TEXTURE_2D;
       }
     }
   }
@@ -202,6 +217,7 @@ struct FB {
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
+    GL_ERRORS();
     // The output framebuffer is used to hold the flattened textures when rendering
     // the orthographic windows.
     if (fb_output == 0) {
@@ -211,6 +227,8 @@ struct FB {
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+
+    GL_ERRORS();
 	}
 } fb;
 
@@ -242,34 +260,8 @@ void GameLevel::draw(
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
 
-	for (auto const &light : lights) {
-		glm::mat4 light_to_world = light.transform->make_local_to_world();
-		//set up lighting information for this light:
-		glUseProgram(basic_material_program->program);
-		glUniform3fv(basic_material_program->EYE_vec3, 1, glm::value_ptr(eye));
-		glUniform3fv(basic_material_program->LIGHT_LOCATION_vec3, 1, glm::value_ptr(glm::vec3(light_to_world[3])));
-		glUniform3fv(basic_material_program->LIGHT_DIRECTION_vec3, 1, glm::value_ptr(glm::vec3(-light_to_world[2])));
-		glUniform3fv(basic_material_program->LIGHT_ENERGY_vec3, 1, glm::value_ptr(light.energy));
-		if (light.type == Scene::Light::Point) {
-			glUniform1i(basic_material_program->LIGHT_TYPE_int, 0);
-			glUniform1f(basic_material_program->LIGHT_CUTOFF_float, 1.0f);
-		} else if (light.type == Scene::Light::Hemisphere) {
-			glUniform1i(basic_material_program->LIGHT_TYPE_int, 1);
-			glUniform1f(basic_material_program->LIGHT_CUTOFF_float, 1.0f);
-		} else if (light.type == Scene::Light::Spot) {
-			glUniform1i(basic_material_program->LIGHT_TYPE_int, 2);
-			glUniform1f(basic_material_program->LIGHT_CUTOFF_float, std::cos(0.5f * light.spot_fov));
-		} else if (light.type == Scene::Light::Directional) {
-			glUniform1i(basic_material_program->LIGHT_TYPE_int, 3);
-			glUniform1f(basic_material_program->LIGHT_CUTOFF_float, 1.0f);
-		}
-		Scene::draw(world_to_clip);
+	Scene::draw(world_to_clip);
 
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_ONE, GL_ONE);
-		glBlendEquation(GL_FUNC_ADD);
-
-	}
   GL_ERRORS();
 
   // Draw the outlines
@@ -292,7 +284,7 @@ void GameLevel::draw(
       glUniformMatrix4fv(outline_program_0->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(object_to_clip));
     }
 
-    // Use the same pipeline as the basic material program
+    // Uses the same pipeline as flat coloring
     Scene::Drawable::Pipeline const &pipeline = drawable.pipeline;
     glDrawArrays(pipeline.type, pipeline.start, pipeline.count);
 
@@ -300,7 +292,7 @@ void GameLevel::draw(
   GL_ERRORS();
   // Draw to screen
   glBindFramebuffer(GL_FRAMEBUFFER, output_fb);
-  glClearColor(0.8f, 0.8f, 1.0f, 0.0f);
+  glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glDisable(GL_DEPTH_TEST);
 
@@ -360,6 +352,9 @@ GameLevel::Standpoint::Standpoint(OrthoCam *cam_, Movable *movable_)
   pos = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
   std::cout << "Position: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
 
+  glGenTextures(1, &tex);
+  GL_ERRORS();
+
 }
 
 void GameLevel::Standpoint::update() {
@@ -394,17 +389,20 @@ GameLevel::Standpoint *GameLevel::standpoint_get(Transform *transform) {
 
 }
 
-void GameLevel::Standpoint::resize_texture(glm::uvec2 &new_size) {
+void GameLevel::Standpoint::resize_texture(glm::uvec2 const &new_size) {
 
   if (size == new_size) return;
   size = new_size;
-  if (tex == 0) glGenTextures(1, &tex);
 
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glBindTexture(GL_TEXTURE_RECTANGLE, 0);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glBindTexture(GL_TEXTURE_2D, 0);
+
+  GL_ERRORS();
 
 }
 
@@ -419,10 +417,11 @@ void GameLevel::Standpoint::update_texture(GameLevel *level) {
   glm::mat4 w2l = cam->transform->make_world_to_local();
 
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_output);
-  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, tex, 0);
+  glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
   glDrawBuffer(GL_COLOR_ATTACHMENT0);
   check_fb();
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  GL_ERRORS();
 
   level->draw(size, pos, proj * w2l, fb.fb_output);
 

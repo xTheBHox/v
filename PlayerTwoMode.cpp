@@ -150,5 +150,10 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
   } else {
     PlayerMode::draw(drawable_size);
   }
+  
+  for (auto &stpt : level->standpoints) {
+    stpt.resize_texture(drawable_size);
+    stpt.update_texture(level);
+  }
 
 }

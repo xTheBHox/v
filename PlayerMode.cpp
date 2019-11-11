@@ -207,6 +207,9 @@ void PlayerMode::update(float elapsed) {
               collider.movable->player = pov.body;
             }
           }
+          else if (collider.movable) {
+            collider.movable->player = NULL;
+          }
 
           //draw to indicate result of check:
           // if (iter == 0 && DEBUG_draw_lines) {

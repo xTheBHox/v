@@ -51,7 +51,7 @@ struct GameLevel : Scene {
 
     Standpoint(OrthoCam *cam_, Movable *movable);
     void update();
-    void resize_texture(glm::uvec2 &new_size);
+    void resize_texture(glm::uvec2 const &new_size);
     void update_texture(GameLevel *level);
     OrthoCam *cam;
     Movable *movable;
@@ -69,8 +69,8 @@ struct GameLevel : Scene {
     // ==== Constants ====
 
     // The dimensions of the screen
-    const float w = 1.0f;
-    const float h = 0.75f;
+    const float w = 3.0f;
+    const float h = 2.25f;
 
     // The margin of error in position (distance units)
     const float pos_tolerance = 9.0f;
@@ -106,7 +106,7 @@ struct GameLevel : Scene {
       mesh(&mesh_),
       buffer(&buffer_),
       movable(movable_)
-    {};
+    {}
     Scene::Transform *transform;
     Mesh const *mesh;
     MeshBuffer const *buffer;
