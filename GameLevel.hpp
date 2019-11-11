@@ -2,6 +2,7 @@
 
 #include "Scene.hpp"
 #include "Mesh.hpp"
+#include "GL.hpp"
 
 #include <string>
 #include <list>
@@ -11,8 +12,17 @@ struct GameLevel : Scene {
   GameLevel( std::string const &scene_file );
   virtual ~GameLevel();
 
-  void draw( Camera const &camera );
-  void draw( Camera const &camera, glm::mat4 world_to_clip );
+  void draw(
+    glm::vec2 const &drawable_size,
+    glm::vec3 const &eye,
+    glm::mat4 const &world_to_clip
+  );
+  void draw(
+    glm::vec2 const &drawable_size,
+    glm::vec3 const &eye,
+    glm::mat4 const &world_to_clip,
+    GLuint output_fb
+  );
 
   void reset();
 
@@ -26,29 +36,63 @@ struct GameLevel : Scene {
   struct Movable {
 
     Movable(Transform *transform_);
-    void update();
-    void init_cam(OrthoCam *cam);
-
-    OrthoCam *cam_flat = nullptr;
-    // The movement axis, direction away from player 2
-    glm::vec3 axis = glm::vec3(0.0f);
-    // The position player 2 needs to stand to move the object
-    glm::vec3 mover_pos = glm::vec3(0.0f);
+    void update(glm::vec3 &axis, float &offset);
 
     // The object's transform.
     Transform *transform = nullptr;
     // The original position of the object
     glm::vec3 init_pos = glm::vec3(0.0f);
-    // The current offset (along axis) of the object
-    float offset = 0.0f;
 
     Transform *player = nullptr;
 
-    // The margin of error in position (distance units)
-    float pos_tolerance = 9.0f;
-    // The margin of error in viewing direction (cos(max error angle))
-    float axis_tolerance = 0.85f;
+  };
 
+  struct Standpoint {
+
+    Standpoint(OrthoCam *cam_, Movable *movable);
+    void update();
+    void resize_texture(glm::uvec2 const &new_size);
+    void update_texture(GameLevel *level);
+    OrthoCam *cam;
+    Movable *movable;
+
+    // The movement axis, direction away from player 2
+    glm::vec3 axis = glm::vec3(0.0f);
+    // The position player 2 needs to stand to move the object
+    glm::vec3 pos = glm::vec3(0.0f);
+    // The current offset (along axis) of the object
+    float offset = 0.0f;
+
+    GLuint tex = 0;
+    glm::uvec2 size = glm::uvec2(0);
+
+    // ==== Constants ====
+
+    // The dimensions of the screen
+    const float w = 3.0f;
+    const float h = 2.25f;
+
+    // The margin of error in position (distance units)
+    const float pos_tolerance = 9.0f;
+    // The margin of error in viewing direction (cos(max error angle))
+    const float axis_tolerance = 0.85f;
+
+  };
+
+  struct Screen {
+    Screen(Transform *transform_, Drawable::Pipeline *pipeline_)
+      : transform(transform_), pipeline(pipeline_) {}
+    Transform *transform = nullptr;
+    Drawable::Pipeline *pipeline = nullptr;
+
+    Standpoint *stpt = nullptr;
+
+    // The position player 2 needs to stand to move the object
+    glm::vec3 pos = glm::vec3(0.0f);
+    // The margin of error in position (distance units)
+    const float pos_tolerance = 9.0f;
+    // The margin of error in viewing direction (cos(max error angle))
+    const float axis_tolerance = 0.85f;
   };
 
   struct MeshCollider {
@@ -62,18 +106,20 @@ struct GameLevel : Scene {
       mesh(&mesh_),
       buffer(&buffer_),
       movable(movable_)
-    {};
+    {}
     Scene::Transform *transform;
     Mesh const *mesh;
     MeshBuffer const *buffer;
     Movable *movable = nullptr;
   };
 
-  Movable *movable_get(Transform *transform);
+  Standpoint *standpoint_get(Transform *transform);
 
   std::vector< MeshCollider > mesh_colliders;
   std::vector< Goal > goals;
   std::vector< Movable > movable_data;
+  std::vector< Standpoint > standpoints;
+  std::vector< Screen > screens;
 
   Transform *body_P1_transform;
   Camera *cam_P1;

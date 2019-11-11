@@ -65,8 +65,8 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
     pov.azimuth *= 2.0f * PI;
 
     // Clamp to [-89deg, 89deg]
-    pov.elevation = std::max(-89.0f / 180.0f * PI, pov.elevation);
-    pov.elevation = std::min( 89.0f / 180.0f * PI, pov.elevation);
+    pov.elevation = std::max(-85.0f / 180.0f * PI, pov.elevation);
+    pov.elevation = std::min(60.0f / 180.0f * PI, pov.elevation);
 
   } else if (evt.type == SDL_MOUSEBUTTONDOWN || evt.type == SDL_MOUSEBUTTONUP) {
     if (evt.button.button == SDL_BUTTON_LEFT) {
@@ -135,7 +135,7 @@ void PlayerMode::update(float elapsed) {
     for (int32_t iter = 0; iter < 5; ++iter) {
       if (remain == 0.0f) break;
 
-      float sphere_radius = 5.0f; // player sphere is radius-1
+      float sphere_radius = 1.0f; // player sphere is radius-1
       glm::vec3 sphere_from = pl_pos;
       glm::vec3 sphere_to = pl_pos + pl_vel * remain;
 
@@ -186,6 +186,7 @@ void PlayerMode::update(float elapsed) {
         }
 
         // Full (all triangles) test:
+        
         assert(collider.mesh->type == GL_TRIANGLES); //only have code for TRIANGLES not other primitive types
 
         for (GLuint v = 0; v + 2 < collider.mesh->count; v += 3) {
@@ -205,8 +206,10 @@ void PlayerMode::update(float elapsed) {
             collided = true;
             if (collider.movable) {
               collider.movable->player = pov.body;
-              std::cout << "Player caught movable" << std::endl;
             }
+          }
+          else if (collider.movable) {
+            collider.movable->player = NULL;
           }
 
           //draw to indicate result of check:
@@ -283,11 +286,13 @@ void PlayerMode::update(float elapsed) {
     pov.vel = pl_vel;
   } // end collision compute
 
-	{ //camera update:
+	{
+    // body rotation update:
+    glm::quat rot_h = glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f));
+    pov.body->rotation = rot_h;
+    //camera update:
     pov.camera->transform->rotation =
-      // glm::angleAxis(gravity_to_z_angle, glm::vec3(0.0f, 1.0f, 0.0f)) *
-			glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f)) *
-      glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
+			glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
 	}
 
 }
@@ -295,6 +300,8 @@ void PlayerMode::update(float elapsed) {
 void PlayerMode::draw(glm::uvec2 const &drawable_size) {
 
   pov.camera->aspect = drawable_size.x / float(drawable_size.y);
-  level->draw( *pov.camera );
+  glm::vec4 eye = pov.camera->transform->make_local_to_world()[3];
+  glm::mat4 world_to_clip = pov.camera->make_projection() * pov.camera->transform->make_world_to_local();
+  level->draw(drawable_size, eye, world_to_clip);
 
 }
