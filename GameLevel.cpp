@@ -23,11 +23,13 @@ Mesh const *mesh_Goal = nullptr;
 //names of mesh-to-collider-mesh:
 std::unordered_map< Mesh const *, Mesh const * > mesh_to_collider;
 
-GLuint vao_level = -1U;
+GLuint vao_color = -1U;
+GLuint vao_outline = -1U;
 
 Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 	MeshBuffer *ret = new MeshBuffer(data_path("level1.pnct"));
-	vao_level = ret->make_vao_for_program(flat_program->program);
+	vao_color = ret->make_vao_for_program(flat_program->program);
+	vao_outline = ret->make_vao_for_program(outline_program_0->program);
 
   //key objects:
   mesh_Goal = &ret->lookup("Goal");
@@ -53,7 +55,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
 
     //set up drawable to draw mesh from buffer:
     pipeline = flat_program_pipeline;
-    pipeline.vao = vao_level;
+    pipeline.vao = vao_color;
     pipeline.type = mesh->type;
     pipeline.start = mesh->start;
     pipeline.count = mesh->count;
@@ -178,7 +180,7 @@ struct FB {
       glBindTexture(GL_TEXTURE_RECTANGLE, 0);
     };
 
-		//set up normal_roughness_tex as a 16-bit floating point RGBA texture:
+		//set up normal_z_tex as a 16-bit floating point RGBA texture:
 		alloc_recttex(normal_z_tex, GL_RGBA32F);
 
 		//set up output_tex as an 8-bit fixed point RGBA texture:
@@ -254,7 +256,7 @@ void GameLevel::draw(
   // Color drawing
 
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_color);
-  GLfloat zeros[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  GLfloat zeros[4] = {1.0f, 1.0f, 1.0f, 1.0f};
   glClearBufferfv(GL_COLOR, 0, zeros);
   glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -272,9 +274,11 @@ void GameLevel::draw(
   glClear(GL_COLOR_BUFFER_BIT);
 
   glDisable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 
   glUseProgram(outline_program_0->program);
-  glBindVertexArray(vao_level);
+  glBindVertexArray(vao_outline);
 
   for (auto const &drawable : drawables) {
 

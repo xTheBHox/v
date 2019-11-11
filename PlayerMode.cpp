@@ -186,7 +186,7 @@ void PlayerMode::update(float elapsed) {
         }
 
         // Full (all triangles) test:
-        std::cout << collider.transform->name << std::endl;
+        
         assert(collider.mesh->type == GL_TRIANGLES); //only have code for TRIANGLES not other primitive types
 
         for (GLuint v = 0; v + 2 < collider.mesh->count; v += 3) {
