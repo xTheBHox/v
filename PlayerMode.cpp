@@ -114,15 +114,12 @@ void PlayerMode::update(float elapsed) {
       pl_vel_move =
         glm::vec3(pl_cosazi, pl_sinazi, 0.0f) * pl_vel_move.x +
         glm::vec3(-pl_sinazi, pl_cosazi, 0.0f) * pl_vel_move.y;
-      pl_vel_move *= 70.0f; // player movement velocity magnitude, constant
+      pl_vel_move *= 10.0f; // player movement velocity magnitude, constant
       if (controls.sprint) pl_vel_move *= 1.5f; // sprint force multiplier, constant
       //pl_vel += pl_vel_move;
-      pl_vel.x = glm::mix(pl_vel.x, pl_vel_move.x, std::pow(0.5f, elapsed / 0.02f));
-      pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / 0.02f));
     }
-    else {
-
-    }
+    pl_vel.x = glm::mix(pl_vel.x, pl_vel_move.x, std::pow(0.5f, elapsed / 0.02f));
+    pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / 0.02f));
     // pov.vel *= std::pow(0.5f, elapsed / 0.01f); // friction
   }
 
@@ -186,7 +183,7 @@ void PlayerMode::update(float elapsed) {
         }
 
         // Full (all triangles) test:
-        
+
         assert(collider.mesh->type == GL_TRIANGLES); //only have code for TRIANGLES not other primitive types
 
         for (GLuint v = 0; v + 2 < collider.mesh->count; v += 3) {
@@ -250,8 +247,17 @@ void PlayerMode::update(float elapsed) {
         float d = glm::dot(pl_vel, collision_out); // collision_out already normalized
         // Adjust for surface friction
         if (d < 0.0f) {
-          pl_vel -= (1.0f - std::pow(0.5f, remain / 0.01f)) * (pl_vel - d * collision_out);
-          pl_vel -= 1.01f * d * collision_out;
+          float friction_coeff = std::pow(0.5f, remain / 0.1f);
+          glm::vec3 forward = pl_vel - d * collision_out;
+          float forward_magnitude_2 = glm::dot(forward, forward);
+          float backward_magnitude = friction_coeff * d;
+          if (forward_magnitude_2 < backward_magnitude * backward_magnitude) {
+            // Friction dominates
+            pl_vel -= forward;
+          } else {
+            pl_vel += backward_magnitude * glm::normalize(forward);
+          }
+          pl_vel -= 1.001f * d * collision_out;
         }
 
         // if (DEBUG_draw_lines && DEBUG_show_collision) {

@@ -171,7 +171,9 @@ void MenuMode::update(float elapsed) {
 }
 
 void MenuMode::draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> items) {
-	glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//use alpha blending:
