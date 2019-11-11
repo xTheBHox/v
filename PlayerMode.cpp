@@ -135,7 +135,7 @@ void PlayerMode::update(float elapsed) {
     for (int32_t iter = 0; iter < 5; ++iter) {
       if (remain == 0.0f) break;
 
-      float sphere_radius = 5.0f; // player sphere is radius-1
+      float sphere_radius = 1.0f; // player sphere is radius-1
       glm::vec3 sphere_from = pl_pos;
       glm::vec3 sphere_to = pl_pos + pl_vel * remain;
 
@@ -186,6 +186,7 @@ void PlayerMode::update(float elapsed) {
         }
 
         // Full (all triangles) test:
+        std::cout << collider.transform->name << std::endl;
         assert(collider.mesh->type == GL_TRIANGLES); //only have code for TRIANGLES not other primitive types
 
         for (GLuint v = 0; v + 2 < collider.mesh->count; v += 3) {
