@@ -17,26 +17,29 @@ std::shared_ptr< MenuMode > demo_menu;
 std::string connect_ip;
 
 Load< void > load_demo_menu(LoadTagDefault, [](){
-	std::vector< MenuMode::Item > items;
-	items.emplace_back("[[ DEMO MENU ]]");
-	items.emplace_back("Client");
-	items.back().on_select = [](MenuMode::Item const &){
+
+	std::vector< MenuMode::Item > main_items;
+	main_items.emplace_back("[[ V ]]");
+	main_items.emplace_back("Client");
+	main_items.back().on_select = [](MenuMode::Item const &){
     GameLevel *lv = new GameLevel(data_path("level1.scene"));
-		Mode::set_current(std::make_shared< PlayerTwoMode >(lv, connect_ip, "12345"));
+		MenuMode::set_current(std::make_shared< PlayerTwoMode >(lv, connect_ip, "12345"));
 	};
-	items.emplace_back("Server");
-	items.back().on_select = [](MenuMode::Item const &){
+	main_items.emplace_back("Server");
+	main_items.back().on_select = [](MenuMode::Item const &){
     GameLevel *lv = new GameLevel(data_path("level1.scene"));
-		Mode::set_current(std::make_shared< PlayerOneMode >(lv, "12345"));
+		MenuMode::set_current(std::make_shared< PlayerOneMode >(lv, "12345"));
 	};
 
-	demo_menu = std::make_shared< MenuMode >(items);
-	demo_menu->selected = 1;
+	demo_menu = std::make_shared< MenuMode >(main_items);
 	demo_menu->atlas = trade_font_atlas;
+	demo_menu->selected = 1;
 	demo_menu->view_min = glm::vec2(0.0f, 0.0f);
 	demo_menu->view_max = glm::vec2(320.0f, 200.0f);
 
-	demo_menu->layout_items(2.0f);
+	// demo_menu->layout_main_items(2.0f);
+	// demo_menu->layout_pause_items(2.0f);
+  demo_menu->layout_items(2.0f);
 
 	demo_menu->left_select = &trade_font_atlas->lookup(">");
 	demo_menu->left_select_offset = glm::vec2(-5.0f - 3.0f, 0.0f);

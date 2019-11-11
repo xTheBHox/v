@@ -27,6 +27,7 @@ struct PlayerMode : Mode {
 
 	bool DEBUG_fly = false;  //fly around for collsion debug
   bool pause = false;
+  uint32_t player_num = 0;
 
   // Player camera tracked using this structure:
   struct {

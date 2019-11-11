@@ -123,7 +123,6 @@ void GameLevel::draw( Camera const &camera ) {
 }
 
 void GameLevel::draw( Camera const &camera, glm::mat4 world_to_clip) {
-
 	//--- actual drawing ---
 	glClearColor(0.8f, 0.8f, 0.95f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

@@ -38,57 +38,124 @@ Load< Sound::Sample > sound_clonk(LoadTagDefault, []() -> Sound::Sample *{
 	return new Sound::Sample(data);
 });
 
+std::shared_ptr< PlayerMode > MenuMode::current;
 
-MenuMode::MenuMode(std::vector< Item > const &items_) : items(items_) {
+void MenuMode::set_current(std::shared_ptr< PlayerMode > const &new_current) {
+	current = new_current;
+}
+std::shared_ptr< PlayerMode > MenuMode::get_current() {
+	return current;
+}
 
-	//select first item which can be selected:
+MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_items_){
+	/*//select first item which can be selected:
 	for (uint32_t i = 0; i < items.size(); ++i) {
 		if (items[i].on_select) {
-			selected = i;
-			break;
+			selected = i; break;
 		}
-	}
+	} */
+  current = nullptr;
+
+	pause_items.emplace_back("[[ PAUSED ]]");
+	pause_items.emplace_back("Resume");
+	pause_items.back().on_select = [&](Item const &){
+    // current = MenuMode::get_current();
+    if (current) { current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); }
+	};
+	pause_items.emplace_back("Reset");
+	pause_items.back().on_select = [&](Item const &){
+    if (current) { current->level->reset(); }
+	};
+	pause_items.emplace_back("Main Menu");
+	pause_items.back().on_select = [](Item const &){
+    MenuMode::set_current(nullptr);
+	};
+	pause_items.emplace_back("Quit");
+	pause_items.back().on_select = [](Item const &){
+    Mode::set_current(nullptr);
+	};
+
 }
 
 MenuMode::~MenuMode() {
 }
 
 bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
-	if (evt.type == SDL_KEYDOWN) {
-    if (evt.key.keysym.sym == SDLK_ESCAPE){
-      Mode::set_current(nullptr);
+	if (current) {
+    if (current->pause) {
+      // we're on the pause menu
+    	if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){
+          current->pause = false;
+          SDL_SetRelativeMouseMode(SDL_TRUE);
+        }
+    		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+    			//skip non-selectable items:
+    			for (uint32_t i = selected - 1; i < pause_items.size(); --i) {
+    				if (pause_items[i].on_select) {
+    					selected = i;
+    					Sound::play(*sound_click);
+    					break;
+    				}
+    			}
+    			return true;
+    		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+    			//note: skips non-selectable items:
+    			for (uint32_t i = selected + 1; i < pause_items.size(); ++i) {
+    				if (pause_items[i].on_select) {
+    					selected = i;
+    					Sound::play(*sound_click);
+    					break;
+    				}
+    			}
+    			return true;
+    		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+    			if (selected < pause_items.size() && pause_items[selected].on_select) {
+    				Sound::play(*sound_clonk);
+    				pause_items[selected].on_select(pause_items[selected]);
+            selected = 1;
+    				return true;
+    			}
+    		}
+    	}
+  		return false;
+    } else {
+      return current->handle_event(evt, window_size);
     }
-		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-			//skip non-selectable items:
-			for (uint32_t i = selected - 1; i < items.size(); --i) {
-				if (items[i].on_select) {
-					selected = i;
-					Sound::play(*sound_click);
-					break;
-				}
-			}
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-			//note: skips non-selectable items:
-			for (uint32_t i = selected + 1; i < items.size(); ++i) {
-				if (items[i].on_select) {
-					selected = i;
-					Sound::play(*sound_click);
-					break;
-				}
-			}
-			return true;
-		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-			if (selected < items.size() && items[selected].on_select) {
-				Sound::play(*sound_clonk);
-				items[selected].on_select(items[selected]);
-				return true;
-			}
-		}
-	}
-	if (background) {
-		return background->handle_event(evt, window_size);
-	} else {
+	} else { // we're on the main menu
+  	if (evt.type == SDL_KEYDOWN) {
+      if (evt.key.keysym.sym == SDLK_ESCAPE){
+        Mode::set_current(nullptr);
+      }
+  		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+  			//skip non-selectable items:
+  			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
+  				if (main_items[i].on_select) {
+  					selected = i;
+  					Sound::play(*sound_click);
+  					break;
+  				}
+  			}
+  			return true;
+  		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+  			//note: skips non-selectable items:
+  			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
+  				if (main_items[i].on_select) {
+  					selected = i;
+  					Sound::play(*sound_click);
+  					break;
+  				}
+  			}
+  			return true;
+  		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+  			if (selected < main_items.size() && main_items[selected].on_select) {
+  				Sound::play(*sound_clonk);
+  				main_items[selected].on_select(main_items[selected]);
+          selected = 1;
+  				return true;
+  			}
+  		}
+  	}
 		return false;
 	}
 }
@@ -98,21 +165,14 @@ void MenuMode::update(float elapsed) {
 	select_bounce_acc = select_bounce_acc + elapsed / 0.7f;
 	select_bounce_acc -= std::floor(select_bounce_acc);
 
-	if (background) {
-		background->update(elapsed);
+	if (current) {
+		current->update(elapsed);
 	}
 }
 
-void MenuMode::draw(glm::uvec2 const &drawable_size) {
-	if (background) {
-		std::shared_ptr< Mode > hold_me = shared_from_this();
-		background->draw(drawable_size);
-		//it is an error to remove the last reference to this object in background->draw():
-		assert(hold_me.use_count() > 1);
-	} else {
-		glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
-		glClear(GL_COLOR_BUFFER_BIT);
-	}
+void MenuMode::draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> items) {
+	glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT);
 
 	//use alpha blending:
 	glEnable(GL_BLEND);
@@ -157,7 +217,23 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 
 		}
 	} //<-- gets drawn here!
+}
 
+void MenuMode::draw(glm::uvec2 const &drawable_size) {
+	if (current) {
+		std::shared_ptr< Mode > hold_me = shared_from_this();
+    if (current->pause) {
+      // draw pause menu
+      draw_menu(drawable_size, pause_items);
+    } else {
+      // draw level
+      current->draw(drawable_size);
+    }
+		//it is an error to remove the last reference to this object in current->draw():
+		assert(hold_me.use_count() > 1);
+	} else {
+    draw_menu(drawable_size, main_items);
+  }
 
 	GL_ERRORS(); //PARANOIA: print errors just in case we did something wrong.
 }
@@ -165,8 +241,9 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 
 void MenuMode::layout_items(float gap) {
 	DrawSprites temp(*atlas, view_min, view_max, view_max - view_min, DrawSprites::AlignPixelPerfect); //<-- doesn't actually draw
-	float y = view_max.y;
-	for (auto &item : items) {
+  // layout for main menu items
+  float y = view_max.y;
+	for (auto &item : main_items) {
 		glm::vec2 min, max;
 		if (item.sprite) {
 			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
@@ -179,7 +256,26 @@ void MenuMode::layout_items(float gap) {
 		y = y - (max.y - min.y) - gap;
 	}
 	float ofs = -0.5f * y;
-	for (auto &item : items) {
+	for (auto &item : main_items) {
+		item.at.y += ofs;
+	}
+
+  // layout for pause menu items
+	y = view_max.y;
+	for (auto &item : pause_items) {
+		glm::vec2 min, max;
+		if (item.sprite) {
+			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
+			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
+		} else {
+			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
+		}
+		item.at.y = y - max.y;
+		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
+		y = y - (max.y - min.y) - gap;
+	}
+	ofs = -0.5f * y;
+	for (auto &item : pause_items) {
 		item.at.y += ofs;
 	}
 }

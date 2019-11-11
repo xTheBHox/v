@@ -8,6 +8,7 @@
 #define PI 3.1415926f
 
 PlayerOneMode::PlayerOneMode( GameLevel *level_ , std::string const &port) : PlayerMode(level_){
+  player_num = 1;
   pov.camera = level->cam_P1;
   pov.body = level->body_P1_transform;
   if (port != "") {

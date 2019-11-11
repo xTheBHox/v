@@ -7,18 +7,25 @@
 
 #include "Sprite.hpp"
 #include "Mode.hpp"
+#include "PlayerMode.hpp"
 
 #include <vector>
 #include <functional>
 
 struct MenuMode : Mode {
 	struct Item;
-	MenuMode(std::vector< Item > const &items);
+	// MenuMode(std::vector< Item > const &main_items, std::vector< Item > const &pause_items);
+  MenuMode(std::vector< Item > const &main_items);
 	virtual ~MenuMode();
+
+	static std::shared_ptr< PlayerMode > current;
+  static void set_current(std::shared_ptr< PlayerMode > const &);
+  static std::shared_ptr< PlayerMode > get_current();
 
 	//functions called by main loop:
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
+  virtual void draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> items);
 	virtual void draw(glm::uvec2 const &drawable_size) override;
 
 	//----- menu state -----
@@ -42,7 +49,9 @@ struct MenuMode : Mode {
 		std::function< void(Item const &) > on_select; //if set, item is selectable
 		glm::vec2 at; //location to draw item
 	};
-	std::vector< Item > items;
+	std::vector< Item > main_items;
+  std::vector< Item > pause_items;
+  std::vector< Item > *current_items;
 
 	//call to arrange items in a centered list:
 	void layout_items(float gap = 0.0f);
@@ -76,6 +85,6 @@ struct MenuMode : Mode {
 	// background->draw() is called at the start of draw()
 	//IMPORTANT NOTE: this means that if background->draw() ends up deleting this (e.g., by removing
 	//  the last shared_ptr that references it), then it will crash. Don't do that!
-	std::shared_ptr< Mode > background;
+	// std::shared_ptr< Mode > background;
 
 };
