@@ -93,19 +93,23 @@ void PlayerTwoMode::update(float elapsed) {
   }
 
   { // Update movables
-    std::list< GameLevel::Movable *>::iterator mp = currently_moving.begin();
-    while (mp != currently_moving.end()) {
-      glm::vec3 diff = (*mp)->target_pos - (*mp)->transform->position;
+    std::list< uint32_t >::iterator mi_ptr = currently_moving.begin();
+    while (mi_ptr != currently_moving.end()) {
+      GameLevel::Movable &m = level->movable_data[*mi_ptr];
+      glm::vec3 diff = m.target_pos - m.transform->position;
       if (diff == glm::vec3(0.0f)) {
-        currently_moving.erase(mp++);
+        currently_moving.erase(mi_ptr++);
+        continue;
       }
 
-      if (glm::dot(diff, diff) < (*mp)->vel * (*mp)->vel) {
-        (*mp)->transform->position = (*mp)->target_pos;
+      if (glm::dot(diff, diff) < m.vel * m.vel) {
+        m.transform->position = m.target_pos;
       } else {
         diff = glm::normalize(diff);
-        (*mp)->transform->position += diff * (*mp)->vel;
+        m.transform->position += diff * m.vel;
       }
+      // TODO network update here
+      mi_ptr++;
     }
   }
 
