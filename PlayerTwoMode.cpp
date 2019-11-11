@@ -37,8 +37,8 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     && evt.motion.state & SDL_BUTTON_LMASK
   ) {
     float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
-    shift.stpt->offset += controls_shift.drag_sensitivity * dy;
-    shift.stpt->update();
+    shift.sc->stpt->offset += controls_shift.drag_sensitivity * dy;
+    shift.sc->stpt->update();
     //TEMP
     if (client) {
 
@@ -72,9 +72,9 @@ void PlayerTwoMode::update(float elapsed) {
 
   if (controls_shift.flat) {
     if (shift.progress == 0.0f) {
-      shift.stpt = level->standpoint_get(pov.camera->transform);
-      if (shift.stpt) {
-        std::cout << "Got standpoint!\n" << std::endl;
+      shift.sc = level->screen_get(pov.camera->transform);
+      if (shift.sc) {
+        std::cout << "Got screen!\n" << std::endl;
         shift.progress = std::min(shift.progress + shift.speed * elapsed, 1.0f);
         SDL_SetRelativeMouseMode(SDL_FALSE);
       }
@@ -86,8 +86,25 @@ void PlayerTwoMode::update(float elapsed) {
     if (shift.progress > 0.0f) {
       shift.progress = std::max(shift.progress - shift.speed * elapsed, 0.0f);
       if (shift.progress == 0.0f) {
-        shift.stpt = nullptr;
+        shift.sc = nullptr;
         SDL_SetRelativeMouseMode(SDL_TRUE);
+      }
+    }
+  }
+
+  { // Update movables
+    std::list< GameLevel::Movable *>::iterator mp = currently_moving.begin();
+    while (mp != currently_moving.end()) {
+      glm::vec3 diff = (*mp)->target_pos - (*mp)->transform->position;
+      if (diff == glm::vec3(0.0f)) {
+        currently_moving.erase(mp++);
+      }
+
+      if (glm::dot(diff, diff) < (*mp)->vel * (*mp)->vel) {
+        (*mp)->transform->position = (*mp)->target_pos;
+      } else {
+        diff = glm::normalize(diff);
+        (*mp)->transform->position += diff * (*mp)->vel;
       }
     }
   }
@@ -124,14 +141,14 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
   float aspect = drawable_size.x / float(drawable_size.y);
 
   if (shift.progress > 0.0f) {
-    Scene::OrthoCam *cf = shift.stpt->cam;
+    Scene::OrthoCam *cf = shift.sc->stpt->cam;
     float h = cf->scale;
     float w = aspect * h;
     float fp = cf->clip_far;
     float np = cf->clip_near;
 
     glm::mat4 proj = glm::ortho(-w, w, -h, h, np ,fp);
-    glm::mat4 w2l = shift.stpt->cam->transform->make_world_to_local();
+    glm::mat4 w2l = shift.sc->stpt->cam->transform->make_world_to_local();
 
     if (shift.progress < 1.0f) {
 
@@ -151,7 +168,7 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
   } else {
     PlayerMode::draw(drawable_size);
   }
-  
+
   for (auto &stpt : level->standpoints) {
     stpt.resize_texture(drawable_size);
     stpt.update_texture(level);

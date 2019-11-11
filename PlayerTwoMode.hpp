@@ -19,12 +19,13 @@ struct PlayerTwoMode : PlayerMode {
   } controls_shift;
 
   struct {
-    GameLevel::Standpoint *stpt = nullptr;
+    GameLevel::Screen *sc = nullptr;
     // How much the camera has shifted
     float progress = 0.0f;
     float speed = 4.0f; // 1/t, t is the time taken to shift
   } shift;
 
+  std::list< GameLevel::Movable *> currently_moving;
   std::unique_ptr< Client > client = nullptr;
 
 };

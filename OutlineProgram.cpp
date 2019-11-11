@@ -57,16 +57,19 @@ FlatProgram::FlatProgram() {
 		//fragment shader:
 		"#version 330\n"
 		"uniform sampler2D TEX;\n"
-    "uniform bool USE_TEX;\n"
+    "uniform uint USE_TEX;\n"
+    "uniform vec4 UNIFORM_COLOR;\n"
 		"in vec4 color;\n"
 		"in vec2 texCoord;\n"
 		"out vec4 fragColor;\n"
 		"void main() {\n"
     " vec4 cout = glm::vec4(0.0, 0.0, 0.0, 0.0);\n"
-    " if (USE_TEX) {\n"
-    "   cout = texture(TEX, texCoord);\n"
-    " } else {\n"
+    " if (USE_TEX == 0U) {\n"
     "   cout = color;\n"
+    " } else if (USE_TEX == 1U) {\n"
+    "   cout = texture(TEX, texCoord);\n"
+    " } else if (USE_TEX == 2U) {\n"
+    "   cout = UNIFORM_COLOR;\n"
     " }\n"
 		"	fragColor = cout;\n"
     "}\n"
@@ -85,7 +88,8 @@ FlatProgram::FlatProgram() {
 	OBJECT_TO_LIGHT_mat4x3 = glGetUniformLocation(program, "OBJECT_TO_LIGHT");
 	NORMAL_TO_LIGHT_mat3 = glGetUniformLocation(program, "NORMAL_TO_LIGHT");
 
-  USE_TEX_bool = glGetUniformLocation(program, "USE_TEX");
+  USE_TEX_uint = glGetUniformLocation(program, "USE_TEX");
+  UNIFORM_COLOR_vec4 = glGetUniformLocation(program, "UNIFORM_COLOR");
 
 	GLuint TEX_sampler2D = glGetUniformLocation(program, "TEX");
 
@@ -122,17 +126,22 @@ OutlineProgram0::OutlineProgram0() {
 		"in vec4 Color;\n"
 		"in vec2 TexCoord;\n"
     "out vec3 normal;\n"
+    "out vec3 position;\n"
 		"void main() {\n"
-		"	gl_Position = OBJECT_TO_CLIP * Position;\n"
     " normal = Normal;\n"
+    " position = Position.xyz;\n"
+    "	gl_Position = OBJECT_TO_CLIP * Position;\n"
 		"}\n"
 	,
 		//fragment shader:
 		"#version 330\n"
     "in vec3 normal;\n"
-		"out vec4 fragNormalZ;\n"
+    "in vec3 position;\n"
+		"layout(location = 0) out vec3 fragNormal;\n"
+		"layout(location = 1) out vec3 fragPosition;\n"
 		"void main() {\n"
-    " fragNormalZ = vec4(normalize(normal), gl_FragCoord.z);\n"
+    " fragNormal = normalize(normal);\n"
+    " fragPosition = position;\n"
 		"}\n"
 	);
 	//As you can see above, adjacent strings in C/C++ are concatenated.
@@ -182,21 +191,28 @@ OutlineProgram1::OutlineProgram1() {
 		//fragment shader:
 		"#version 330\n"
 		"uniform sampler2DRect COLOR_TEX;\n"
-		"uniform sampler2DRect NORMAL_Z_TEX;\n"
+		"uniform sampler2DRect NORMAL_TEX;\n"
+		"uniform sampler2DRect POSITION_TEX;\n"
 		"out vec4 fragColor;\n"
 		"void main() {\n"
     " ivec2 pos = ivec2(gl_FragCoord);\n"
-    " vec4 x0 = texelFetch(NORMAL_Z_TEX, ivec2(pos.x - 1, pos.y));\n"
-    " vec4 x1 = texelFetch(NORMAL_Z_TEX, ivec2(pos.x + 1, pos.y));\n"
-    " vec4 y0 = texelFetch(NORMAL_Z_TEX, ivec2(pos.x, pos.y - 1));\n"
-    " vec4 y1 = texelFetch(NORMAL_Z_TEX, ivec2(pos.x, pos.y + 1));\n"
+    " vec4 nx0 = texelFetch(NORMAL_TEX, ivec2(pos.x - 1, pos.y));\n"
+    " vec4 nx1 = texelFetch(NORMAL_TEX, ivec2(pos.x + 1, pos.y));\n"
+    " vec4 ny0 = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y - 1));\n"
+    " vec4 ny1 = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y + 1));\n"
+    " vec4 px0 = texelFetch(POSITION_TEX, ivec2(pos.x - 1, pos.y));\n"
+    " vec4 px1 = texelFetch(POSITION_TEX, ivec2(pos.x + 1, pos.y));\n"
+    " vec4 py0 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y - 1));\n"
+    " vec4 py1 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y + 1));\n"
     " vec4 cin = texelFetch(COLOR_TEX, pos);\n"
     " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
-    " if (dot(x0.xyz, x1.xyz) > 0.95 &&\n"
-    "  dot(y0.xyz, y1.xyz) > 0.95 &&\n"
-    "  abs(x0.w - x1.w) < 0.0004 &&\n"
-    "  abs(y0.w - y1.w) < 0.0004) {\n"
-    "  cout = cin;\n"
+    " if (dot(nx0, nx1) > 0.95 &&\n"          // Adjacent normals are close
+    "  dot(ny0, ny1) > 0.95 &&\n"             // Adjacent normals are close
+    "  abs(dot(px1 - px0, nx0)) < 0.001 &&\n"
+    "  abs(dot(px1 - px0, nx1)) < 0.001 &&\n"
+    "  abs(dot(py1 - py0, ny0)) < 0.001 &&\n"
+    "  abs(dot(py1 - py0, ny1)) < 0.001) {\n"
+    "   cout = cin;\n"
     //"  cout = vec4(1.0, 1.0, 1.0, 1.0) - cin;\n"
     //"  cout = vec4(1.0, 1.0, 1.0, 1.0);\n"
     " }\n"
@@ -205,13 +221,14 @@ OutlineProgram1::OutlineProgram1() {
 	);
 
 	GLuint COLOR_TEX_sampler2D = glGetUniformLocation(program, "COLOR_TEX");
-
-  GLuint NORMAL_Z_TEX_sampler2D = glGetUniformLocation(program, "NORMAL_Z_TEX");
+  GLuint NORMAL_TEX_sampler2D = glGetUniformLocation(program, "NORMAL_TEX");
+  GLuint POSITION_TEX_sampler2D = glGetUniformLocation(program, "POSITION_TEX");
 
 	//set TEX to always refer to texture binding zero:
 	glUseProgram(program); //bind program -- glUniform* calls refer to this program now
 	glUniform1i(COLOR_TEX_sampler2D, 0); //set TEX to sample from GL_TEXTURE0
-  glUniform1i(NORMAL_Z_TEX_sampler2D, 1); //set TEX to sample from GL_TEXTURE1
+  glUniform1i(NORMAL_TEX_sampler2D, 1); //set TEX to sample from GL_TEXTURE1
+  glUniform1i(POSITION_TEX_sampler2D, 2); //set TEX to sample from GL_TEXTURE2
 	glUseProgram(0); //unbind program -- glUniform* calls refer to ??? now
 }
 

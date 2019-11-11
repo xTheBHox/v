@@ -61,7 +61,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.count = mesh->count;
 
     pipeline.set_uniforms = [](){
-      glUniform1ui(flat_program->USE_TEX_bool, 0);
+      glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
     };
 
     if (transform->name.substr(0, 4) == "Move") {
@@ -69,13 +69,17 @@ GameLevel::GameLevel(std::string const &scene_file) {
         std::cout << "Screen detected: " << transform->name << std::endl;
         screens.emplace_back(transform, &pipeline);
         pipeline.set_uniforms = [](){
-          glUniform1ui(flat_program->USE_TEX_bool, 1);
+          glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_TEX);
         };
       } else {
         std::cout << "Movable detected: " << transform->name << std::endl;
 
         movable_data.emplace_back(transform);
         Movable &data = movable_data.back();
+        pipeline.set_uniforms = [&data](){
+          glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
+          glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(data.color));
+        };
 
         auto f = mesh_to_collider.find(mesh);
         // TODO NOT FOUND CHECK!
@@ -118,10 +122,8 @@ GameLevel::GameLevel(std::string const &scene_file) {
       std::string &sc_name = sc.transform->name; // xyzScreen
       if (cam_name.substr(0, cam_name.size()-3) == sc_name.substr(0, sc_name.size()-6)) {
         std::cout << "Matched " << cam_name << " to " << sc_name << std::endl;
-        sc.stpt = &stpt;
         std::cout << "Texture #" << stpt.tex << std::endl;
-        sc.pipeline->textures[0].texture = stpt.tex;
-        sc.pipeline->textures[0].target = GL_TEXTURE_2D;
+        sc.set_standpoint(&stpt);
       }
     }
   }
@@ -151,7 +153,8 @@ void GameLevel::reset() {
 //Helper: maintain a framebuffer to hold rendered geometry
 struct FB {
 	//object data gets stored in these textures:
-	GLuint normal_z_tex = 0;
+	GLuint normal_tex = 0;
+  GLuint position_tex = 0;
 
 	//output image gets written to this texture:
 	GLuint color_tex = 0;
@@ -180,8 +183,9 @@ struct FB {
       glBindTexture(GL_TEXTURE_RECTANGLE, 0);
     };
 
-		//set up normal_z_tex as a 16-bit floating point RGBA texture:
-		alloc_recttex(normal_z_tex, GL_RGBA32F);
+		//set up normal_tex as a 16-bit floating point RGBA texture:
+		alloc_recttex(normal_tex, GL_RGB32F);
+    alloc_recttex(position_tex, GL_RGB32F);
 
 		//set up output_tex as an 8-bit fixed point RGBA texture:
 		alloc_recttex(color_tex, GL_RGBA8);
@@ -214,9 +218,11 @@ struct FB {
       glGenFramebuffers(1, &fb_outline);
       //set up framebuffer: (don't need to do when resizing)
       glBindFramebuffer(GL_FRAMEBUFFER, fb_outline);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, normal_z_tex, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, normal_tex, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, position_tex, 0);
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
-      glDrawBuffer(GL_COLOR_ATTACHMENT0);
+      GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+			glDrawBuffers(2, bufs);
       check_fb();
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -308,13 +314,17 @@ void GameLevel::draw(
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_RECTANGLE, fb.color_tex);
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_RECTANGLE, fb.normal_z_tex);
+  glBindTexture(GL_TEXTURE_RECTANGLE, fb.normal_tex);
+  glActiveTexture(GL_TEXTURE2);
+  glBindTexture(GL_TEXTURE_RECTANGLE, fb.position_tex);
   glDrawArrays(GL_TRIANGLES, 0, 3);
 	GL_ERRORS();
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, 0);
   glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, 0);
+  glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glBindVertexArray(0);
@@ -345,6 +355,13 @@ void GameLevel::Movable::update(glm::vec3 &axis, float &offset) {
 
 }
 
+void GameLevel::Movable::set_target_pos(glm::vec3 &target, glm::vec4 &color_) {
+
+  color = color;
+  target_pos = target;
+  
+}
+
 GameLevel::Standpoint::Standpoint(OrthoCam *cam_, Movable *movable_)
   : cam(cam_), movable(movable_) {
 
@@ -367,33 +384,6 @@ void GameLevel::Standpoint::update() {
   movable->update(axis, offset);
 }
 
-GameLevel::Standpoint *GameLevel::standpoint_get(Transform *transform) {
-
-  glm::vec3 pos = transform->make_local_to_world()[3]; // * (0,0,0,1)
-  glm::vec3 axis = transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
-  if (axis == glm::vec3(0.0f)) return nullptr;
-  axis = glm::normalize(axis);
-
-  std::cout << "Pos: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
-  std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
-
-  for (Standpoint &s : standpoints) {
-    std::cout << "Mover: " << s.pos.x << "\t" << s.pos.y << "\t" << s.pos.z << std::endl;
-
-    glm::vec3 dist = s.pos - pos;
-    std::cout << glm::dot(dist, dist) << std::endl;
-    if (glm::dot(dist, dist) <= s.pos_tolerance * s.pos_tolerance) {
-      std::cout << "Position within threshhold. Checking axis..." << std::endl;
-      std::cout << "Dot: " << glm::dot(axis, s.axis) << std::endl;
-      if (glm::dot(axis, s.axis) > s.axis_tolerance) {
-        return &s;
-      }
-    }
-  }
-
-  return nullptr;
-
-}
 
 void GameLevel::Standpoint::resize_texture(glm::uvec2 const &new_size) {
 
@@ -430,5 +420,44 @@ void GameLevel::Standpoint::update_texture(GameLevel *level) {
   GL_ERRORS();
 
   level->draw(size, pos, proj * w2l, fb.fb_output);
+
+}
+
+GameLevel::Screen::Screen(Transform *transform_, Drawable::Pipeline *pipeline_)
+: transform(transform_), pipeline(pipeline_) {
+  pos = transform->make_local_to_world()[3];
+}
+
+void GameLevel::Screen::set_standpoint(GameLevel::Standpoint *stpt_) {
+  stpt = stpt_;
+  pipeline->textures[0].texture = stpt->tex;
+  pipeline->textures[0].target = GL_TEXTURE_2D;
+}
+
+GameLevel::Screen *GameLevel::screen_get(Transform *transform) {
+
+  glm::vec3 pos = transform->make_local_to_world()[3]; // * (0,0,0,1)
+  glm::vec3 axis = transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+  if (axis == glm::vec3(0.0f)) return nullptr;
+  axis = glm::normalize(axis);
+
+  std::cout << "Pos: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
+  std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
+
+  for (Screen &sc : screens) {
+    std::cout << "Screen: " << sc.pos.x << "\t" << sc.pos.y << "\t" << sc.pos.z << std::endl;
+
+    glm::vec3 dist = sc.pos - pos;
+    std::cout << glm::dot(dist, dist) << std::endl;
+    if (glm::dot(dist, dist) <= sc.pos_tolerance * sc.pos_tolerance) {
+      std::cout << "Position within threshhold. Checking axis..." << std::endl;
+      std::cout << "Dot: " << glm::dot(axis, dist) << std::endl;
+      if (glm::dot(axis, dist) > sc.axis_tolerance) {
+        return &sc;
+      }
+    }
+  }
+
+  return nullptr;
 
 }

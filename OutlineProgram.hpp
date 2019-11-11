@@ -20,7 +20,14 @@ struct FlatProgram{
 	GLuint OBJECT_TO_CLIP_mat4 = -1U;
 	GLuint OBJECT_TO_LIGHT_mat4x3 = -1U;
 	GLuint NORMAL_TO_LIGHT_mat3 = -1U;
-  GLuint USE_TEX_bool = -1U;
+  GLuint USE_TEX_uint = -1U;
+  GLuint UNIFORM_COLOR_vec4 = -1U;
+
+  enum USE_TEXTURE : uint32_t {
+    USE_VX_COLORS = 0,
+    USE_TEX = 1,
+    USE_COL = 2
+  };
 
 	//Textures:
 	//TEXTURE0 - texture that is accessed by TexCoord

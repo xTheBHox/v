@@ -37,11 +37,16 @@ struct GameLevel : Scene {
 
     Movable(Transform *transform_);
     void update(glm::vec3 &axis, float &offset);
+    void set_target_pos(glm::vec3 &target, glm::vec4 &color_);
 
     // The object's transform.
     Transform *transform = nullptr;
     // The original position of the object
     glm::vec3 init_pos = glm::vec3(0.0f);
+
+    glm::vec4 color = glm::vec4(1.0f);
+    glm::vec3 target_pos = glm::vec3(0.0f);
+    float vel = 5.0f;
 
     Transform *player = nullptr;
 
@@ -58,7 +63,7 @@ struct GameLevel : Scene {
 
     // The movement axis, direction away from player 2
     glm::vec3 axis = glm::vec3(0.0f);
-    // The position player 2 needs to stand to move the object
+    // The position of the orthographic camera
     glm::vec3 pos = glm::vec3(0.0f);
     // The current offset (along axis) of the object
     float offset = 0.0f;
@@ -80,8 +85,10 @@ struct GameLevel : Scene {
   };
 
   struct Screen {
-    Screen(Transform *transform_, Drawable::Pipeline *pipeline_)
-      : transform(transform_), pipeline(pipeline_) {}
+    Screen(Transform *transform_, Drawable::Pipeline *pipeline_);
+
+    void set_standpoint(Standpoint *stpt);
+
     Transform *transform = nullptr;
     Drawable::Pipeline *pipeline = nullptr;
 
@@ -90,9 +97,9 @@ struct GameLevel : Scene {
     // The position player 2 needs to stand to move the object
     glm::vec3 pos = glm::vec3(0.0f);
     // The margin of error in position (distance units)
-    const float pos_tolerance = 9.0f;
+    const float pos_tolerance = 5.0f;
     // The margin of error in viewing direction (cos(max error angle))
-    const float axis_tolerance = 0.85f;
+    const float axis_tolerance = 0.9f;
   };
 
   struct MeshCollider {
@@ -113,7 +120,7 @@ struct GameLevel : Scene {
     Movable *movable = nullptr;
   };
 
-  Standpoint *standpoint_get(Transform *transform);
+  Screen *screen_get(Transform *transform);
 
   std::vector< MeshCollider > mesh_colliders;
   std::vector< Goal > goals;
