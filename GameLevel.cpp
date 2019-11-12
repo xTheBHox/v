@@ -158,7 +158,17 @@ GameLevel::GameLevel(std::string const &scene_file) {
 GameLevel::~GameLevel() {
 
 }
+void GameLevel::detect_winLose(){
+  detect_lose();
+  detect_win();
+}
 
+void GameLevel::detect_lose(){
+  std::cout << body_P1_transform->position.z << " "<< body_P2_transform->position.z << std::endl;
+  if (body_P1_transform->position.z < die_y || body_P2_transform->position.z < die_y){
+    MenuMode::set_current(nullptr);
+  }
+}
 void GameLevel::detect_win(){
   for (auto &g: goals){
     glm::vec3 goalPos = g.transform->position;

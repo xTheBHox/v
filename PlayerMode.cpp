@@ -35,16 +35,12 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
   if (evt.type == SDL_KEYDOWN || evt.type == SDL_KEYUP) {
     if (evt.key.keysym.scancode == SDL_SCANCODE_A) {
       controls.left = (evt.type == SDL_KEYDOWN);
-      level->detect_win();
     } else if (evt.key.keysym.scancode == SDL_SCANCODE_D) {
       controls.right = (evt.type == SDL_KEYDOWN);
-      level->detect_win();
     } else if (evt.key.keysym.scancode == SDL_SCANCODE_W) {
       controls.forward = (evt.type == SDL_KEYDOWN);
-      level->detect_win();
     } else if (evt.key.keysym.scancode == SDL_SCANCODE_S) {
       controls.backward = (evt.type == SDL_KEYDOWN);
-      level->detect_win();
     } else if (evt.key.keysym.sym == SDLK_LSHIFT) {
       controls.sprint = (evt.type == SDL_KEYDOWN);
     } else if (evt.key.keysym.sym == SDLK_SPACE) {
@@ -83,7 +79,9 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 }
 
 void PlayerMode::update(float elapsed) {
-
+  //TEMP: Only detect if position changes
+  level->detect_winLose();
+  
   if (pause) return;
 
   float pl_cosazi = std::cos(pov.azimuth);
