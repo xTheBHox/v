@@ -26,6 +26,8 @@ struct Mesh {
 	GLuint start = 0; //index of first vertex
 	GLuint count = 0; //count of vertices
 
+  glm::vec4 color = glm::vec4(0.0f);
+
 	//Bounding box.
 	//useful for debug visualization and collision detection:
 	glm::vec3 min = glm::vec3( std::numeric_limits< float >::infinity());
@@ -40,7 +42,7 @@ struct MeshBuffer {
 	//look up a particular mesh by name:
 	// note: will throw if mesh not found.
 	const Mesh &lookup(std::string const &name) const;
-	
+
 	//build a vertex array object that links this vbo to attributes to a program:
 	// note: will throw if program defines attributes not contained in this buffer
 	GLuint make_vao_for_program(GLuint program) const;

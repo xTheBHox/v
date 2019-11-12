@@ -71,6 +71,15 @@ struct GameLevel : Scene {
     GLuint tex = 0;
     glm::uvec2 size = glm::uvec2(0);
 
+    struct MovePosition {
+      MovePosition(Transform *transform_) : transform(transform_) {}
+      Transform *transform = nullptr;
+      glm::vec3 pos = glm::vec3(0.0f);
+      glm::vec4 color = glm::vec4(0.0f);
+    };
+
+    std::vector< MovePosition *> move_pos;
+
     // ==== Constants ====
 
     // The dimensions of the screen
@@ -126,6 +135,7 @@ struct GameLevel : Scene {
   std::vector< Goal > goals;
   std::vector< Movable > movable_data;
   std::vector< Standpoint > standpoints;
+  std::vector< Standpoint::MovePosition > move_positions;
   std::vector< Screen > screens;
 
   Transform *body_P1_transform;

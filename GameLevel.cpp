@@ -65,12 +65,19 @@ GameLevel::GameLevel(std::string const &scene_file) {
     };
 
     if (transform->name.substr(0, 4) == "Move") {
-      if (transform->name.substr(transform->name.size() - 6, transform->name.size()) == "Screen") {
+      size_t name_len = transform->name.size();
+      if (transform->name.substr(name_len - 6, name_len) == "Screen") {
         std::cout << "Screen detected: " << transform->name << std::endl;
         screens.emplace_back(transform, &pipeline);
         pipeline.set_uniforms = [](){
           glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_TEX);
         };
+      } else if (transform->name.substr(name_len - 9, name_len - 1) == "Position") {
+        std::cout << "MovePosition detected: " << transform->name << std::endl;
+        drawables.pop_back();
+        move_positions.emplace_back(transform);
+        move_positions.back().pos = transform->position;
+        move_positions.back().color = mesh->color;
       } else {
         std::cout << "Movable detected: " << transform->name << std::endl;
 
@@ -111,6 +118,13 @@ GameLevel::GameLevel(std::string const &scene_file) {
       if (oc.transform->name.substr(0, xf_name.size()) == xf_name) {
         std::cout << "Matched " << xf_name << " to " << oc.transform->name << std::endl;
         standpoints.emplace_back(&oc, &m);
+        for (Standpoint::MovePosition &mp : move_positions) {
+          std::string &mp_name = mp.transform->name;
+          if (mp_name.substr(0, mp_name.size()-9) == oc.transform->name) {
+            std::cout << "Matched " << mp_name << " to " << oc.transform->name << std::endl;
+            standpoints.back().move_pos.emplace_back(&mp);
+          }
+        }
         break;
       }
     }
@@ -359,7 +373,7 @@ void GameLevel::Movable::set_target_pos(glm::vec3 &target, glm::vec4 &color_) {
 
   color = color;
   target_pos = target;
-  
+
 }
 
 GameLevel::Standpoint::Standpoint(OrthoCam *cam_, Movable *movable_)
