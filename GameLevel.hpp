@@ -24,7 +24,7 @@ struct GameLevel : Scene {
     GLuint output_fb
   );
 
-  void reset();
+  void reset(bool resetBySync);
   bool resetSync = false;
 
 	//Goal objects(s) tracked using this structure:

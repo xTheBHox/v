@@ -43,7 +43,8 @@ void PlayerOneMode::update(float elapsed) {
               start += sizeof(float);
             }
 					} else if (type == 'R') {
-						level->reset();
+						std::cout << "Received reset" << std::endl;
+						level->reset(true);
 					}else{
 						//invalid data type
 					}

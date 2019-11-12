@@ -65,7 +65,7 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
 	pause_items.emplace_back("Reset");
 	pause_items.back().on_select = [&](Item const &){
     if (current) { 
-			current->level->reset(); 
+			current->level->reset(false); 
 			current->pause = false; 
 			SDL_SetRelativeMouseMode(SDL_TRUE);
 		}

@@ -20,7 +20,7 @@ PlayerTwoMode::PlayerTwoMode(GameLevel *level_ , std::string const &host, std::s
   player_num = 2;
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
-  //client.reset(new Client(host, port));
+  client.reset(new Client(host, port));
 }
 
 bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -41,15 +41,19 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     shift.sc->stpt->update();
     //TEMP
     if (client) {
-
-      client->connection.send('C');
-      for (auto it = level->standpoints.begin(); it != level->standpoints.end(); ++it){
-          float offset = it->offset;
-          client->connection.send(offset);
-      }
       if (level->resetSync){
+        std::cout << "Reset sent" << std::endl;
         client->connection.send('R');
+        level->resetSync = false;
       }
+      else{
+        client->connection.send('C');
+        for (auto it = level->standpoints.begin(); it != level->standpoints.end(); ++it){
+            float offset = it->offset;
+            client->connection.send(offset);
+        }
+      }
+      
 
     	client->poll([](Connection *, Connection::Event evt){
     		//TODO: eventually, read server state
@@ -122,6 +126,23 @@ void PlayerTwoMode::update(float elapsed) {
 
     PlayerMode::update(elapsed);
 
+  }
+  if (client) {
+      if (level->resetSync){
+        std::cout << "Reset sent" << std::endl;
+        client->connection.send('R');
+        level->resetSync = false;
+      }
+      
+
+    	client->poll([](Connection *, Connection::Event evt){
+    		//TODO: eventually, read server state
+
+    	}, 0.0);
+    	//if connection was closed,
+    	if (!client->connection) {
+    		Mode::set_current(nullptr);
+    	}
   }
 }
 

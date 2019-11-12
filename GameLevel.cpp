@@ -143,8 +143,11 @@ GameLevel::~GameLevel() {
 
 }
 
-void GameLevel::reset() {
-  resetSync = true;
+void GameLevel::reset(bool resetBySync) {
+  if (!resetBySync){
+    resetSync = true;
+    std::cout << "Reset in game level" << std::endl;
+  }
   for (Standpoint &s : standpoints) {
     s.offset = 0.0f;
     s.movable->update(s.axis, s.offset);
