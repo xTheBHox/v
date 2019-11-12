@@ -169,7 +169,8 @@ void GameLevel::detect_win(){
     std::cout << dis1 << std::endl;
     if ((dis1 < g.spin_acc) || (dis2 < g.spin_acc)){
       std::cout << "You win!!" << std::endl;
-      exit(0);
+      MenuMode::set_current(nullptr);
+      //exit(0);
       //return true;
     }
   }
