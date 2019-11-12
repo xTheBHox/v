@@ -39,7 +39,7 @@ struct GameLevel : Scene {
   struct Movable {
 
     Movable(Transform *transform_);
-    void update(glm::vec3 &axis, float &offset);
+    void update(glm::vec3 &diff);
     void set_target_pos(glm::vec3 &target, glm::vec4 &color_);
 
     // The object's transform.
@@ -58,7 +58,6 @@ struct GameLevel : Scene {
   struct Standpoint {
 
     Standpoint(OrthoCam *cam_, Movable *movable);
-    void update();
     void resize_texture(glm::uvec2 const &new_size);
     void update_texture(GameLevel *level);
     OrthoCam *cam;
@@ -68,8 +67,6 @@ struct GameLevel : Scene {
     glm::vec3 axis = glm::vec3(0.0f);
     // The position of the orthographic camera
     glm::vec3 pos = glm::vec3(0.0f);
-    // The current offset (along axis) of the object
-    float offset = 0.0f;
 
     GLuint tex = 0;
     glm::uvec2 size = glm::uvec2(0);

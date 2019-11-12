@@ -37,8 +37,8 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     && evt.motion.state & SDL_BUTTON_LMASK
   ) {
     float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
-    shift.sc->stpt->offset += controls_shift.drag_sensitivity * dy;
-    shift.sc->stpt->update();
+    shift.sc->stpt->movable->transform->position +=
+      (controls_shift.drag_sensitivity * dy) * shift.sc->stpt->axis;
     //TEMP
     if (client) {
       if (level->resetSync){
@@ -48,9 +48,9 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
       }
       else{
         client->connection.send('C');
-        for (auto it = level->standpoints.begin(); it != level->standpoints.end(); ++it){
-            float offset = it->offset;
-            client->connection.send(offset);
+        for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+            glm::vec3 pos = it->transform->position;
+            client->connection.send(pos);
         }
       }
     	//if connection was closed,
@@ -143,7 +143,7 @@ void PlayerTwoMode::update(float elapsed) {
             if (type == 'R'){
               std::cout << "Received FROM SERVER reset" << std::endl;
 						  level->reset(true);
-            }else if (type == 'P'){
+            } else if (type == 'P') {
               std::cout << "Received P1 pos" << std::endl;
               char *start = &data[1];
 						  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
@@ -211,9 +211,9 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
     PlayerMode::draw(drawable_size);
   }
 
-  //for (auto &stpt : level->standpoints) {
-    //stpt.resize_texture(drawable_size);
-    //stpt.update_texture(level);
-  //}
+  for (auto &stpt : level->standpoints) {
+    stpt.resize_texture(drawable_size);
+    stpt.update_texture(level);
+  }
 
 }

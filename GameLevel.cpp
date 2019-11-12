@@ -177,9 +177,8 @@ void GameLevel::reset(bool resetBySync) {
     resetSync = true;
     std::cout << "Reset in game level" << std::endl;
   }
-  for (Standpoint &s : standpoints) {
-    s.offset = 0.0f;
-    s.movable->update(s.axis, s.offset);
+  for (Movable &m : movable_data) {
+    m.transform->position = m.init_pos;
   }
 }
 
@@ -372,20 +371,11 @@ GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
 
 }
 
-void GameLevel::Movable::update(glm::vec3 &axis, float &offset) {
-
+void GameLevel::Movable::update(glm::vec3 &diff) {
+  transform->position += diff;
   if (player) {
-    glm::vec3 start = transform->position;
-    glm::vec3 end = init_pos + offset * axis;
-    //glm::vec4 move = glm::vec4(end - start, 1.0f);
-    //player->position += glm::vec3(player->make_world_to_local() * move);
-    player->position += end - start;
-    transform->position = end;
+    player->position += diff;
   }
-  else {
-    transform->position = init_pos + offset * axis;
-  }
-
 }
 
 void GameLevel::Movable::set_target_pos(glm::vec3 &target, glm::vec4 &color_) {
@@ -412,11 +402,6 @@ GameLevel::Standpoint::Standpoint(OrthoCam *cam_, Movable *movable_)
   GL_ERRORS();
 
 }
-
-void GameLevel::Standpoint::update() {
-  movable->update(axis, offset);
-}
-
 
 void GameLevel::Standpoint::resize_texture(glm::uvec2 const &new_size) {
 
