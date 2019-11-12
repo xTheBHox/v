@@ -28,6 +28,12 @@ void PlayerOneMode::update(float elapsed) {
 				connection_infos.erase(f);
 			}
 		};**/
+		if (level->resetSync)
+		{
+			//TEMP
+			server->connections.begin()->send('R');
+			level->resetSync = false;
+		}
     server->poll([this](Connection *connection, Connection::Event evt){
 			if (evt == Connection::OnRecv) {
 					//extract and erase data from the connection's recv_buffer:

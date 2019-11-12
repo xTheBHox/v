@@ -53,12 +53,6 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
             client->connection.send(offset);
         }
       }
-      
-
-    	client->poll([](Connection *, Connection::Event evt){
-    		//TODO: eventually, read server state
-
-    	}, 0.0);
     	//if connection was closed,
     	if (!client->connection) {
     		Mode::set_current(nullptr);
@@ -135,9 +129,16 @@ void PlayerTwoMode::update(float elapsed) {
       }
       
 
-    	client->poll([](Connection *, Connection::Event evt){
+    	client->poll([this](Connection *connection, Connection::Event evt){
     		//TODO: eventually, read server state
-
+        if (evt == Connection::OnRecv) {
+          std::vector< char > data = connection->recv_buffer;
+            char type = data[0];
+            if (type == 'R'){
+              std::cout << "Received FROM SERVER reset" << std::endl;
+						  level->reset(true);
+            }
+        }
     	}, 0.0);
     	//if connection was closed,
     	if (!client->connection) {
