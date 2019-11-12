@@ -47,6 +47,9 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
           float offset = it->offset;
           client->connection.send(offset);
       }
+      if (level->resetSync){
+        client->connection.send('R');
+      }
 
     	client->poll([](Connection *, Connection::Event evt){
     		//TODO: eventually, read server state
@@ -173,9 +176,9 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
     PlayerMode::draw(drawable_size);
   }
 
-  for (auto &stpt : level->standpoints) {
-    stpt.resize_texture(drawable_size);
-    stpt.update_texture(level);
-  }
+  //for (auto &stpt : level->standpoints) {
+    //stpt.resize_texture(drawable_size);
+    //stpt.update_texture(level);
+  //}
 
 }

@@ -25,6 +25,7 @@ struct GameLevel : Scene {
   );
 
   void reset();
+  bool resetSync = false;
 
 	//Goal objects(s) tracked using this structure:
 	struct Goal {
@@ -132,6 +133,5 @@ struct GameLevel : Scene {
   Camera *cam_P1;
   Transform *body_P2_transform;
   Camera *cam_P2;
-
 
 };

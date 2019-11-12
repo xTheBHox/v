@@ -144,6 +144,7 @@ GameLevel::~GameLevel() {
 }
 
 void GameLevel::reset() {
+  resetSync = true;
   for (Standpoint &s : standpoints) {
     s.offset = 0.0f;
     s.movable->update(s.axis, s.offset);
@@ -357,7 +358,7 @@ void GameLevel::Movable::update(glm::vec3 &axis, float &offset) {
 
 void GameLevel::Movable::set_target_pos(glm::vec3 &target, glm::vec4 &color_) {
 
-  color = color;
+  color = color_;
   target_pos = target;
   
 }

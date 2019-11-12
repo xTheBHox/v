@@ -42,7 +42,9 @@ void PlayerOneMode::update(float elapsed) {
               it->update();
               start += sizeof(float);
             }
-					} else {
+					} else if (type == 'R') {
+						level->reset();
+					}else{
 						//invalid data type
 					}
 					connection->recv_buffer.clear();
