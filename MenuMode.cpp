@@ -12,6 +12,7 @@
 //for loading:
 #include "Load.hpp"
 
+#include <glm/gtc/type_ptr.hpp>
 #include <random>
 
 Load< Sound::Sample > sound_click(LoadTagDefault, []() -> Sound::Sample *{
@@ -64,9 +65,9 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
 	};
 	pause_items.emplace_back("Reset");
 	pause_items.back().on_select = [&](Item const &){
-    if (current) { 
-			current->level->reset(false); 
-			current->pause = false; 
+    if (current) {
+			current->level->reset(false);
+			current->pause = false;
 			SDL_SetRelativeMouseMode(SDL_TRUE);
 		}
 	};
@@ -78,6 +79,84 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
 	pause_items.back().on_select = [](Item const &){
     Mode::set_current(nullptr);
 	};
+
+
+	//----- allocate OpenGL resources -----
+	{ //vertex buffer:
+		glGenBuffers(1, &vertex_buffer);
+		GL_ERRORS(); //PARANOIA: print out any OpenGL errors that may have happened
+	}
+
+	{ //vertex array mapping buffer for color_texture_program:
+		//ask OpenGL to fill vertex_buffer_for_color_texture_program with the name of an unused vertex array object:
+		glGenVertexArrays(1, &vertex_buffer_for_color_texture_program);
+		//set vertex_buffer_for_color_texture_program as the current vertex array object:
+		glBindVertexArray(vertex_buffer_for_color_texture_program);
+		//set vertex_buffer as the source of glVertexAttribPointer() commands:
+		glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+		//set up the vertex array object to describe arrays of FroggerMode::Vertex:
+		glVertexAttribPointer(
+			color_texture_program.Position_vec4, //attribute
+			3, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vertex), //stride
+			(GLbyte *)0 + 0 //offset
+		);
+		glEnableVertexAttribArray(color_texture_program.Position_vec4);
+		//[Note that it is okay to bind a vec3 input to a vec4 attribute -- the w component will be filled with 1.0 automatically]
+		glVertexAttribPointer(
+			color_texture_program.Color_vec4, //attribute
+			4, //size
+			GL_UNSIGNED_BYTE, //type
+			GL_TRUE, //normalized
+			sizeof(Vertex), //stride
+			(GLbyte *)0 + 4*3 //offset
+		);
+		glEnableVertexAttribArray(color_texture_program.Color_vec4);
+		glVertexAttribPointer(
+			color_texture_program.TexCoord_vec2, //attribute
+			2, //size
+			GL_FLOAT, //type
+			GL_FALSE, //normalized
+			sizeof(Vertex), //stride
+			(GLbyte *)0 + 4*3 + 4*1 //offset
+		);
+		glEnableVertexAttribArray(color_texture_program.TexCoord_vec2);
+		//done referring to vertex_buffer, so unbind it:
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		//done setting up vertex array object, so unbind it:
+		glBindVertexArray(0);
+		GL_ERRORS(); //PARANOIA: print out any OpenGL errors that may have happened
+	}
+
+	{ //solid white texture:
+		//ask OpenGL to fill white_tex with the name of an unused texture object:
+		glGenTextures(1, &white_tex);
+
+		//bind that texture object as a GL_TEXTURE_2D-type texture:
+		glBindTexture(GL_TEXTURE_2D, white_tex);
+
+		//upload a 1x1 image of solid white to the texture:
+		glm::uvec2 size = glm::uvec2(1,1);
+		std::vector< glm::u8vec4 > data(size.x*size.y, glm::u8vec4(0xff, 0xff, 0xff, 0xff));
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
+
+		//set filtering and wrapping parameters:
+		//(it's a bit silly to mipmap a 1x1 texture, but I'm doing it because you may want to use this code to load different sizes of texture)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+		//since texture uses a mipmap and we haven't uploaded one, instruct opengl to make one for us:
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		//Okay, texture uploaded, can unbind it:
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+		GL_ERRORS(); //PARANOIA: print out any OpenGL errors that may have happened
+	}
 
 }
 
@@ -225,6 +304,163 @@ void MenuMode::draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> item
 	} //<-- gets drawn here!
 }
 
+void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glDisable(GL_DEPTH_TEST);
+
+  std::vector< Vertex > vertices;
+  auto draw_rectangle = [&vertices](glm::vec2 const &center, glm::vec2 const &radius, glm::u8vec4 const &color) {
+    //split rectangle into two CCW-oriented triangles:
+    vertices.emplace_back(glm::vec3(center.x-radius.x, center.y-radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+    vertices.emplace_back(glm::vec3(center.x+radius.x, center.y-radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+    vertices.emplace_back(glm::vec3(center.x+radius.x, center.y+radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+
+    vertices.emplace_back(glm::vec3(center.x-radius.x, center.y-radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+    vertices.emplace_back(glm::vec3(center.x+radius.x, center.y+radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+    vertices.emplace_back(glm::vec3(center.x-radius.x, center.y+radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+  };
+  auto draw_triangle = [&vertices](glm::vec2 const &a, glm::vec2 const &b, glm::vec2 const &c, glm::u8vec4 const &color) {
+    //a, b, c should be CCW-oriented. BUGGY?
+    vertices.emplace_back(glm::vec3(a.x, a.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+    vertices.emplace_back(glm::vec3(b.x, b.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+    vertices.emplace_back(glm::vec3(c.x, c.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+  };
+  // TODO: draw_circle_sector now handles angle and angle_offset in clockwise direction
+  auto draw_circle_sector = [&vertices](glm::vec2 const &center, float const &radius, float angle_offset, float angle, glm::u8vec4 const &color) {
+    static const uint8_t sides = 36;
+    static const float x_offsets[sides+1] =
+      {-1.0f, -0.98480775301f, -0.93969262078f, -0.86602540378f, -0.76604444311f,
+        -0.64278760968f, -0.5f, -0.34202014332f, -0.17364817766f,
+        0.0f, 0.17364817766f, 0.34202014332f, 0.5f, 0.64278760968f,
+        0.76604444311f, 0.86602540378f, 0.93969262078f, 0.98480775301f,
+        1.0f,  0.98480775301f,  0.93969262078f,  0.86602540378f, 0.76604444311f,
+        0.64278760968f, 0.5f, 0.34202014332f, 0.17364817766f,
+        0.0f, -0.17364817766f, -0.34202014332f, -0.5f, -0.64278760968f,
+        -0.76604444311f, -0.86602540378f, -0.93969262078f, -0.98480775301f, -1.0f
+      };
+    static const float y_offsets[sides+1] =
+      {0.0f, -0.17364817766f, -0.34202014332f, -0.5f, -0.64278760968f,
+        -0.76604444311f, -0.86602540378f, -0.93969262078f, -0.98480775301f,
+        -1.0f, -0.98480775301f, -0.93969262078f, -0.86602540378f, -0.76604444311f,
+        -0.64278760968f, -0.5f, -0.34202014332f, -0.17364817766f,
+        0.0f, 0.17364817766f, 0.34202014332f, 0.5f, 0.64278760968f,
+        0.76604444311f, 0.86602540378f, 0.93969262078f, 0.98480775301f,
+        1.0f,  0.98480775301f,  0.93969262078f,  0.86602540378f, 0.76604444311f,
+        0.64278760968f, 0.5f, 0.34202014332f, 0.17364817766f, 0.0f
+      };
+    //just draw a <sides>-gon with CCW-oriented triangles:
+    uint8_t start = (uint8_t)(angle_offset/10.0f);
+    uint8_t end = (uint8_t)((angle_offset+angle)/10.0f);
+    for (uint8_t i = start; i < end; i++) {
+      vertices.emplace_back(glm::vec3(center.x+x_offsets[i]*radius, center.y+y_offsets[i]*radius, 0.0f), color, glm::vec2(0.5f, 0.5f));
+      vertices.emplace_back(glm::vec3(center.x+x_offsets[i+1]*radius, center.y+y_offsets[i+1]*radius, 0.0f), color, glm::vec2(0.5f, 0.5f));
+      vertices.emplace_back(glm::vec3(center.x, center.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
+    }
+  };
+
+  float aspect = drawable_size.x / float(drawable_size.y); //compute window aspect ratio: (scale the x coordinate by 1.0 / aspect to make sure things stay square.)
+  float scale = std::min( //compute scale factor for court given that...
+    (2.0f * aspect) / (view_max.x - view_min.x), //... x must fit in [-aspect,aspect] ...
+    (2.0f) / (view_max.y - view_min.y) //... y must fit in [-1,1].
+  );
+  glm::vec2 center = 0.5f * (view_max + view_min);
+
+  if (current->player_num == 2) {
+    std::shared_ptr< PlayerTwoMode > player = std::static_pointer_cast< PlayerTwoMode > (current);
+    // TODO: find a way to not keep calling screen_get?
+    if (player->level->screen_get(player->pov.camera->transform) && player->shift.progress == 0.0f) {
+      // Player is in position to shift but hasn't started it: draw LSHIFT prompt
+      assert(atlas && "it is an error to try to draw a menu without an atlas");
+      DrawSprites draw_sprites(*atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
+      glm::u8vec4 black = glm::u8vec4(0,0,0,255);
+      glm::u8vec4 white = glm::u8vec4(255,255,255,255);
+      glm::vec2 textbox_center = glm::vec2(0.5f*(view_min.x+view_max.x), 0.2f*(view_min.y+view_max.y));
+      // TODO: use get_text_extents to determine textbox_radius
+      glm::vec2 textbox_radius = glm::vec2(24,9);
+      glm::vec2 textbox_border = glm::vec2(1,1);
+      glm::vec2 text_offset = glm::vec2(-18,-8);
+
+      draw_rectangle(textbox_center, textbox_radius+textbox_border, black);
+      draw_rectangle(textbox_center, textbox_radius, white);
+
+    	//build matrix that scales and translates appropriately:
+    	glm::mat4 court_to_clip = glm::mat4(
+    		glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
+    		glm::vec4(0.0f, scale, 0.0f, 0.0f),
+    		glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
+    		glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
+    	);
+    	//also build the matrix that takes clip coordinates to court coordinates (used for mouse handling):
+    	clip_to_court = glm::mat3x2(
+    		glm::vec2(aspect / scale, 0.0f),
+    		glm::vec2(0.0f, 1.0f / scale),
+    		glm::vec2(center.x, center.y)
+    	);
+    	//upload vertices to vertex_buffer:
+    	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
+    	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
+    	glBindBuffer(GL_ARRAY_BUFFER, 0);
+    	glUseProgram(color_texture_program.program); //set color_texture_program as current program:
+    	glUniformMatrix4fv(color_texture_program.OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(court_to_clip)); //upload OBJECT_TO_CLIP to the proper uniform location:
+    	glBindVertexArray(vertex_buffer_for_color_texture_program); //use the mapping vertex_buffer_for_color_texture_program to fetch vertex data
+    	glActiveTexture(GL_TEXTURE0); //bind the solid white texture to location zero:
+    	glBindTexture(GL_TEXTURE_2D, white_tex);
+    	glDrawArrays(GL_TRIANGLES, 0, GLsizei(vertices.size())); //run the OpenGL pipeline
+    	glBindTexture(GL_TEXTURE_2D, 0); //unbind the solid white texture
+    	glBindVertexArray(0); //reset vertex array to none
+    	glUseProgram(0); //reset current program to none
+
+      draw_sprites.draw_text("LSHIFT", textbox_center+text_offset, 0.7f, black);
+
+    } else if (player->shift.progress == 1.0f) {
+      // Shift is complete: draw color wheel UI
+      // TODO: Move constants to somewhere more reasonable, pull position from movable target
+      // TODO: Make it work for arbitrary number of colors
+      glm::u8vec4 yellow = glm::u8vec4(255,255,0,255);
+      glm::u8vec4 cyan = glm::u8vec4(0,255,255,255);
+      glm::u8vec4 black = glm::u8vec4(0,0,0,255);
+      glm::u8vec4 gray = glm::u8vec4(30,30,30,255);
+      glm::vec2 wheel_center = 0.5f * (view_min + view_max); // TODO: get position of movable in screen space
+      float wheel_radius = 15.0f; //NOTE: view_max = (320,200)
+      float border = 0.5f;
+      glm::vec2 spoke_radius = glm::vec2(2, 2); // TODO: make the wheel size invariant to window size
+
+      draw_circle_sector(wheel_center, wheel_radius+border, 0.0f, 360.0f, gray); // Border
+      draw_circle_sector(wheel_center, wheel_radius, 0.0f, 180.0f, cyan); // Bottom color
+      draw_circle_sector(wheel_center, wheel_radius, 180.0f, 180.0f, yellow); // Top color
+      draw_rectangle(wheel_center, spoke_radius, black); // Center spoke
+
+    	//build matrix that scales and translates appropriately:
+    	glm::mat4 court_to_clip = glm::mat4(
+    		glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
+    		glm::vec4(0.0f, scale, 0.0f, 0.0f),
+    		glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
+    		glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
+    	);
+    	//also build the matrix that takes clip coordinates to court coordinates (used for mouse handling):
+    	clip_to_court = glm::mat3x2(
+    		glm::vec2(aspect / scale, 0.0f),
+    		glm::vec2(0.0f, 1.0f / scale),
+    		glm::vec2(center.x, center.y)
+    	);
+    	//upload vertices to vertex_buffer:
+    	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
+    	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
+    	glBindBuffer(GL_ARRAY_BUFFER, 0);
+    	glUseProgram(color_texture_program.program); //set color_texture_program as current program:
+    	glUniformMatrix4fv(color_texture_program.OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(court_to_clip)); //upload OBJECT_TO_CLIP to the proper uniform location:
+    	glBindVertexArray(vertex_buffer_for_color_texture_program); //use the mapping vertex_buffer_for_color_texture_program to fetch vertex data
+    	glActiveTexture(GL_TEXTURE0); //bind the solid white texture to location zero:
+    	glBindTexture(GL_TEXTURE_2D, white_tex);
+    	glDrawArrays(GL_TRIANGLES, 0, GLsizei(vertices.size())); //run the OpenGL pipeline
+    	glBindTexture(GL_TEXTURE_2D, 0); //unbind the solid white texture
+    	glBindVertexArray(0); //reset vertex array to none
+    	glUseProgram(0); //reset current program to none
+    }
+  }
+}
+
 void MenuMode::draw(glm::uvec2 const &drawable_size) {
 	if (current) {
 		std::shared_ptr< Mode > hold_me = shared_from_this();
@@ -234,6 +470,7 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
     } else {
       // draw level
       current->draw(drawable_size);
+      draw_ui(drawable_size);
     }
 		//it is an error to remove the last reference to this object in current->draw():
 		assert(hold_me.use_count() > 1);

@@ -118,7 +118,7 @@ void PlayerMode::update(float elapsed) {
       pl_vel_move =
         glm::vec3(pl_cosazi, pl_sinazi, 0.0f) * pl_vel_move.x +
         glm::vec3(-pl_sinazi, pl_cosazi, 0.0f) * pl_vel_move.y;
-      pl_vel_move *= 10.0f; // player movement velocity magnitude, constant
+      pl_vel_move *= 15.0f; // player movement velocity magnitude, constant
       if (controls.sprint) pl_vel_move *= 1.5f; // sprint force multiplier, constant
       //pl_vel += pl_vel_move;
     }

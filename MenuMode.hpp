@@ -5,16 +5,18 @@
  *
  */
 
+#include "ColorTextureProgram.hpp"
 #include "Sprite.hpp"
 #include "Mode.hpp"
 #include "PlayerMode.hpp"
+#include "PlayerOneMode.hpp"
+#include "PlayerTwoMode.hpp"
 
 #include <vector>
 #include <functional>
 
 struct MenuMode : Mode {
 	struct Item;
-	// MenuMode(std::vector< Item > const &main_items, std::vector< Item > const &pause_items);
   MenuMode(std::vector< Item > const &main_items);
 	virtual ~MenuMode();
 
@@ -26,7 +28,23 @@ struct MenuMode : Mode {
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
   virtual void draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> items);
+	virtual void draw_ui(glm::uvec2 const &drawable_size);
 	virtual void draw(glm::uvec2 const &drawable_size) override;
+
+  //for drawing manually using vertex buffer
+  struct Vertex {
+    Vertex(glm::vec3 const &Position_, glm::u8vec4 const &Color_, glm::vec2 const &TexCoord_) :
+      Position(Position_), Color(Color_), TexCoord(TexCoord_) { }
+    glm::vec3 Position;
+    glm::u8vec4 Color;
+    glm::vec2 TexCoord;
+  };
+  ColorTextureProgram color_texture_program; //Shader program that draws transformed, vertices tinted with vertex colors:
+  GLuint vertex_buffer = 0; //Buffer used to hold vertex data during drawing
+  GLuint vertex_buffer_for_color_texture_program = 0; //VAO that maps buffer locations to color_texture_program attribute locations:
+  GLuint white_tex = 0; //Solid white texture:
+  glm::mat3x2 clip_to_court = glm::mat3x2(1.0f); //matrix that maps from clip coordinates to court-space coordinates:
+  // computed in draw() as the inverse of OBJECT_TO_CLIP
 
 	//----- menu state -----
 

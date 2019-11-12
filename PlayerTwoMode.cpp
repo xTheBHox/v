@@ -20,7 +20,7 @@ PlayerTwoMode::PlayerTwoMode(GameLevel *level_ , std::string const &host, std::s
   player_num = 2;
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
-  client.reset(new Client(host, port));
+  // client.reset(new Client(host, port));
 }
 
 bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -181,6 +181,11 @@ void print_vec4(glm::vec4 const &v) {
 
 void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
 
+  for (auto &stpt : level->standpoints) {
+    stpt.resize_texture(drawable_size);
+    stpt.update_texture(level);
+  }
+
   float aspect = drawable_size.x / float(drawable_size.y);
 
   if (shift.progress > 0.0f) {
@@ -211,10 +216,5 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
   } else {
     PlayerMode::draw(drawable_size);
   }
-
-  //for (auto &stpt : level->standpoints) {
-    //stpt.resize_texture(drawable_size);
-    //stpt.update_texture(level);
-  //}
 
 }
