@@ -280,9 +280,9 @@ struct FB {
       glBindFramebuffer(GL_FRAMEBUFFER, fb_outline);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, normal_tex, 0);
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
-      GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-      glDrawBuffers(2, bufs);
+      glDrawBuffer(GL_COLOR_ATTACHMENT0);
       check_fb();
+      std::cout << "A" << std::endl;
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
