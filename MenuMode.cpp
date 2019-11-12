@@ -203,7 +203,35 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     	}
   		return false;
     } else {
-      return current->handle_event(evt, window_size);
+      current->handle_event(evt, window_size);
+      // Check UI elements:
+      if (current->player_num == 2) {
+        std::shared_ptr< PlayerTwoMode > player = std::static_pointer_cast< PlayerTwoMode > (current);
+        // TODO: find a way to not keep calling screen_get? Same issue in draw_ui.
+        if (player->shift.progress == 1.0f) {
+          // Player is completed shift mode: check color wheel interaction
+          if (evt.type == SDL_MOUSEBUTTONUP && evt.button.button == SDL_BUTTON_LEFT) {
+            int x, y;
+            glm::vec2 center = glm::vec2(window_size.x/2.0f, window_size.y/2.0f);
+            // TODO: Make this a function of wheel_radius
+            float threshold = window_size.y / 15.0f;
+            SDL_GetMouseState(&x, &y);
+            if (glm::distance(center, glm::vec2((float)x,(float)y)) < threshold) {
+              // TODO: Make this work for multiple colors
+              if (y > center.y) {
+                GameLevel::Standpoint::MovePosition &mp = player->shift.sc->stpt->move_pos[0];
+                player->shift.sc->stpt->movable->set_target_pos(mp.pos, mp.color);
+                player->currently_moving.emplace_back(player->shift.sc->stpt->movable->index);
+              } else {
+                GameLevel::Standpoint::MovePosition &mp = player->shift.sc->stpt->move_pos[1];
+                player->shift.sc->stpt->movable->set_target_pos(mp.pos, mp.color);
+                player->currently_moving.emplace_back(player->shift.sc->stpt->movable->index);
+              }
+            }
+          }
+        }
+      }
+      return false;
     }
 	} else { // we're on the main menu
   	if (evt.type == SDL_KEYDOWN) {
@@ -368,7 +396,7 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
 
   if (current->player_num == 2) {
     std::shared_ptr< PlayerTwoMode > player = std::static_pointer_cast< PlayerTwoMode > (current);
-    // TODO: find a way to not keep calling screen_get?
+    // TODO: find a way to not keep calling screen_get? Same issue in handle_event.
     if (player->level->screen_get(player->pov.camera->transform) && player->shift.progress == 0.0f) {
       // Player is in position to shift but hasn't started it: draw LSHIFT prompt
       assert(atlas && "it is an error to try to draw a menu without an atlas");
