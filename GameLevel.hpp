@@ -36,6 +36,12 @@ struct GameLevel : Scene {
 
   void detect_win();
 
+  void detect_winLose();
+
+  float die_y = -40.0;
+  void detect_lose();
+
+
   struct Movable {
 
     Movable(Transform *transform_);
