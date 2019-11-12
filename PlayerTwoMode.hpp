@@ -25,7 +25,7 @@ struct PlayerTwoMode : PlayerMode {
     float speed = 4.0f; // 1/t, t is the time taken to shift
   } shift;
 
-  std::list< uint32_t > currently_moving;
+  std::list< size_t > currently_moving;
   std::unique_ptr< Client > client = nullptr;
 
 };

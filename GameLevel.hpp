@@ -36,6 +36,12 @@ struct GameLevel : Scene {
 
   void detect_win();
 
+  void detect_winLose();
+
+  float die_y = -40.0;
+  void detect_lose();
+
+
   struct Movable {
 
     Movable(Transform *transform_);
@@ -49,9 +55,11 @@ struct GameLevel : Scene {
 
     glm::vec4 color = glm::vec4(1.0f);
     glm::vec3 target_pos = glm::vec3(0.0f);
-    float vel = 5.0f;
+    float vel = 20.0f;
 
     Transform *player = nullptr;
+
+    size_t index; // index in the vector
 
   };
 
@@ -72,13 +80,13 @@ struct GameLevel : Scene {
     glm::uvec2 size = glm::uvec2(0);
 
     struct MovePosition {
-      MovePosition(Transform *transform_) : transform(transform_) {}
+      MovePosition(Light *light);
       Transform *transform = nullptr;
       glm::vec3 pos = glm::vec3(0.0f);
       glm::vec4 color = glm::vec4(0.0f);
     };
 
-    std::vector< MovePosition *> move_pos;
+    std::vector< MovePosition > move_pos;
 
     // ==== Constants ====
 
@@ -135,7 +143,6 @@ struct GameLevel : Scene {
   std::vector< Goal > goals;
   std::vector< Movable > movable_data;
   std::vector< Standpoint > standpoints;
-  std::vector< Standpoint::MovePosition > move_positions;
   std::vector< Screen > screens;
 
   Transform *body_P1_transform;

@@ -291,7 +291,8 @@ void Scene::load(std::string const &filename,
 		this->lights.emplace_back(hierarchy_transforms[l.transform]);
 		Light *light = &this->lights.back();
 		light->type = static_cast<Light::Type>(l.type);
-		light->energy = glm::vec3(l.color) / 255.0f * l.energy;
+    light->color = glm::vec3(l.color) / 255.0f;
+		light->energy = light->color * l.energy;
 		light->spot_fov = l.fov / 180.0f * 3.1415926f; //FOV is stored in degrees; convert to radians.
 	}
 

@@ -11,7 +11,6 @@
 #include <algorithm>
 
 #include <iostream>
-#include <iomanip>
 
 #define PI 3.1415926f
 
@@ -27,39 +26,34 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 
 	if (handle_ui(evt, window_size)) return true;
 
-  if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_LCTRL) {
+  if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_LSHIFT) {
     controls_shift.flat = true;
-  } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_LCTRL) {
+  } else if (evt.type == SDL_KEYUP && evt.key.keysym.sym == SDLK_LSHIFT) {
     controls_shift.flat = false;
+  } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_1
+    && shift.progress == 1.0f) {
+    std::cout << "1" << std::endl;
+    GameLevel::Standpoint::MovePosition &mp = shift.sc->stpt->move_pos[0];
+    shift.sc->stpt->movable->set_target_pos(mp.pos, mp.color);
+    currently_moving.emplace_back(shift.sc->stpt->movable->index);
+  } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_2
+    && shift.progress == 1.0f) {
+    std::cout << "2" << std::endl;
+    GameLevel::Standpoint::MovePosition &mp = shift.sc->stpt->move_pos[1];
+    shift.sc->stpt->movable->set_target_pos(mp.pos, mp.color);
+    currently_moving.emplace_back(shift.sc->stpt->movable->index);
   } else if (
     evt.type == SDL_MOUSEMOTION
     && shift.progress == 1.0f
     && evt.motion.state & SDL_BUTTON_LMASK
   ) {
-    level->detect_win();
+
     float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
     shift.sc->stpt->movable->transform->position +=
       (controls_shift.drag_sensitivity * dy) * shift.sc->stpt->axis;
-    //TEMP
-    if (client) {
-      if (level->resetSync){
-        std::cout << "Reset sent" << std::endl;
-        client->connection.send('R');
-        level->resetSync = false;
-      }
-      else{
-        client->connection.send('C');
-        for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
-            glm::vec3 pos = it->transform->position;
-            client->connection.send(pos);
-        }
-      }
-    	//if connection was closed,
-    	if (!client->connection) {
-    		Mode::set_current(nullptr);
-    	}
-    }
-    //END TEMP
+
+  } else if (evt.type == SDL_MOUSEMOTION && shift.progress > 0.0f) {
+    // ignore
   } else {
     return PlayerMode::handle_event(evt, window_size);
   }
@@ -95,7 +89,7 @@ void PlayerTwoMode::update(float elapsed) {
   }
 
   { // Update movables
-    std::list< uint32_t >::iterator mi_ptr = currently_moving.begin();
+    std::list< size_t >::iterator mi_ptr = currently_moving.begin();
     while (mi_ptr != currently_moving.end()) {
       GameLevel::Movable &m = level->movable_data[*mi_ptr];
       glm::vec3 diff = m.target_pos - m.transform->position;
@@ -103,14 +97,14 @@ void PlayerTwoMode::update(float elapsed) {
         currently_moving.erase(mi_ptr++);
         continue;
       }
-
-      if (glm::dot(diff, diff) < m.vel * m.vel) {
+      float dpos = elapsed * m.vel;
+      if (glm::dot(diff, diff) < dpos * dpos) {
         m.transform->position = m.target_pos;
       } else {
         diff = glm::normalize(diff);
-        m.transform->position += diff * m.vel;
+        m.transform->position += diff * dpos;
       }
-      // TODO network update here
+      // need network update later
       mi_ptr++;
     }
   }
@@ -125,10 +119,18 @@ void PlayerTwoMode::update(float elapsed) {
   if (client) {
 
       //syncing reset
-      if (level->resetSync){
+      if (level->resetSync) {
         std::cout << "Reset sent" << std::endl;
         client->connection.send('R');
         level->resetSync = false;
+      }
+
+      if (!currently_moving.empty()) {
+        client->connection.send('C');
+        for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+            glm::vec3 pos = it->transform->position;
+            client->connection.send(pos);
+        }
       }
 
       //syncing player pos
@@ -145,10 +147,10 @@ void PlayerTwoMode::update(float elapsed) {
               std::cout << "Received FROM SERVER reset" << std::endl;
 						  level->reset(true);
             } else if (type == 'P') {
-              std::cout << "Received P1 pos" << std::endl;
+              //std::cout << "Received P1 pos" << std::endl;
               char *start = &data[1];
 						  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-						  std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
+						  //std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
               level->body_P1_transform->position = *pos;
             }
             connection->recv_buffer.clear();
@@ -158,24 +160,6 @@ void PlayerTwoMode::update(float elapsed) {
     	if (!client->connection) {
     		Mode::set_current(nullptr);
     	}
-  }
-}
-
-void print_mat4(glm::mat4 const &M) {
-  std::cout << std::setprecision(4);
-  for (int i = 0; i < 4; i++) {
-    for (int j = 0; j < 4; j++) {
-      std::cout << M[j][i] << "\t";
-    }
-    std::cout << std::endl;
-  }
-}
-
-void print_vec4(glm::vec4 const &v) {
-  std::cout << std::setprecision(4);
-  for (int i = 0; i < 4; i++) {
-    std::cout << v[i] << "\t";
-    std::cout << std::endl;
   }
 }
 

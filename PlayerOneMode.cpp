@@ -51,20 +51,20 @@ void PlayerOneMode::update(float elapsed) {
 					//extract and erase data from the connection's recv_buffer:
 					std::vector< char > data = connection->recv_buffer;
 					char type = data[0];
-					if (type == 'C'){
+					if (type == 'C') {
             char *start = &data[1];
             //td::cout << (int)start[0] << " " << (int)start[1] << " " << (int)start[2] << " " << (int)start[3] << std::endl;
             for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
               glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-			  glm::vec3 offset = *pos - it->transform->position;
+              glm::vec3 offset = *pos - it->transform->position;
               it->update(offset);
               start += sizeof(glm::vec3);
             }
 					} else if (type == 'R') {
-						std::cout << "Received reset" << std::endl;
+						// std::cout << "Received reset" << std::endl;
 						level->reset(true);
 					} else if (type == 'P'){
-						std::cout << "Received P2 pos" << std::endl;
+						// std::cout << "Received P2 pos" << std::endl;
 						char *start = &data[1];
 						glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
 						level->body_P2_transform->position = *pos;
