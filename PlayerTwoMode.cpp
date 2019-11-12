@@ -11,15 +11,21 @@
 #include <algorithm>
 
 #include <iostream>
+#include <iomanip>
 
 #define PI 3.1415926f
+
+
+extern void print_mat4(glm::mat4 const &M);
+extern void print_vec4(glm::vec4 const &v);
+extern void print_vec3(glm::vec3 const &v);
 
 PlayerTwoMode::PlayerTwoMode(GameLevel *level_ , std::string const &host, std::string const &port)
   : PlayerMode(level_) {
   player_num = 2;
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
-  // client.reset(new Client(host, port));
+  client.reset(new Client(host, port));
 }
 
 bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -42,16 +48,6 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     GameLevel::Standpoint::MovePosition &mp = shift.sc->stpt->move_pos[1];
     shift.sc->stpt->movable->set_target_pos(mp.pos, mp.color);
     currently_moving.emplace_back(shift.sc->stpt->movable->index);
-  } else if (
-    evt.type == SDL_MOUSEMOTION
-    && shift.progress == 1.0f
-    && evt.motion.state & SDL_BUTTON_LMASK
-  ) {
-
-    float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
-    shift.sc->stpt->movable->transform->position +=
-      (controls_shift.drag_sensitivity * dy) * shift.sc->stpt->axis;
-
   } else if (evt.type == SDL_MOUSEMOTION && shift.progress > 0.0f) {
     // ignore
   } else {
@@ -116,6 +112,7 @@ void PlayerTwoMode::update(float elapsed) {
     PlayerMode::update(elapsed);
 
   }
+
   if (client) {
 
       //syncing reset
@@ -128,8 +125,10 @@ void PlayerTwoMode::update(float elapsed) {
       if (!currently_moving.empty()) {
         client->connection.send('C');
         for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
-            glm::vec3 pos = it->transform->position;
-            client->connection.send(pos);
+          glm::vec3 pos = it->transform->position;
+          client->connection.send(pos);
+          glm::vec4 color = it->color;
+          client->connection.send(color);
         }
       }
 

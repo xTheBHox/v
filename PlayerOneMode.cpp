@@ -59,6 +59,9 @@ void PlayerOneMode::update(float elapsed) {
               glm::vec3 offset = *pos - it->transform->position;
               it->update(offset);
               start += sizeof(glm::vec3);
+              glm::vec4* color = reinterpret_cast<glm::vec4*> (start);
+              it->color = *color;
+              start += sizeof(glm::vec4);
             }
 					} else if (type == 'R') {
 						// std::cout << "Received reset" << std::endl;

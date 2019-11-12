@@ -31,7 +31,7 @@ struct GameLevel : Scene {
 	struct Goal {
 		Goal(Scene::Transform *transform_) : transform(transform_) { };
 		Scene::Transform *transform;
-		float spin_acc = 10.0f;
+		float spin_acc = 5.0f;
 	};
 
   void detect_win();

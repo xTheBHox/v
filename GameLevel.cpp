@@ -102,11 +102,9 @@ GameLevel::GameLevel(std::string const &scene_file) {
         movable_data.emplace_back(transform);
         Movable &data = movable_data.back();
         data.index = movable_data.size() - 1;
-        glm::vec4 *color_ptr = &(data.color);
-        pipeline.set_uniforms = [color_ptr](){
+        pipeline.set_uniforms = [&data](){
           glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
-          glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(*color_ptr));
-          print_vec4(*color_ptr);
+          glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(data.color));
         };
 
         auto f = mesh_to_collider.find(mesh);
@@ -505,17 +503,17 @@ GameLevel::Screen *GameLevel::screen_get(Transform *transform) {
   if (axis == glm::vec3(0.0f)) return nullptr;
   axis = glm::normalize(axis);
 
-  std::cout << "Pos: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
-  std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
+  //std::cout << "Pos: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
+  //std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
 
   for (Screen &sc : screens) {
-    std::cout << "Screen: " << sc.pos.x << "\t" << sc.pos.y << "\t" << sc.pos.z << std::endl;
+    //std::cout << "Screen: " << sc.pos.x << "\t" << sc.pos.y << "\t" << sc.pos.z << std::endl;
 
     glm::vec3 dist = sc.pos - pos;
-    std::cout << glm::dot(dist, dist) << std::endl;
+    //std::cout << glm::dot(dist, dist) << std::endl;
     if (glm::dot(dist, dist) <= sc.pos_tolerance * sc.pos_tolerance) {
-      std::cout << "Position within threshhold. Checking axis..." << std::endl;
-      std::cout << "Dot: " << glm::dot(axis, dist) << std::endl;
+      //std::cout << "Position within threshhold. Checking axis..." << std::endl;
+      //std::cout << "Dot: " << glm::dot(axis, dist) << std::endl;
       if (glm::dot(axis, dist) > sc.axis_tolerance) {
         return &sc;
       }
