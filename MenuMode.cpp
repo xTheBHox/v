@@ -358,12 +358,12 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
     vertices.emplace_back(glm::vec3(center.x+radius.x, center.y+radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
     vertices.emplace_back(glm::vec3(center.x-radius.x, center.y+radius.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
   };
-  auto draw_triangle = [&vertices](glm::vec2 const &a, glm::vec2 const &b, glm::vec2 const &c, glm::u8vec4 const &color) {
+  /* auto draw_triangle = [&vertices](glm::vec2 const &a, glm::vec2 const &b, glm::vec2 const &c, glm::u8vec4 const &color) {
     //a, b, c should be CCW-oriented. BUGGY?
     vertices.emplace_back(glm::vec3(a.x, a.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
     vertices.emplace_back(glm::vec3(b.x, b.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
     vertices.emplace_back(glm::vec3(c.x, c.y, 0.0f), color, glm::vec2(0.5f, 0.5f));
-  };
+  }; */
   // TODO: draw_circle_sector now handles angle and angle_offset in clockwise direction
   auto draw_circle_sector = [&vertices](glm::vec2 const &center, float const &radius, float angle_offset, float angle, glm::u8vec4 const &color) {
     static const uint8_t sides = 36;

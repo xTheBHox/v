@@ -284,7 +284,7 @@ struct FB {
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, position_tex, 0);
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
       GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-			glDrawBuffers(2, bufs);
+      glDrawBuffers(2, bufs);
       check_fb();
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
@@ -328,11 +328,11 @@ void GameLevel::draw(
   glClearBufferfv(GL_COLOR, 0, zeros);
   glClear(GL_DEPTH_BUFFER_BIT);
 
-	glDisable(GL_BLEND);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
+  glDisable(GL_BLEND);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
 
-	Scene::draw(world_to_clip);
+  Scene::draw(world_to_clip);
 
   GL_ERRORS();
 
@@ -342,16 +342,16 @@ void GameLevel::draw(
   glClear(GL_COLOR_BUFFER_BIT);
 
   glDisable(GL_BLEND);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
 
   glUseProgram(outline_program_0->program);
   glBindVertexArray(vao_outline);
 
   for (auto const &drawable : drawables) {
 
-		assert(drawable.transform); //drawables *must* have a transform
-		glm::mat4 object_to_world = drawable.transform->make_local_to_world();
+    assert(drawable.transform); //drawables *must* have a transform
+    glm::mat4 object_to_world = drawable.transform->make_local_to_world();
 
     if (outline_program_0->OBJECT_TO_CLIP_mat4 != -1U) {
       glm::mat4 object_to_clip = world_to_clip * object_to_world;
@@ -368,7 +368,7 @@ void GameLevel::draw(
   glBindFramebuffer(GL_FRAMEBUFFER, output_fb);
   glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glDisable(GL_DEPTH_TEST);
+  glDisable(GL_DEPTH_TEST);
 
   glBindVertexArray(vao_empty);
   glUseProgram(outline_program_1->program);
@@ -380,18 +380,18 @@ void GameLevel::draw(
   glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_RECTANGLE, fb.position_tex);
   glDrawArrays(GL_TRIANGLES, 0, 3);
-	GL_ERRORS();
+  GL_ERRORS();
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, 0);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, 0);
   glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
   glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, 0);
+  glBindTexture(GL_TEXTURE_2D, 0);
 
-	glBindVertexArray(0);
-	glUseProgram(0);
-	GL_ERRORS();
+  glBindVertexArray(0);
+  glUseProgram(0);
+  GL_ERRORS();
 
 }
 
