@@ -498,8 +498,7 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
     }
   }
 
-  // if (current->won || current->lost || current->we_want_reset || current->they_want_reset) {
-  if (current->won || current->lost) {
+  if (current->won || current->lost || current->we_want_reset || current->they_want_reset) {
     glm::u8vec4 black = glm::u8vec4(0,0,0,255);
     glm::u8vec4 white = glm::u8vec4(255,255,255,255);
     glm::vec2 textbox_center;
@@ -514,12 +513,12 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
     } else if (current->lost) {
       textbox_radius = glm::vec2(34,9);
       text_offset = glm::vec2(-31,-5);
-    // } else if (current->we_want_reset) {
-    //   textbox_radius = glm::vec2(34,9);
-    //   text_offset = glm::vec2(-31,-5);
-    // } else {
-    //   textbox_radius = glm::vec2(34,9);
-    //   text_offset = glm::vec2(-31,-5);
+    } else if (current->we_want_reset) {
+      textbox_radius = glm::vec2(82,9);
+      text_offset = glm::vec2(-80,-8);
+    } else {
+      textbox_radius = glm::vec2(54,9);
+      text_offset = glm::vec2(-52,-8);
     }
 
     draw_rectangle(textbox_center, textbox_radius+textbox_border, black);
@@ -550,8 +549,8 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
 
     if (current->won) { draw_sprites.draw_text("You Won!", textbox_center+text_offset, 0.9f, black); }
     else if (current->lost) { draw_sprites.draw_text("Game Over", textbox_center+text_offset, 0.9f, black); }
-    // else if (current->we_want_reset) { draw_sprites.draw_text("Waiting for other player to reset...", textbox_center+text_offset, 0.7f, black); }
-    // else if (current->they_want_reset) { draw_sprites.draw_text("Reset request received.", textbox_center+text_offset, 0.7f, black); }
+    else if (current->we_want_reset) { draw_sprites.draw_text("Waiting for other player to reset...", textbox_center+text_offset, 0.7f, black); }
+    else if (current->they_want_reset) { draw_sprites.draw_text("Reset request received", textbox_center+text_offset, 0.7f, black); }
   }
 }
 
