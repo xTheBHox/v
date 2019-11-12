@@ -68,6 +68,8 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
     if (current) {
 			current->level->reset(false);
 			current->pause = false;
+      current->won = false;
+      current->lost = false;
 			SDL_SetRelativeMouseMode(SDL_TRUE);
 		}
 	};
@@ -277,7 +279,10 @@ void MenuMode::update(float elapsed) {
 	select_bounce_acc -= std::floor(select_bounce_acc);
 
 	if (current) {
-		current->update(elapsed);
+    //else if (current->pause) {}
+		else {
+      current->update(elapsed);
+    }
 	}
 }
 

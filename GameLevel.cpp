@@ -181,18 +181,13 @@ GameLevel::GameLevel(std::string const &scene_file) {
 GameLevel::~GameLevel() {
 
 }
-void GameLevel::detect_winLose(){
-  detect_lose();
-  detect_win();
+
+bool GameLevel::detect_lose() {
+  //std::cout << body_P1_transform->position.z << " "<< body_P2_transform->position.z << std::endl;
+  return (body_P1_transform->position.z < die_y || body_P2_transform->position.z < die_y);
 }
 
-void GameLevel::detect_lose(){
-  //std::cout << body_P1_transform->position.z << " "<< body_P2_transform->position.z << std::endl;
-  if (body_P1_transform->position.z < die_y || body_P2_transform->position.z < die_y){
-    MenuMode::set_current(nullptr);
-  }
-}
-void GameLevel::detect_win(){
+bool GameLevel::detect_win() {
   for (auto &g: goals){
     glm::vec3 goalPos = g.transform->position;
     glm::vec3 p1 = body_P1_transform->position;
@@ -200,14 +195,9 @@ void GameLevel::detect_win(){
     auto dis1 = glm::distance(goalPos, p1);
     auto dis2 = glm::distance(goalPos, p2);
     //std::cout << dis1 << std::endl;
-    if ((dis1 < g.spin_acc) || (dis2 < g.spin_acc)){
-      std::cout << "You win!!" << std::endl;
-      MenuMode::set_current(nullptr);
-      //exit(0);
-      //return true;
-    }
+    return (dis1 < g.spin_acc) || (dis2 < g.spin_acc);
   }
-  //return false;
+  return false;
 }
 
 void GameLevel::reset(bool resetBySync) {

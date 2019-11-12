@@ -80,9 +80,13 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 
 void PlayerMode::update(float elapsed) {
   //TEMP: Only detect if position changes
-  level->detect_winLose();
-
   if (pause) return;
+  if (current->level->detect_win()) {
+    won = true;
+  }
+  else if (current->level->detect_lose()) {
+    lost = true;
+  }
 
   float pl_cosazi = std::cos(pov.azimuth);
   float pl_sinazi = std::sin(pov.azimuth);
