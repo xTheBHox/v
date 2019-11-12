@@ -338,6 +338,7 @@ void MenuMode::draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> item
 }
 
 void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
+  assert(current);
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glDisable(GL_DEPTH_TEST);
@@ -399,13 +400,14 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
   );
   glm::vec2 center = 0.5f * (view_max + view_min);
 
+  assert(atlas && "it is an error to try to draw a menu without an atlas");
+  DrawSprites draw_sprites(*atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
+
   if (current->player_num == 2) {
     std::shared_ptr< PlayerTwoMode > player = std::static_pointer_cast< PlayerTwoMode > (current);
     // TODO: find a way to not keep calling screen_get? Same issue in handle_event.
     if (player->level->screen_get(player->pov.camera->transform) && player->shift.progress == 0.0f) {
       // Player is in position to shift but hasn't started it: draw LSHIFT prompt
-      assert(atlas && "it is an error to try to draw a menu without an atlas");
-      DrawSprites draw_sprites(*atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
       glm::u8vec4 black = glm::u8vec4(0,0,0,255);
       glm::u8vec4 white = glm::u8vec4(255,255,255,255);
       glm::vec2 textbox_center = glm::vec2(0.5f*(view_min.x+view_max.x), 0.2f*(view_min.y+view_max.y));
@@ -491,6 +493,62 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
     	glBindVertexArray(0); //reset vertex array to none
     	glUseProgram(0); //reset current program to none
     }
+  }
+
+  // if (current->won || current->lost || current->we_want_reset || current->they_want_reset) {
+  if (current->won || current->lost) {
+    glm::u8vec4 black = glm::u8vec4(0,0,0,255);
+    glm::u8vec4 white = glm::u8vec4(255,255,255,255);
+    glm::vec2 textbox_center;
+    if (current->won || current->lost) { textbox_center = 0.5f * (view_min + view_max); }
+    else { textbox_center = glm::vec2(0.5f*(view_min.x+view_max.x), 0.2f*(view_min.y+view_max.y)); }
+    // TODO: use get_text_extents to determine textbox_radius
+    glm::vec2 textbox_border = glm::vec2(1,1);
+    glm::vec2 textbox_radius, text_offset;
+    if (current->won){
+      textbox_radius = glm::vec2(30,9);
+      text_offset = glm::vec2(-27,-5);
+    } else if (current->lost) {
+      textbox_radius = glm::vec2(34,9);
+      text_offset = glm::vec2(-31,-5);
+    // } else if (current->we_want_reset) {
+    //   textbox_radius = glm::vec2(34,9);
+    //   text_offset = glm::vec2(-31,-5);
+    // } else {
+    //   textbox_radius = glm::vec2(34,9);
+    //   text_offset = glm::vec2(-31,-5);
+    }
+
+    draw_rectangle(textbox_center, textbox_radius+textbox_border, black);
+    draw_rectangle(textbox_center, textbox_radius, white);
+    glm::mat4 court_to_clip = glm::mat4(
+      glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
+      glm::vec4(0.0f, scale, 0.0f, 0.0f),
+      glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
+      glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
+    );
+    clip_to_court = glm::mat3x2(
+      glm::vec2(aspect / scale, 0.0f),
+      glm::vec2(0.0f, 1.0f / scale),
+      glm::vec2(center.x, center.y)
+    );
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glUseProgram(color_texture_program.program); //set color_texture_program as current program:
+    glUniformMatrix4fv(color_texture_program.OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(court_to_clip)); //upload OBJECT_TO_CLIP to the proper uniform location:
+    glBindVertexArray(vertex_buffer_for_color_texture_program); //use the mapping vertex_buffer_for_color_texture_program to fetch vertex data
+    glActiveTexture(GL_TEXTURE0); //bind the solid white texture to location zero:
+    glBindTexture(GL_TEXTURE_2D, white_tex);
+    glDrawArrays(GL_TRIANGLES, 0, GLsizei(vertices.size())); //run the OpenGL pipeline
+    glBindTexture(GL_TEXTURE_2D, 0); //unbind the solid white texture
+    glBindVertexArray(0); //reset vertex array to none
+    glUseProgram(0); //reset current program to none
+
+    if (current->won) { draw_sprites.draw_text("You Won!", textbox_center+text_offset, 0.9f, black); }
+    else if (current->lost) { draw_sprites.draw_text("Game Over", textbox_center+text_offset, 0.9f, black); }
+    // else if (current->we_want_reset) { draw_sprites.draw_text("Waiting for other player to reset...", textbox_center+text_offset, 0.7f, black); }
+    // else if (current->they_want_reset) { draw_sprites.draw_text("Reset request received.", textbox_center+text_offset, 0.7f, black); }
   }
 }
 
