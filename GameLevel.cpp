@@ -12,6 +12,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
+#include <iomanip>
 
 #define PI 3.1415926f
 
@@ -41,6 +42,31 @@ Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 
 	return ret;
 });
+
+void print_mat4(glm::mat4 const &M) {
+  std::cout << std::setprecision(4);
+  for (int i = 0; i < 4; i++) {
+    for (int j = 0; j < 4; j++) {
+      std::cout << M[j][i] << "\t";
+    }
+    std::cout << std::endl;
+  }
+}
+
+void print_vec4(glm::vec4 const &v) {
+  std::cout << std::setprecision(4);
+  for (int i = 0; i < 4; i++) {
+    std::cout << v[i] << "\t";
+  }
+  std::cout << std::endl;
+}
+void print_vec3(glm::vec3 const &v) {
+  std::cout << std::setprecision(4);
+  for (int i = 0; i < 3; i++) {
+    std::cout << v[i] << "\t";
+  }
+  std::cout << std::endl;
+}
 
 GameLevel::GameLevel(std::string const &scene_file) {
   uint32_t decorations = 0;
@@ -75,9 +101,12 @@ GameLevel::GameLevel(std::string const &scene_file) {
 
         movable_data.emplace_back(transform);
         Movable &data = movable_data.back();
-        pipeline.set_uniforms = [&data](){
+        data.index = movable_data.size() - 1;
+        glm::vec4 *color_ptr = &(data.color);
+        pipeline.set_uniforms = [color_ptr](){
           glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
-          glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(data.color));
+          glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(*color_ptr));
+          print_vec4(*color_ptr);
         };
 
         auto f = mesh_to_collider.find(mesh);
@@ -117,6 +146,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
           if (mp_name.substr(0, mp_name.size()-9) == oc.transform->name) {
             std::cout << "Matched " << mp_name << " to " << oc.transform->name << std::endl;
             stpt.move_pos.emplace_back(&(*lit));
+            print_vec3(stpt.move_pos.back().pos);
             lights.erase(lit++);
           } else {
             lit++;
@@ -159,7 +189,7 @@ void GameLevel::detect_winLose(){
 }
 
 void GameLevel::detect_lose(){
-  std::cout << body_P1_transform->position.z << " "<< body_P2_transform->position.z << std::endl;
+  //std::cout << body_P1_transform->position.z << " "<< body_P2_transform->position.z << std::endl;
   if (body_P1_transform->position.z < die_y || body_P2_transform->position.z < die_y){
     MenuMode::set_current(nullptr);
   }
@@ -171,7 +201,7 @@ void GameLevel::detect_win(){
     glm::vec3 p2 = body_P2_transform->position;
     auto dis1 = glm::distance(goalPos, p1);
     auto dis2 = glm::distance(goalPos, p2);
-    std::cout << dis1 << std::endl;
+    //std::cout << dis1 << std::endl;
     if ((dis1 < g.spin_acc) || (dis2 < g.spin_acc)){
       std::cout << "You win!!" << std::endl;
       MenuMode::set_current(nullptr);
@@ -454,6 +484,7 @@ void GameLevel::Standpoint::update_texture(GameLevel *level) {
 GameLevel::Standpoint::MovePosition::MovePosition(Light *light) {
   transform = light->transform;
   color = glm::vec4(light->color, 1.0f);
+  pos = transform->position;
 }
 
 GameLevel::Screen::Screen(Transform *transform_, Drawable::Pipeline *pipeline_)

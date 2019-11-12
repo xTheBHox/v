@@ -55,9 +55,11 @@ struct GameLevel : Scene {
 
     glm::vec4 color = glm::vec4(1.0f);
     glm::vec3 target_pos = glm::vec3(0.0f);
-    float vel = 5.0f;
+    float vel = 20.0f;
 
     Transform *player = nullptr;
+
+    size_t index; // index in the vector
 
   };
 
