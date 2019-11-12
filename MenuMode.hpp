@@ -8,6 +8,7 @@
 #include "ColorTextureProgram.hpp"
 #include "Sprite.hpp"
 #include "Mode.hpp"
+#include "GameLevel.hpp"
 #include "PlayerMode.hpp"
 #include "PlayerOneMode.hpp"
 #include "PlayerTwoMode.hpp"
