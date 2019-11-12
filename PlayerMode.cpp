@@ -128,6 +128,11 @@ void PlayerMode::update(float elapsed) {
   {
     float remain = elapsed;
 
+    if (on_movable) {
+      on_movable->player = nullptr;
+      on_movable = nullptr;
+    }
+
     // Iterate for multiple bounces. Stop at a certain number.
     for (int32_t iter = 0; iter < 5; ++iter) {
       if (remain == 0.0f) break;
@@ -202,11 +207,10 @@ void PlayerMode::update(float elapsed) {
           if (did_collide) {
             collided = true;
             if (collider.movable) {
+              on_movable = collider.movable;
               collider.movable->player = pov.body;
+              std::cout << collider.movable->transform->name << " got player" << std::endl;
             }
-          }
-          else if (collider.movable) {
-            collider.movable->player = NULL;
           }
 
           //draw to indicate result of check:

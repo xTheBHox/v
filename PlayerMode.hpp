@@ -40,6 +40,8 @@ struct PlayerMode : Mode {
     bool in_air = false;
   } pov;
 
+  GameLevel::Movable *on_movable = nullptr;
+
   GameLevel *level;
 
 };

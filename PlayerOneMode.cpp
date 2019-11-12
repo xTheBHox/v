@@ -30,15 +30,15 @@ void PlayerOneMode::update(float elapsed) {
 		};**/
 
 		//syncing player pos
-		
+
 		if (server->connections.size() != 0){
 			server->connections.begin()->send('P');
-			std::cout << "Sent P1 pos" << std::endl;
+			//std::cout << "Sent P1 pos" << std::endl;
 			auto pos = level->body_P1_transform->position;
-			std::cout << pos.x <<" " << pos.y << " " <<  pos.z << std::endl;
+			//std::cout << pos.x <<" " << pos.y << " " <<  pos.z << std::endl;
 			server->connections.begin()->send(pos);
 		}
-		
+
 
 		if (level->resetSync)
 		{
@@ -54,11 +54,10 @@ void PlayerOneMode::update(float elapsed) {
 					if (type == 'C'){
             char *start = &data[1];
             //td::cout << (int)start[0] << " " << (int)start[1] << " " << (int)start[2] << " " << (int)start[3] << std::endl;
-            for (auto it = level->standpoints.begin(); it != level->standpoints.end(); ++it){
-              float* pos = reinterpret_cast<float*> (start);
-              it->offset = *pos;
-              it->update();
-              start += sizeof(float);
+            for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+              glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+              it->update(*pos - it->transform->position);
+              start += sizeof(glm::vec3);
             }
 					} else if (type == 'R') {
 						std::cout << "Received reset" << std::endl;
