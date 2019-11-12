@@ -115,50 +115,57 @@ void PlayerTwoMode::update(float elapsed) {
 
   if (client) {
 
-      //syncing reset
-      if (level->resetSync) {
-        std::cout << "Reset sent" << std::endl;
-        client->connection.send('R');
-        level->resetSync = false;
+    if (we_want_reset) {
+      client->connection.send('R');
+      reset_countdown = 0.0f;
+    }
+
+    if (!currently_moving.empty()) {
+      client->connection.send('C');
+      for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+        glm::vec3 pos = it->transform->position;
+        client->connection.send(pos);
+        glm::vec4 color = it->color;
+        client->connection.send(color);
       }
+    }
 
-      if (!currently_moving.empty()) {
-        client->connection.send('C');
-        for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
-          glm::vec3 pos = it->transform->position;
-          client->connection.send(pos);
-          glm::vec4 color = it->color;
-          client->connection.send(color);
-        }
+    //syncing player pos
+    client->connection.send('P');
+    auto pos = level->body_P2_transform->position;
+    client->connection.send(pos);
+
+  	client->poll([this](Connection *connection, Connection::Event evt){
+  		//Read server state
+      if (evt == Connection::OnRecv) {
+        std::vector< char > data = connection->recv_buffer;
+          char type = data[0];
+          if (type == 'R'){
+            they_want_reset = true;
+            reset_countdown = 0.0f;
+          } else if (type == 'P') {
+            //std::cout << "Received P1 pos" << std::endl;
+            char *start = &data[1];
+					  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+					  //std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
+            level->body_P1_transform->position = *pos;
+          }
+          connection->recv_buffer.clear();
       }
+  	}, 0.0);
+  	//if connection was closed,
+  	if (!client->connection) {
+  		Mode::set_current(nullptr);
+  	}
+  }
 
-      //syncing player pos
-      client->connection.send('P');
-      auto pos = level->body_P2_transform->position;
-      client->connection.send(pos);
-
-    	client->poll([this](Connection *connection, Connection::Event evt){
-    		//Read server state
-        if (evt == Connection::OnRecv) {
-          std::vector< char > data = connection->recv_buffer;
-            char type = data[0];
-            if (type == 'R'){
-              std::cout << "Received FROM SERVER reset" << std::endl;
-						  level->reset(true);
-            } else if (type == 'P') {
-              //std::cout << "Received P1 pos" << std::endl;
-              char *start = &data[1];
-						  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-						  //std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
-              level->body_P1_transform->position = *pos;
-            }
-            connection->recv_buffer.clear();
-        }
-    	}, 0.0);
-    	//if connection was closed,
-    	if (!client->connection) {
-    		Mode::set_current(nullptr);
-    	}
+  if (we_want_reset || they_want_reset) {
+    reset_countdown += elapsed;
+    if (reset_countdown > 15.0f) {
+      we_want_reset = false;
+      they_want_reset = false;
+      reset_countdown = 0.0f;
+    }
   }
 }
 

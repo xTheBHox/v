@@ -115,8 +115,10 @@ GameLevel::GameLevel(std::string const &scene_file) {
       goals.emplace_back(transform);
     } else if (transform->name.substr(0, 5) == "Body1") {
       body_P1_transform = transform;
+      body_P1_start = *transform;
     } else if (transform->name.substr(0, 5) == "Body2") {
       body_P2_transform = transform;
+      body_P2_start = *transform;
     } else {
       auto f = mesh_to_collider.find(mesh);
       if (f != mesh_to_collider.end()) {
@@ -200,14 +202,14 @@ bool GameLevel::detect_win() {
   return false;
 }
 
-void GameLevel::reset(bool resetBySync) {
-  if (!resetBySync){
-    resetSync = true;
-    std::cout << "Reset in game level" << std::endl;
-  }
+void GameLevel::reset() {
   for (Movable &m : movable_data) {
     m.transform->position = m.init_pos;
   }
+  body_P1_transform->position = body_P1_start.position;
+  body_P1_transform->rotation = body_P1_start.rotation;
+  body_P2_transform->position = body_P2_start.position;
+  body_P2_transform->rotation = body_P2_start.rotation;
 }
 
 //Helper: maintain a framebuffer to hold rendered geometry

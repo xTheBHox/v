@@ -24,8 +24,7 @@ struct GameLevel : Scene {
     GLuint output_fb
   );
 
-  void reset(bool resetBySync);
-  bool resetSync = false;
+  void reset();
 
 	//Goal objects(s) tracked using this structure:
 	struct Goal {
@@ -143,6 +142,8 @@ struct GameLevel : Scene {
   std::vector< Standpoint > standpoints;
   std::vector< Screen > screens;
 
+  Transform body_P1_start;
+  Transform body_P2_start;
   Transform *body_P1_transform;
   Camera *cam_P1;
   Transform *body_P2_transform;

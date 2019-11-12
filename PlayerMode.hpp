@@ -29,6 +29,9 @@ struct PlayerMode : Mode {
   bool pause = false;
   bool won = false;
   bool lost = false;
+  bool we_want_reset = false;
+  bool they_want_reset = false;
+  float reset_countdown = 0.0f;
   uint32_t player_num = 0;
 
   // Player camera tracked using this structure:
