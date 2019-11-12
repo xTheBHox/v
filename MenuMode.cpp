@@ -280,9 +280,9 @@ void MenuMode::update(float elapsed) {
 
 	if (current) {
     //else if (current->pause) {}
-		else {
+		//else {
       current->update(elapsed);
-    }
+    //}
 	}
 }
 

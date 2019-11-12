@@ -81,10 +81,10 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 void PlayerMode::update(float elapsed) {
   //TEMP: Only detect if position changes
   if (pause) return;
-  if (current->level->detect_win()) {
+  if (level->detect_win()) {
     won = true;
   }
-  else if (current->level->detect_lose()) {
+  else if (level->detect_lose()) {
     lost = true;
   }
 
