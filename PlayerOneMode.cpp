@@ -40,9 +40,10 @@ void PlayerOneMode::update(float elapsed) {
 		}
 
 
-		if (we_want_reset) {
+		if ((reset_countdown == 0.0f || they_want_reset) && we_want_reset) {
 			server->connections.begin()->send('R');
-      reset_countdown = 0.0f;
+      reset_countdown = 0.01f;
+      std::cout << "Requested reset" << std::endl;
 		}
     server->poll([this](Connection *connection, Connection::Event evt){
 			if (evt == Connection::OnRecv) {
@@ -62,9 +63,9 @@ void PlayerOneMode::update(float elapsed) {
               start += sizeof(glm::vec4);
             }
 					} else if (type == 'R') {
-						// std::cout << "Received reset" << std::endl;
+					  std::cout << "Received reset" << std::endl;
             they_want_reset = true;
-            reset_countdown = 0.0f;
+            reset_countdown = 0.01f;
 					} else if (type == 'P'){
 						// std::cout << "Received P2 pos" << std::endl;
 						char *start = &data[1];

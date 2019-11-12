@@ -67,6 +67,7 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
 	pause_items.back().on_select = [&](Item const &){
     if (current) {
       current->we_want_reset = true;
+      current->pause = false;
     }
 	};
 	pause_items.emplace_back("Main Menu");
@@ -275,6 +276,7 @@ void MenuMode::update(float elapsed) {
 	select_bounce_acc -= std::floor(select_bounce_acc);
 
 	if (current) {
+    current->update(elapsed);
     if (current->we_want_reset && current->they_want_reset) {
       current->level->reset();
       current->pause = false;
@@ -284,7 +286,6 @@ void MenuMode::update(float elapsed) {
       current->they_want_reset = false;
       SDL_SetRelativeMouseMode(SDL_TRUE);
     }
-    current->update(elapsed);
     //}
 	}
 }

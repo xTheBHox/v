@@ -215,7 +215,7 @@ void PlayerMode::update(float elapsed) {
             if (collider.movable) {
               on_movable = collider.movable;
               collider.movable->player = pov.body;
-              std::cout << collider.movable->transform->name << " got player" << std::endl;
+              // std::cout << collider.movable->transform->name << " got player" << std::endl;
             }
           }
 

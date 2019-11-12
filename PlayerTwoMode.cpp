@@ -60,8 +60,6 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
 
 void PlayerTwoMode::update(float elapsed) {
 
-  if (pause) return;
-
   if (controls_shift.flat) {
     if (shift.progress == 0.0f) {
       shift.sc = level->screen_get(pov.camera->transform);
@@ -115,9 +113,10 @@ void PlayerTwoMode::update(float elapsed) {
 
   if (client) {
 
-    if (we_want_reset) {
+    if ((reset_countdown == 0.0f || they_want_reset) && we_want_reset) {
       client->connection.send('R');
-      reset_countdown = 0.0f;
+      std::cout << "Requested reset" << std::endl;
+      reset_countdown = 0.01f;
     }
 
     if (!currently_moving.empty()) {
@@ -142,7 +141,8 @@ void PlayerTwoMode::update(float elapsed) {
           char type = data[0];
           if (type == 'R'){
             they_want_reset = true;
-            reset_countdown = 0.0f;
+            reset_countdown = 0.01f;
+            std::cout << "Received reset" << std::endl;
           } else if (type == 'P') {
             //std::cout << "Received P1 pos" << std::endl;
             char *start = &data[1];
@@ -162,6 +162,7 @@ void PlayerTwoMode::update(float elapsed) {
   if (we_want_reset || they_want_reset) {
     reset_countdown += elapsed;
     if (reset_countdown > 15.0f) {
+      std::cout << "Reset timed out" << std::endl;
       we_want_reset = false;
       they_want_reset = false;
       reset_countdown = 0.0f;
