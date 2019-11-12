@@ -28,6 +28,24 @@ void PlayerOneMode::update(float elapsed) {
 				connection_infos.erase(f);
 			}
 		};**/
+
+		//syncing player pos
+		
+		if (server->connections.size() != 0){
+			server->connections.begin()->send('P');
+			std::cout << "Sent P1 pos" << std::endl;
+			auto pos = level->body_P1_transform->position;
+			std::cout << pos.x <<" " << pos.y << " " <<  pos.z << std::endl;
+			server->connections.begin()->send(pos);
+		}
+		
+
+		if (level->resetSync)
+		{
+			//TEMP
+			server->connections.begin()->send('R');
+			level->resetSync = false;
+		}
     server->poll([this](Connection *connection, Connection::Event evt){
 			if (evt == Connection::OnRecv) {
 					//extract and erase data from the connection's recv_buffer:
@@ -42,7 +60,16 @@ void PlayerOneMode::update(float elapsed) {
               it->update();
               start += sizeof(float);
             }
-					} else {
+					} else if (type == 'R') {
+						std::cout << "Received reset" << std::endl;
+						level->reset(true);
+					} else if (type == 'P'){
+						std::cout << "Received P2 pos" << std::endl;
+						char *start = &data[1];
+						glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+						level->body_P2_transform->position = *pos;
+					}
+					else {
 						//invalid data type
 					}
 					connection->recv_buffer.clear();

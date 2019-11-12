@@ -20,7 +20,7 @@ PlayerTwoMode::PlayerTwoMode(GameLevel *level_ , std::string const &host, std::s
   player_num = 2;
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
-  //client.reset(new Client(host, port));
+  client.reset(new Client(host, port));
 }
 
 bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -41,17 +41,18 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     shift.sc->stpt->update();
     //TEMP
     if (client) {
-
-      client->connection.send('C');
-      for (auto it = level->standpoints.begin(); it != level->standpoints.end(); ++it){
-          float offset = it->offset;
-          client->connection.send(offset);
+      if (level->resetSync){
+        std::cout << "Reset sent" << std::endl;
+        client->connection.send('R');
+        level->resetSync = false;
       }
-
-    	client->poll([](Connection *, Connection::Event evt){
-    		//TODO: eventually, read server state
-
-    	}, 0.0);
+      else{
+        client->connection.send('C');
+        for (auto it = level->standpoints.begin(); it != level->standpoints.end(); ++it){
+            float offset = it->offset;
+            client->connection.send(offset);
+        }
+      }
     	//if connection was closed,
     	if (!client->connection) {
     		Mode::set_current(nullptr);
@@ -120,6 +121,43 @@ void PlayerTwoMode::update(float elapsed) {
     PlayerMode::update(elapsed);
 
   }
+  if (client) {
+
+      //syncing reset
+      if (level->resetSync){
+        std::cout << "Reset sent" << std::endl;
+        client->connection.send('R');
+        level->resetSync = false;
+      }
+
+      //syncing player pos
+      client->connection.send('P');
+      auto pos = level->body_P2_transform->position;
+      client->connection.send(pos);
+
+    	client->poll([this](Connection *connection, Connection::Event evt){
+    		//Read server state
+        if (evt == Connection::OnRecv) {
+          std::vector< char > data = connection->recv_buffer;
+            char type = data[0];
+            if (type == 'R'){
+              std::cout << "Received FROM SERVER reset" << std::endl;
+						  level->reset(true);
+            }else if (type == 'P'){
+              std::cout << "Received P1 pos" << std::endl;
+              char *start = &data[1];
+						  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+						  std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
+              level->body_P1_transform->position = *pos;
+            }
+            connection->recv_buffer.clear();
+        }
+    	}, 0.0);
+    	//if connection was closed,
+    	if (!client->connection) {
+    		Mode::set_current(nullptr);
+    	}
+  }
 }
 
 void print_mat4(glm::mat4 const &M) {
@@ -173,9 +211,9 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
     PlayerMode::draw(drawable_size);
   }
 
-  for (auto &stpt : level->standpoints) {
-    stpt.resize_texture(drawable_size);
-    stpt.update_texture(level);
-  }
+  //for (auto &stpt : level->standpoints) {
+    //stpt.resize_texture(drawable_size);
+    //stpt.update_texture(level);
+  //}
 
 }

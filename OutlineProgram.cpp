@@ -63,7 +63,7 @@ FlatProgram::FlatProgram() {
 		"in vec2 texCoord;\n"
 		"out vec4 fragColor;\n"
 		"void main() {\n"
-    " vec4 cout = glm::vec4(0.0, 0.0, 0.0, 0.0);\n"
+    " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
     " if (USE_TEX == 0U) {\n"
     "   cout = color;\n"
     " } else if (USE_TEX == 1U) {\n"

@@ -24,14 +24,17 @@ struct GameLevel : Scene {
     GLuint output_fb
   );
 
-  void reset();
+  void reset(bool resetBySync);
+  bool resetSync = false;
 
 	//Goal objects(s) tracked using this structure:
 	struct Goal {
 		Goal(Scene::Transform *transform_) : transform(transform_) { };
 		Scene::Transform *transform;
-		float spin_acc = 0.0f;
+		float spin_acc = 10.0f;
 	};
+
+  bool detect_win();
 
   struct Movable {
 
@@ -142,6 +145,5 @@ struct GameLevel : Scene {
   Camera *cam_P1;
   Transform *body_P2_transform;
   Camera *cam_P2;
-
 
 };
