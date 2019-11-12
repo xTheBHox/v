@@ -17,8 +17,6 @@
 
 //used for lookup later:
 Mesh const *mesh_Goal = nullptr;
-//Mesh const *mesh_Body_P1 = nullptr;
-//Mesh const *mesh_Body_P2 = nullptr;
 
 //names of mesh-to-collider-mesh:
 std::unordered_map< Mesh const *, Mesh const * > mesh_to_collider;
@@ -33,8 +31,6 @@ Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
 
   //key objects:
   mesh_Goal = &ret->lookup("Goal");
-  //mesh_Body_P1 = &ret->lookup("Body1");
-  //mesh_Body_P2 = &ret->lookup("Body2");
 
   //collidable objects:
   mesh_to_collider.insert(std::make_pair(&ret->lookup("Platform1"), &ret->lookup("Platform1")));
@@ -74,12 +70,6 @@ GameLevel::GameLevel(std::string const &scene_file) {
         pipeline.set_uniforms = [](){
           glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_TEX);
         };
-      } else if (transform->name.substr(name_len - 9, name_len - 1) == "Position") {
-        std::cout << "MovePosition detected: " << transform->name << std::endl;
-        drawables.pop_back();
-        move_positions.emplace_back(transform);
-        move_positions.back().pos = transform->position;
-        move_positions.back().color = mesh->color;
       } else {
         std::cout << "Movable detected: " << transform->name << std::endl;
 
@@ -120,11 +110,16 @@ GameLevel::GameLevel(std::string const &scene_file) {
       if (oc.transform->name.substr(0, xf_name.size()) == xf_name) {
         std::cout << "Matched " << xf_name << " to " << oc.transform->name << std::endl;
         standpoints.emplace_back(&oc, &m);
-        for (Standpoint::MovePosition &mp : move_positions) {
-          std::string &mp_name = mp.transform->name;
+        Standpoint &stpt = standpoints.back();
+        std::list< Light >::iterator lit = lights.begin();
+        while (lit != lights.end()) {
+          std::string &mp_name = lit->transform->name;
           if (mp_name.substr(0, mp_name.size()-9) == oc.transform->name) {
             std::cout << "Matched " << mp_name << " to " << oc.transform->name << std::endl;
-            standpoints.back().move_pos.emplace_back(&mp);
+            stpt.move_pos.emplace_back(&(*lit));
+            lights.erase(lit++);
+          } else {
+            lit++;
           }
         }
         break;
@@ -443,6 +438,11 @@ void GameLevel::Standpoint::update_texture(GameLevel *level) {
 
   level->draw(size, pos, proj * w2l, fb.fb_output);
 
+}
+
+GameLevel::Standpoint::MovePosition::MovePosition(Light *light) {
+  transform = light->transform;
+  color = glm::vec4(light->color, 1.0f);
 }
 
 GameLevel::Screen::Screen(Transform *transform_, Drawable::Pipeline *pipeline_)

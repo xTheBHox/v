@@ -60,6 +60,8 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     	}
     }
     //END TEMP
+  } else if (evt.type == SDL_MOUSEMOTION && shift.progress > 0.0f) {
+    // ignore
   } else {
     return PlayerMode::handle_event(evt, window_size);
   }

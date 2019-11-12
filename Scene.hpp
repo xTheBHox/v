@@ -127,6 +127,7 @@ struct Scene {
 
 		//light energy at our conventional three wavelengths:
 		glm::vec3 energy = glm::vec3(1.0f);
+    glm::vec3 color = glm::vec3(0.0f);
 
 		//Spotlight specific:
 		float spot_fov = glm::radians(45.0f);
