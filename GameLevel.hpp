@@ -34,7 +34,7 @@ struct GameLevel : Scene {
 		float spin_acc = 10.0f;
 	};
 
-  bool detect_win();
+  void detect_win();
 
   struct Movable {
 

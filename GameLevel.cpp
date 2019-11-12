@@ -159,19 +159,21 @@ GameLevel::~GameLevel() {
 
 }
 
-bool GameLevel::detect_win(){
+void GameLevel::detect_win(){
   for (auto &g: goals){
     glm::vec3 goalPos = g.transform->position;
     glm::vec3 p1 = body_P1_transform->position;
     glm::vec3 p2 = body_P2_transform->position;
     auto dis1 = glm::distance(goalPos, p1);
     auto dis2 = glm::distance(goalPos, p2);
+    std::cout << dis1 << std::endl;
     if ((dis1 < g.spin_acc) || (dis2 < g.spin_acc)){
       std::cout << "You win!!" << std::endl;
-      return true;
+      exit(0);
+      //return true;
     }
   }
-  return false;
+  //return false;
 }
 
 void GameLevel::reset(bool resetBySync) {
