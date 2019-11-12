@@ -39,7 +39,9 @@ Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
   //collidable objects:
   mesh_to_collider.insert(std::make_pair(&ret->lookup("Platform1"), &ret->lookup("Platform1")));
   mesh_to_collider.insert(std::make_pair(&ret->lookup("Platform2"), &ret->lookup("Platform2")));
+  mesh_to_collider.insert(std::make_pair(&ret->lookup("Platform3"), &ret->lookup("Platform3")));
   mesh_to_collider.insert(std::make_pair(&ret->lookup("MovePlatform"), &ret->lookup("MovePlatform")));
+  mesh_to_collider.insert(std::make_pair(&ret->lookup("ScreenFrame"), &ret->lookup("ScreenFrame")));
 
 	return ret;
 });
