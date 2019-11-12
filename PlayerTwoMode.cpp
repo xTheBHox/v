@@ -36,6 +36,7 @@ bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_
     && shift.progress == 1.0f
     && evt.motion.state & SDL_BUTTON_LMASK
   ) {
+    level->detect_win();
     float dy = evt.motion.yrel / float(window_size.y) * -2.0f;
     shift.sc->stpt->movable->transform->position +=
       (controls_shift.drag_sensitivity * dy) * shift.sc->stpt->axis;
@@ -211,9 +212,9 @@ void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {
     PlayerMode::draw(drawable_size);
   }
 
-  for (auto &stpt : level->standpoints) {
-    stpt.resize_texture(drawable_size);
-    stpt.update_texture(level);
-  }
+  //for (auto &stpt : level->standpoints) {
+    //stpt.resize_texture(drawable_size);
+    //stpt.update_texture(level);
+  //}
 
 }

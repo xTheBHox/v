@@ -56,7 +56,8 @@ void PlayerOneMode::update(float elapsed) {
             //td::cout << (int)start[0] << " " << (int)start[1] << " " << (int)start[2] << " " << (int)start[3] << std::endl;
             for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
               glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-              it->update(*pos - it->transform->position);
+			  glm::vec3 offset = *pos - it->transform->position;
+              it->update(offset);
               start += sizeof(glm::vec3);
             }
 					} else if (type == 'R') {
