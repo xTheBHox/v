@@ -216,7 +216,6 @@ void GameLevel::reset() {
 struct FB {
 	//object data gets stored in these textures:
 	GLuint normal_tex = 0;
-  GLuint position_tex = 0;
 
 	//output image gets written to this texture:
 	GLuint color_tex = 0;
@@ -247,7 +246,6 @@ struct FB {
 
 		//set up normal_tex as a 16-bit floating point RGBA texture:
 		alloc_recttex(normal_tex, GL_RGB32F);
-    alloc_recttex(position_tex, GL_RGB32F);
 
 		//set up output_tex as an 8-bit fixed point RGBA texture:
 		alloc_recttex(color_tex, GL_RGBA8);
@@ -281,7 +279,6 @@ struct FB {
       //set up framebuffer: (don't need to do when resizing)
       glBindFramebuffer(GL_FRAMEBUFFER, fb_outline);
       glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, normal_tex, 0);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, position_tex, 0);
       glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
       GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
       glDrawBuffers(2, bufs);
@@ -377,16 +374,12 @@ void GameLevel::draw(
   glBindTexture(GL_TEXTURE_RECTANGLE, fb.color_tex);
   glActiveTexture(GL_TEXTURE1);
   glBindTexture(GL_TEXTURE_RECTANGLE, fb.normal_tex);
-  glActiveTexture(GL_TEXTURE2);
-  glBindTexture(GL_TEXTURE_RECTANGLE, fb.position_tex);
   glDrawArrays(GL_TRIANGLES, 0, 3);
   GL_ERRORS();
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, 0);
   glActiveTexture(GL_TEXTURE1);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glActiveTexture(GL_TEXTURE2);
   glBindTexture(GL_TEXTURE_2D, 0);
 
   glBindVertexArray(0);
