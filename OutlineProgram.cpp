@@ -208,10 +208,10 @@ OutlineProgram1::OutlineProgram1() {
     " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
     " if (dot(nx0, nx1) > 0.95 &&\n"          // Adjacent normals are close
     "  dot(ny0, ny1) > 0.95 &&\n"             // Adjacent normals are close
-    "  abs(dot(px1 - px0, nx0)) < 0.001 &&\n"
-    "  abs(dot(px1 - px0, nx1)) < 0.001 &&\n"
-    "  abs(dot(py1 - py0, ny0)) < 0.001 &&\n"
-    "  abs(dot(py1 - py0, ny1)) < 0.001) {\n"
+    "  abs(dot(px1 - px0, nx0)) < 0.01 &&\n"
+    "  abs(dot(px1 - px0, nx1)) < 0.01 &&\n"
+    "  abs(dot(py1 - py0, ny0)) < 0.01 &&\n"
+    "  abs(dot(py1 - py0, ny1)) < 0.01) {\n"
     "   cout = cin;\n"
     //"  cout = vec4(1.0, 1.0, 1.0, 1.0) - cin;\n"
     //"  cout = vec4(1.0, 1.0, 1.0, 1.0);\n"
