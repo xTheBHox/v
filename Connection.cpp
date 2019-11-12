@@ -19,7 +19,8 @@ void poll_connections(
 	std::list< Connection > &connections,
 	std::function< void(Connection *, Connection::Event event) > const &on_event,
 	double timeout,
-	SOCKET listen_socket = INVALID_SOCKET) {
+	SOCKET listen_socket = INVALID_SOCKET
+) {
 
 	fd_set read_fds, write_fds;
 	FD_ZERO(&read_fds);
@@ -308,7 +309,6 @@ Client::Client(std::string const &host, std::string const &port) : connections(1
 		}
 	}
 }
-
 
 void Client::poll(std::function< void(Connection *, Connection::Event event) > const &on_event, double timeout) {
 	poll_connections("Client::poll", connections, on_event, timeout, INVALID_SOCKET);

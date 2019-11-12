@@ -32,18 +32,18 @@ void PlayerOneMode::update(float elapsed) {
 		//syncing player pos
 
 		if (server->connections.size() != 0){
+      if ((reset_countdown == 0.0f || they_want_reset) && we_want_reset) {
+        server->connections.begin()->send('R');
+        reset_countdown = 0.01f;
+        std::cout << "Requested reset" << std::endl;
+      }
+
 			server->connections.begin()->send('P');
 			//std::cout << "Sent P1 pos" << std::endl;
 			auto pos = level->body_P1_transform->position;
 			//std::cout << pos.x <<" " << pos.y << " " <<  pos.z << std::endl;
 			server->connections.begin()->send(pos);
-		}
 
-
-		if ((reset_countdown == 0.0f || they_want_reset) && we_want_reset) {
-			server->connections.begin()->send('R');
-      reset_countdown = 0.01f;
-      std::cout << "Requested reset" << std::endl;
 		}
     server->poll([this](Connection *connection, Connection::Event evt){
 			if (evt == Connection::OnRecv) {
