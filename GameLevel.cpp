@@ -353,6 +353,9 @@ void GameLevel::draw(
     assert(drawable.transform); //drawables *must* have a transform
     glm::mat4 object_to_world = drawable.transform->make_local_to_world();
 
+		if (outline_program_0->OBJECT_TO_WORLD_mat4 != -1U) {
+			glUniformMatrix4fv(outline_program_0->OBJECT_TO_WORLD_mat4, 1, GL_FALSE, glm::value_ptr(object_to_world));
+		}
     if (outline_program_0->OBJECT_TO_CLIP_mat4 != -1U) {
       glm::mat4 object_to_clip = world_to_clip * object_to_world;
       glUniformMatrix4fv(outline_program_0->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(object_to_clip));
@@ -370,8 +373,12 @@ void GameLevel::draw(
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glDisable(GL_DEPTH_TEST);
 
-  glBindVertexArray(vao_empty);
   glUseProgram(outline_program_1->program);
+  glBindVertexArray(vao_empty);
+
+  if (outline_program_1->EYE_vec3 != -1U) {
+    glUniform3fv(outline_program_1->EYE_vec3, 1, glm::value_ptr(eye));
+  }
 
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_RECTANGLE, fb.color_tex);

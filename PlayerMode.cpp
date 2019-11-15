@@ -124,8 +124,8 @@ void PlayerMode::update(float elapsed) {
       if (controls.sprint) pl_vel_move *= 1.5f; // sprint force multiplier, constant
       //pl_vel += pl_vel_move;
     }
-    pl_vel.x = glm::mix(pl_vel.x, pl_vel_move.x, std::pow(0.5f, elapsed / 0.02f));
-    pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / 0.02f));
+    pl_vel.x = glm::mix(pl_vel.x, pl_vel_move.x, std::pow(0.5f, elapsed / 0.01f));
+    pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / 0.01f));
     // pov.vel *= std::pow(0.5f, elapsed / 0.01f); // friction
   }
 

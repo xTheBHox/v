@@ -120,7 +120,8 @@ OutlineProgram0::OutlineProgram0() {
   program = gl_compile_program(
 		//vertex shader:
 		"#version 330\n"
-		"uniform mat4 OBJECT_TO_CLIP;\n"
+    "uniform mat4 OBJECT_TO_WORLD;\n"
+    "uniform mat4 OBJECT_TO_CLIP;\n"
 		"in vec4 Position;\n"
 		"in vec3 Normal;\n"
 		"in vec4 Color;\n"
@@ -128,8 +129,8 @@ OutlineProgram0::OutlineProgram0() {
     "out vec3 normal;\n"
     "out vec3 position;\n"
 		"void main() {\n"
-    " normal = Normal;\n"
-    " position = Position.xyz;\n"
+    " normal = (OBJECT_TO_WORLD * vec4(Normal, 0.0)).xyz;\n"
+    " position = (OBJECT_TO_WORLD * Position).xyz;\n"
     "	gl_Position = OBJECT_TO_CLIP * Position;\n"
 		"}\n"
 	,
@@ -154,8 +155,8 @@ OutlineProgram0::OutlineProgram0() {
 	TexCoord_vec2 = glGetAttribLocation(program, "TexCoord");
 
 	//look up the locations of uniforms:
+  OBJECT_TO_WORLD_mat4 = glGetUniformLocation(program, "OBJECT_TO_WORLD");
 	OBJECT_TO_CLIP_mat4 = glGetUniformLocation(program, "OBJECT_TO_CLIP");
-
 	//set TEX to always refer to texture binding zero:
 	glUseProgram(program); //bind program -- glUniform* calls refer to this program now
 
@@ -190,28 +191,31 @@ OutlineProgram1::OutlineProgram1() {
 	,
 		//fragment shader:
 		"#version 330\n"
+    "uniform vec3 EYE;\n"
 		"uniform sampler2DRect COLOR_TEX;\n"
 		"uniform sampler2DRect NORMAL_TEX;\n"
 		"uniform sampler2DRect POSITION_TEX;\n"
 		"out vec4 fragColor;\n"
 		"void main() {\n"
     " ivec2 pos = ivec2(gl_FragCoord);\n"
-    " vec4 nx0 = texelFetch(NORMAL_TEX, ivec2(pos.x - 1, pos.y));\n"
-    " vec4 nx1 = texelFetch(NORMAL_TEX, ivec2(pos.x + 1, pos.y));\n"
-    " vec4 ny0 = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y - 1));\n"
-    " vec4 ny1 = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y + 1));\n"
-    " vec4 px0 = texelFetch(POSITION_TEX, ivec2(pos.x - 1, pos.y));\n"
-    " vec4 px1 = texelFetch(POSITION_TEX, ivec2(pos.x + 1, pos.y));\n"
-    " vec4 py0 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y - 1));\n"
-    " vec4 py1 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y + 1));\n"
+    " vec4 n = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y));\n"
+    " vec4 p = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y));\n"
+    " float dist2 = dot(p.xyz - EYE, p.xyz - EYE);\n"
+    " float off = 10.0 / sqrt(dist2) + 1;\n"
+    " vec4 nx0 = texelFetch(NORMAL_TEX, ivec2(pos.x - off, pos.y));\n"
+    " vec4 nx1 = texelFetch(NORMAL_TEX, ivec2(pos.x + off, pos.y));\n"
+    " vec4 ny0 = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y - off));\n"
+    " vec4 ny1 = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y + off));\n"
+    " vec4 px0 = texelFetch(POSITION_TEX, ivec2(pos.x - off, pos.y));\n"
+    " vec4 px1 = texelFetch(POSITION_TEX, ivec2(pos.x + off, pos.y));\n"
+    " vec4 py0 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y - off));\n"
+    " vec4 py1 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y + off));\n"
     " vec4 cin = texelFetch(COLOR_TEX, pos);\n"
     " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
     " if (dot(nx0, nx1) > 0.95 &&\n"          // Adjacent normals are close
     "  dot(ny0, ny1) > 0.95 &&\n"             // Adjacent normals are close
-    "  abs(dot(px1 - px0, nx0)) < 0.001 &&\n"
-    "  abs(dot(px1 - px0, nx1)) < 0.001 &&\n"
-    "  abs(dot(py1 - py0, ny0)) < 0.001 &&\n"
-    "  abs(dot(py1 - py0, ny1)) < 0.001) {\n"
+    "  abs(dot(px1 - px0, n)) < 0.01 &&\n"
+    "  abs(dot(py1 - py0, n)) < 0.01){\n"
     "   cout = cin;\n"
     //"  cout = vec4(1.0, 1.0, 1.0, 1.0) - cin;\n"
     //"  cout = vec4(1.0, 1.0, 1.0, 1.0);\n"
@@ -219,6 +223,8 @@ OutlineProgram1::OutlineProgram1() {
 		"	fragColor = cout;\n"
 		"}\n"
 	);
+
+  EYE_vec3 = glGetUniformLocation(program, "EYE");
 
 	GLuint COLOR_TEX_sampler2D = glGetUniformLocation(program, "COLOR_TEX");
   GLuint NORMAL_TEX_sampler2D = glGetUniformLocation(program, "NORMAL_TEX");
