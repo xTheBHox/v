@@ -63,7 +63,7 @@ FlatProgram::FlatProgram() {
 		"in vec2 texCoord;\n"
 		"out vec4 fragColor;\n"
 		"void main() {\n"
-    " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
+    " vec4 cout = vec4(1.0, 1.0, 1.0, 1.0);\n"
     " if (USE_TEX == 0U) {\n"
     "   cout = color;\n"
     " } else if (USE_TEX == 1U) {\n"
@@ -212,10 +212,15 @@ OutlineProgram1::OutlineProgram1() {
     " vec4 py1 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y + off));\n"
     " vec4 cin = texelFetch(COLOR_TEX, pos);\n"
     " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
-    " if (dot(nx0, nx1) > 0.95 &&\n"          // Adjacent normals are close
+    " if (dot(n, n) < 2.0 ||\n"
+    "  (dot(nx0, nx1) > 0.95 &&\n"          // Adjacent normals are close
     "  dot(ny0, ny1) > 0.95 &&\n"             // Adjacent normals are close
-    "  abs(dot(px1 - px0, n)) < 0.01 &&\n"
-    "  abs(dot(py1 - py0, n)) < 0.01){\n"
+    "  abs(dot(normalize(px1 - px0), n)) < 0.01 &&\n"
+    "  abs(dot(normalize(py1 - py0), n)) < 0.01)){\n"
+    //"  abs(dot(px1 - px0, nx0)) < 0.01 &&\n"
+    //"  abs(dot(px1 - px0, nx1)) < 0.01 &&\n"
+    //"  abs(dot(py1 - py0, ny0)) < 0.01 &&\n"
+    //"  abs(dot(py1 - py0, ny1)) < 0.01) {\n"
     "   cout = cin;\n"
     //"  cout = vec4(1.0, 1.0, 1.0, 1.0) - cin;\n"
     //"  cout = vec4(1.0, 1.0, 1.0, 1.0);\n"

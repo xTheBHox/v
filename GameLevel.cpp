@@ -324,8 +324,8 @@ void GameLevel::draw(
   // Color drawing
 
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_color);
-  GLfloat zeros[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-  glClearBufferfv(GL_COLOR, 0, zeros);
+  GLfloat bg_color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+  glClearBufferfv(GL_COLOR, 0, bg_color);
   glClear(GL_DEPTH_BUFFER_BIT);
 
   glDisable(GL_BLEND);
@@ -338,7 +338,8 @@ void GameLevel::draw(
 
   // Draw the outlines
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_outline);
-  glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
+  GLfloat bg_normal[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  glClearBufferfv(GL_COLOR, 0, bg_normal);
   glClear(GL_COLOR_BUFFER_BIT);
 
   glDisable(GL_BLEND);
