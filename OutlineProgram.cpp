@@ -212,7 +212,7 @@ OutlineProgram1::OutlineProgram1() {
     " vec4 py1 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y + off));\n"
     " vec4 cin = texelFetch(COLOR_TEX, pos);\n"
     " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
-    " if (dot(n, n) < 2.0 ||\n"
+    " if (dot(n.xyz, n.xyz) < 0.9 ||\n"
     "  (dot(nx0, nx1) > 0.95 &&\n"          // Adjacent normals are close
     "  dot(ny0, ny1) > 0.95 &&\n"             // Adjacent normals are close
     "  abs(dot(normalize(px1 - px0), n)) < 0.01 &&\n"

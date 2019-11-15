@@ -137,20 +137,31 @@ void PlayerTwoMode::update(float elapsed) {
   	client->poll([this](Connection *connection, Connection::Event evt){
   		//Read server state
       if (evt == Connection::OnRecv) {
-        std::vector< char > data = connection->recv_buffer;
-          char type = data[0];
-          if (type == 'R'){
+        char type;
+        while (connection->peek(type) == 0) {
+          if (type == 'R') {
             they_want_reset = true;
             reset_countdown = 0.01f;
             std::cout << "Received reset" << std::endl;
           } else if (type == 'P') {
-            //std::cout << "Received P1 pos" << std::endl;
-            char *start = &data[1];
-					  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-					  //std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
-            level->body_P1_transform->position = *pos;
+            glm::vec3 pos;
+            connection->recv(type);
+            connection->recv(pos);
+            level->body_P1_transform->position = pos;
           }
-          connection->recv_buffer.clear();
+        }
+          // char type = data[0];
+          // if (type == 'R'){
+          //   they_want_reset = true;
+          //   reset_countdown = 0.01f;
+          //   std::cout << "Received reset" << std::endl;
+          // } else if (type == 'P') {
+          //   //std::cout << "Received P1 pos" << std::endl;
+          //   char *start = &data[1];
+					//   glm::vec3* pos;
+					//   //std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
+          //   level->body_P1_transform->position = *pos;
+          // }
       }
   	}, 0.0);
   	//if connection was closed,

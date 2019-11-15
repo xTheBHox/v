@@ -38,6 +38,7 @@ constexpr const SOCKET INVALID_SOCKET = -1;
 #include <vector>
 #include <list>
 #include <string>
+#include <cstring>
 #include <functional>
 
 /*
@@ -91,6 +92,32 @@ struct Connection {
 	void send_raw(void const *data, size_t size) {
 		send_buffer.insert(send_buffer.end(), reinterpret_cast< uint8_t const * >(data), reinterpret_cast< uint8_t const * >(data) + size);
 	}
+
+
+  // Helper that will get any type from the recv buffer:
+  template< typename T >
+  int peek(T &t, size_t start = 0) {
+    if (peek_raw(&t, start, sizeof(T)) == -1) return -1;
+    return start + sizeof(T);
+  }
+  int peek_raw(void *data, size_t size, size_t start_index=0) {
+    if (recv_buffer.size() < start_index + size) return -1;
+    memcpy(data, recv_buffer.data()+start_index, size);
+    return 0;
+  }
+  // Helper that will get any type from the recv buffer:
+  template< typename T >
+  int recv(T &t) {
+    return recv_raw(&t, sizeof(T));
+  }
+
+  //Helper that will get raw bytes from the recv buffer:
+  int recv_raw(void *data, size_t size) {
+    if (recv_buffer.size() < size) return -1;
+    memcpy(data, recv_buffer.data(), size);
+    recv_buffer.erase(recv_buffer.begin(), recv_buffer.begin() + size);
+    return 0;
+  }
 
 	//Call 'close' to mark a connection for discard:
 	void close() {
