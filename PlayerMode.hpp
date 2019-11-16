@@ -45,6 +45,19 @@ struct PlayerMode : Mode {
     bool in_air = false;
   } pov;
 
+  struct {
+    bool flat = false;
+  } controls_shift;
+
+  struct {
+    GameLevel::Screen *sc = nullptr;
+    // How much the camera has shifted
+    float progress = 0.0f;
+    float speed = 4.0f; // 1/t, t is the time taken to shift
+  } shift;
+
+  std::list< size_t > currently_moving;
+  
   GameLevel::Movable *on_movable = nullptr;
 
   GameLevel *level;

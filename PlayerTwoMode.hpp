@@ -13,19 +13,6 @@ struct PlayerTwoMode : PlayerMode {
 	virtual void update(float elapsed) override;
   virtual void draw(glm::uvec2 const &drawable_size) override;
 
-  struct {
-    bool flat = false;
-    float drag_sensitivity = 20.0f;
-  } controls_shift;
-
-  struct {
-    GameLevel::Screen *sc = nullptr;
-    // How much the camera has shifted
-    float progress = 0.0f;
-    float speed = 4.0f; // 1/t, t is the time taken to shift
-  } shift;
-
-  std::list< size_t > currently_moving;
   std::unique_ptr< Client > client = nullptr;
 
 };
