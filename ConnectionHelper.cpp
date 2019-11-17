@@ -100,9 +100,80 @@
 	}
 	void ConnectionHelper::receive_data(){
 		if (isServer){
+			if (server) {
+				server->poll([this](Connection *connection, Connection::Event evt){
+				if (evt == Connection::OnRecv) {
+						//extract and erase data from the connection's recv_buffer:
+						std::vector< char > data = connection->recv_buffer;
+						char type = data[0];
+						if (type == 'C') {
+							char *start = &data[1];
+							size_t* len = reinterpret_cast<size_t*> (start);
+							start += sizeof(size_t);
+							for (size_t i = 0 ; i < *len; i++){
+								size_t* index = reinterpret_cast<size_t*> (start);
+								start += sizeof(size_t);
+								glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+								glm::vec3 offset = *pos - (&(level->movable_data[*index]))->transform->position;
+								start += sizeof(glm::vec3);
+								glm::vec4* color = reinterpret_cast<glm::vec4*> (start);
+								start += sizeof(glm::vec4);
+								(&(level->movable_data[*index]))->update(offset);
+								(&(level->movable_data[*index]))->color = *color;
+							}
+						} else if (type == 'R') {
+							std::cout << "Received reset" << std::endl;
+							they_want_reset = true;
+							reset_countdown = 0.01f;
+						} else if (type == 'P'){
+							char *start = &data[1];
+							glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+							level->body_P2_transform->position = *pos;
+						}
+
+						connection->recv_buffer.clear();
+						//send to other connections:
+				}
+	  		},0.0 //timeout (in seconds)
+			  );
+			}
 
 		}else{
-
+			if (client){
+				client->poll([this](Connection *connection, Connection::Event evt){
+  				//Read server state
+					if (evt == Connection::OnRecv) {
+						std::vector< char > data = connection->recv_buffer;
+						char type = data[0];
+						if (type == 'C') {
+							char *start = &data[1];
+							size_t* len = reinterpret_cast<size_t*> (start);
+							start += sizeof(size_t);
+							for (size_t i = 0 ; i < *len; i++){
+								size_t* index = reinterpret_cast<size_t*> (start);
+								start += sizeof(size_t);
+								glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+								glm::vec3 offset = *pos - (&(level->movable_data[*index]))->transform->position;
+								start += sizeof(glm::vec3);
+								glm::vec4* color = reinterpret_cast<glm::vec4*> (start);
+								start += sizeof(glm::vec4);
+								(&(level->movable_data[*index]))->update(offset);
+								(&(level->movable_data[*index]))->color = *color;
+							}
+						}
+						else if (type == 'R'){
+							they_want_reset = true;
+							reset_countdown = 0.01f;
+							std::cout << "Received reset" << std::endl;
+						} else if (type == 'P') {
+							char *start = &data[1];
+							glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+							level->body_P1_transform->position = *pos;
+						}
+						connection->recv_buffer.clear();
+					}
+  				}, 0.0);
+			}
 		}
 	}
 	//std::unique_ptr< Server > server = nullptr;

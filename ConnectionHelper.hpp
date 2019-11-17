@@ -15,6 +15,9 @@ struct ConnectionHelper {
 	std::unique_ptr< Server > server = nullptr;
 	std::unique_ptr< Client > client = nullptr;
 	GameLevel *level;
+	bool they_want_reset;
+	bool we_want_reset;
+	float reset_countdown;
 
 
 };
