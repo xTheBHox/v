@@ -32,11 +32,11 @@ void PlayerOneMode::update(float elapsed) {
 		//syncing player pos
 
 		if (server->connections.size() != 0){
-      if ((reset_countdown == 0.0f || they_want_reset) && we_want_reset) {
-        server->connections.begin()->send('R');
-        reset_countdown = 0.01f;
-        std::cout << "Requested reset" << std::endl;
-      }
+			if ((reset_countdown == 0.0f || they_want_reset) && we_want_reset) {
+				server->connections.begin()->send('R');
+				reset_countdown = 0.01f;
+				std::cout << "Requested reset" << std::endl;
+      		}
 
 			server->connections.begin()->send('P');
 			//std::cout << "Sent P1 pos" << std::endl;
@@ -51,21 +51,37 @@ void PlayerOneMode::update(float elapsed) {
 					std::vector< char > data = connection->recv_buffer;
 					char type = data[0];
 					if (type == 'C') {
-            char *start = &data[1];
-            //td::cout << (int)start[0] << " " << (int)start[1] << " " << (int)start[2] << " " << (int)start[3] << std::endl;
-            for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
-              glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-              glm::vec3 offset = *pos - it->transform->position;
-              it->update(offset);
-              start += sizeof(glm::vec3);
-              glm::vec4* color = reinterpret_cast<glm::vec4*> (start);
-              it->color = *color;
-              start += sizeof(glm::vec4);
-            }
+						char *start = &data[1];
+						size_t* len = reinterpret_cast<size_t*> (start);
+						//std::cout << *len << std::endl;
+						start += sizeof(size_t);
+						for (size_t i = 0 ; i < *len; i++){
+							size_t* index = reinterpret_cast<size_t*> (start);
+							start += sizeof(size_t);
+							glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+							glm::vec3 offset = *pos - (&(level->movable_data[*index]))->transform->position;
+							start += sizeof(glm::vec3);
+							glm::vec4* color = reinterpret_cast<glm::vec4*> (start);
+							start += sizeof(glm::vec4);
+							(&(level->movable_data[*index]))->update(offset);
+							(&(level->movable_data[*index]))->color = *color;
+						}
+						//td::cout << (int)start[0] << " " << (int)start[1] << " " << (int)start[2] << " " << (int)start[3] << std::endl;
+						/*for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
+							glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
+							glm::vec3 offset = *pos - it->transform->position;
+							it->update(offset);
+							start += sizeof(glm::vec3);
+							glm::vec4* color = reinterpret_cast<glm::vec4*> (start);
+							it->color = *color;
+							start += sizeof(glm::vec4);
+            			}
+						*/
+
 					} else if (type == 'R') {
-					  std::cout << "Received reset" << std::endl;
-            they_want_reset = true;
-            reset_countdown = 0.01f;
+						std::cout << "Received reset" << std::endl;
+            			they_want_reset = true;
+            			reset_countdown = 0.01f;
 					} else if (type == 'P'){
 						// std::cout << "Received P2 pos" << std::endl;
 						char *start = &data[1];

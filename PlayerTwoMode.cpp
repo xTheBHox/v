@@ -121,12 +121,27 @@ void PlayerTwoMode::update(float elapsed) {
 
     if (!currently_moving.empty()) {
       client->connection.send('C');
+      size_t len = currently_moving.size();
+      //send number of moved objects
+      client->connection.send(len);
+      for (auto it = currently_moving.begin(); it != currently_moving.end(); ++it){
+        //send index
+        client->connection.send(*it);
+        //send pos
+        glm::vec3 pos = level->movable_data[*it].transform->position;
+        client->connection.send(pos);
+        //send color
+        glm::vec4 color = level->movable_data[*it].color;
+        client->connection.send(color);
+      }
+      /**
       for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
         glm::vec3 pos = it->transform->position;
         client->connection.send(pos);
         glm::vec4 color = it->color;
         client->connection.send(color);
       }
+      **/
     }
 
     //syncing player pos
