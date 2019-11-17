@@ -153,19 +153,27 @@ void PlayerTwoMode::update(float elapsed) {
   		//Read server state
       if (evt == Connection::OnRecv) {
         std::vector< char > data = connection->recv_buffer;
+        while (data.size() >= 1){
           char type = data[0];
+          char *start = &data[1];
           if (type == 'R'){
             they_want_reset = true;
             reset_countdown = 0.01f;
             std::cout << "Received reset" << std::endl;
+            data.erase(data.begin(),data.begin()+1);
+
           } else if (type == 'P') {
             //std::cout << "Received P1 pos" << std::endl;
-            char *start = &data[1];
+            if (data.size() < sizeof(glm::vec3) + 1){
+							break;
+						}
+            //char *start = &data[1];
 					  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-					  //std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
             level->body_P1_transform->position = *pos;
+            data.erase(data.begin(),data.begin() + sizeof(glm::vec3) + 1);
           }
-          connection->recv_buffer.clear();
+          //connection->recv_buffer.clear();
+        } 
       }
   	}, 0.0);
   	//if connection was closed,

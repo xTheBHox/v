@@ -49,7 +49,7 @@ void PlayerOneMode::update(float elapsed) {
 			if (evt == Connection::OnRecv) {
 					//extract and erase data from the connection's recv_buffer:
 					std::vector< char > data = connection->recv_buffer;
-					while (true){
+					while (data.size() >= 1){
 						char type = data[0];
 						char *start = &data[1];
 						if (type == 'C') {
