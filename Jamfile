@@ -173,6 +173,7 @@ GAME_NAMES =
   PlayerMode
   PlayerTwoMode
   PlayerOneMode
+  ConnectionHelper
 	MenuMode
 	main
 	data_path

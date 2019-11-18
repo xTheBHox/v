@@ -121,12 +121,27 @@ void PlayerTwoMode::update(float elapsed) {
 
     if (!currently_moving.empty()) {
       client->connection.send('C');
+      size_t len = currently_moving.size();
+      //send number of moved objects
+      client->connection.send(len);
+      for (auto it = currently_moving.begin(); it != currently_moving.end(); ++it){
+        //send index
+        client->connection.send(*it);
+        //send pos
+        glm::vec3 pos = level->movable_data[*it].transform->position;
+        client->connection.send(pos);
+        //send color
+        glm::vec4 color = level->movable_data[*it].color;
+        client->connection.send(color);
+      }
+      /**
       for (auto it = level->movable_data.begin(); it != level->movable_data.end(); ++it){
         glm::vec3 pos = it->transform->position;
         client->connection.send(pos);
         glm::vec4 color = it->color;
         client->connection.send(color);
       }
+      **/
     }
 
     //syncing player pos
@@ -138,19 +153,27 @@ void PlayerTwoMode::update(float elapsed) {
   		//Read server state
       if (evt == Connection::OnRecv) {
         std::vector< char > data = connection->recv_buffer;
+        while (data.size() >= 1){
           char type = data[0];
+          char *start = &data[1];
           if (type == 'R'){
             they_want_reset = true;
             reset_countdown = 0.01f;
             std::cout << "Received reset" << std::endl;
+            data.erase(data.begin(),data.begin()+1);
+
           } else if (type == 'P') {
             //std::cout << "Received P1 pos" << std::endl;
-            char *start = &data[1];
+            if (data.size() < sizeof(glm::vec3) + 1){
+							break;
+						}
+            //char *start = &data[1];
 					  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
-					  //std::cout << pos->x <<" " << pos->y << " " <<  pos->z << std::endl;
             level->body_P1_transform->position = *pos;
+            data.erase(data.begin(),data.begin() + sizeof(glm::vec3) + 1);
           }
-          connection->recv_buffer.clear();
+          //connection->recv_buffer.clear();
+        } 
       }
   	}, 0.0);
   	//if connection was closed,
