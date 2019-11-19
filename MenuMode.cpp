@@ -66,8 +66,11 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
 	pause_items.emplace_back("Reset");
 	pause_items.back().on_select = [&](Item const &){
     if (current) {
-      current->we_want_reset = true;
       current->pause = false;
+      current->we_want_reset = true;
+      current->reset_countdown = 0.01f;
+      current->connect->send('R');
+      std::cout << "Requested reset" << std::endl;
     }
 	};
 	pause_items.emplace_back("Main Menu");
@@ -284,6 +287,7 @@ void MenuMode::update(float elapsed) {
       current->lost = false;
       current->we_want_reset = false;
       current->they_want_reset = false;
+      std::cout << "Reset!" << std::endl;
       SDL_SetRelativeMouseMode(SDL_TRUE);
     }
     //}

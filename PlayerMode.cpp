@@ -311,6 +311,16 @@ void PlayerMode::update(float elapsed) {
 			glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
 	}
 
+  if (we_want_reset || they_want_reset) {
+    reset_countdown += elapsed;
+    if (reset_countdown > 15.0f) {
+      std::cout << "Reset timed out" << std::endl;
+      we_want_reset = false;
+      they_want_reset = false;
+      reset_countdown = 0.0f;
+    }
+  }
+
 }
 
 void PlayerMode::draw(glm::uvec2 const &drawable_size) {

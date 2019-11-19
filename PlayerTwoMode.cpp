@@ -26,6 +26,7 @@ PlayerTwoMode::PlayerTwoMode(GameLevel *level_ , std::string const &host, std::s
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
   client.reset(new Client(host, port));
+  connect = &client->connection;
 }
 
 bool PlayerTwoMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -113,12 +114,6 @@ void PlayerTwoMode::update(float elapsed) {
 
   if (client) {
 
-    if ((reset_countdown == 0.0f || they_want_reset) && we_want_reset) {
-      client->connection.send('R');
-      std::cout << "Requested reset" << std::endl;
-      reset_countdown = 0.01f;
-    }
-
     if (!currently_moving.empty()) {
       client->connection.send('C');
       size_t len = currently_moving.size();
@@ -152,7 +147,7 @@ void PlayerTwoMode::update(float elapsed) {
   	client->poll([this](Connection *connection, Connection::Event evt){
   		//Read server state
       if (evt == Connection::OnRecv) {
-        std::vector< char > data = connection->recv_buffer;
+        std::vector< char >& data = connection->recv_buffer;
         while (data.size() >= 1){
           char type = data[0];
           char *start = &data[1];
@@ -171,9 +166,11 @@ void PlayerTwoMode::update(float elapsed) {
 					  glm::vec3* pos = reinterpret_cast<glm::vec3*> (start);
             level->body_P1_transform->position = *pos;
             data.erase(data.begin(),data.begin() + sizeof(glm::vec3) + 1);
+          } else {
+            std::cout << "Invalid message type" << std::endl;
           }
           //connection->recv_buffer.clear();
-        } 
+        }
       }
   	}, 0.0);
   	//if connection was closed,
@@ -182,15 +179,6 @@ void PlayerTwoMode::update(float elapsed) {
   	}
   }
 
-  if (we_want_reset || they_want_reset) {
-    reset_countdown += elapsed;
-    if (reset_countdown > 15.0f) {
-      std::cout << "Reset timed out" << std::endl;
-      we_want_reset = false;
-      they_want_reset = false;
-      reset_countdown = 0.0f;
-    }
-  }
 }
 
 void PlayerTwoMode::draw(glm::uvec2 const &drawable_size) {

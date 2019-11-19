@@ -2,6 +2,7 @@
 
 #include "Mode.hpp"
 #include "GameLevel.hpp"
+#include "Connection.hpp"
 
 struct PlayerMode : Mode {
 	PlayerMode(GameLevel *level_);
@@ -57,8 +58,10 @@ struct PlayerMode : Mode {
   } shift;
 
   std::list< size_t > currently_moving;
-  
+
   GameLevel::Movable *on_movable = nullptr;
+
+  Connection *connect;
 
   GameLevel *level;
 
