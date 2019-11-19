@@ -66,11 +66,13 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
 	pause_items.emplace_back("Reset");
 	pause_items.back().on_select = [&](Item const &){
     if (current) {
-      current->pause = false;
       current->we_want_reset = true;
       current->reset_countdown = 0.01f;
       current->connect->send('R');
       std::cout << "Requested reset" << std::endl;
+      // TODO just call resume at the end
+      current->pause = false;
+      SDL_SetRelativeMouseMode(SDL_TRUE);
     }
 	};
 	pause_items.emplace_back("Main Menu");
