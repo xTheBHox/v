@@ -26,7 +26,7 @@ GLuint vao_color = -1U;
 GLuint vao_outline = -1U;
 
 Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
-	MeshBuffer *ret = new MeshBuffer(data_path("level1.pnct"));
+	MeshBuffer *ret = new MeshBuffer(data_path("level2.pnct"));
 	vao_color = ret->make_vao_for_program(flat_program->program);
 	vao_outline = ret->make_vao_for_program(outline_program_0->program);
 

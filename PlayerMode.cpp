@@ -13,7 +13,7 @@ extern void print_vec4(glm::vec4 const &v);
 extern void print_vec3(glm::vec3 const &v);
 
 PlayerMode::PlayerMode() {
-  level = new GameLevel(data_path("level1.scene"));
+  level = new GameLevel(data_path("level2.scene"));
   SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
@@ -415,10 +415,6 @@ int PlayerMode::update_recv_msg(char msg_type, char *buf, size_t buf_len, size_t
     glm::quat* rot = reinterpret_cast<glm::quat*> (buf);
     buf += sizeof(glm::quat);
 
-    std::cout << "Received reset" << std::endl;
-
-    print_vec3(*pos);
-
     other_player->position = *pos;
     other_player->rotation = *rot;
 
@@ -514,9 +510,42 @@ void PlayerMode::update_network() {
 
 void PlayerMode::draw(glm::uvec2 const &drawable_size) {
 
-  pov.camera->aspect = drawable_size.x / float(drawable_size.y);
-  glm::vec4 eye = pov.camera->transform->make_local_to_world()[3];
-  glm::mat4 world_to_clip = pov.camera->make_projection() * pov.camera->transform->make_world_to_local();
-  level->draw(drawable_size, eye, world_to_clip);
+  for (auto &stpt : level->standpoints) {
+    stpt.resize_texture(drawable_size);
+    stpt.update_texture(level);
+  }
+  float aspect = drawable_size.x / float(drawable_size.y);
+
+  if (shift.progress > 0.0f) {
+    Scene::OrthoCam *cf = shift.sc->stpt->cam;
+    //float h = cf->scale;
+    //float w = aspect * h;
+    //float fp = cf->clip_far;
+    float np = cf->clip_near;
+
+    glm::mat4 proj = cf->make_projection();
+    glm::mat4 w2l = shift.sc->stpt->cam->transform->make_world_to_local();
+
+    if (shift.progress < 1.0f) {
+
+      float f = 1.0f - shift.progress;
+      float f3 = f * f * f;
+      float f6 = f3 * f3;
+      float near_p = (np * (1.0f - f6)) + (0.01f * f6);
+      glm::mat4 reg_proj = glm::infinitePerspective(pov.camera->fovy, pov.camera->aspect, near_p);
+
+      glm::mat4 reg_w2l = pov.camera->transform->make_world_to_local();
+
+      w2l = (w2l * (1.0f - f3)) + (reg_w2l * f3);
+      proj = (proj * (1.0f - f6)) + (reg_proj * f6);
+    }
+    level->draw(drawable_size, w2l[3], proj * w2l);
+
+  } else {
+    pov.camera->aspect = drawable_size.x / float(drawable_size.y);
+    glm::vec4 eye = pov.camera->transform->make_local_to_world()[3];
+    glm::mat4 world_to_clip = pov.camera->make_projection() * pov.camera->transform->make_world_to_local();
+    level->draw(drawable_size, eye, world_to_clip);
+  }
 
 }
