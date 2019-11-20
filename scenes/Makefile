@@ -11,19 +11,18 @@ endif
 all : \
 	../dist/level1.pnct \
 	../dist/level1.scene \
+	../dist/level2.pnct \
+	../dist/level2.scene
 
 
+../dist/level1.scene : v.blend export-scene.py
+	$(BLENDER) --background --python export-scene.py -- v.blend:Level1 '$@'
 
-../dist/level1.scene : level1-mockup.blend export-scene.py
-	$(BLENDER) --background --python export-scene.py -- level1-mockup.blend:Level1 '$@'
+../dist/level1.pnct : v.blend export-meshes.py
+	$(BLENDER) --background --python export-meshes.py -- v.blend:Level1 '$@'
+  
+../dist/level2.scene : v.blend export-scene.py
+	$(BLENDER) --background --python export-scene.py -- v.blend:L2 '$@'
 
-../dist/level1.pnct : level1-mockup.blend export-meshes.py
-	$(BLENDER) --background --python export-meshes.py -- level1-mockup.blend:Level1 '$@'
-
-#../dist/pool.scene : pool.blend export-scene.py
-#	$(BLENDER) --background --python export-scene.py -- 'pool.blend:Table 1' '$@'
-
-#hexapod.pnct : hexapod.blend export-meshes.py
-#	$(BLENDER) --background --python export-meshes.py -- hexapod.blend:Main '$@'
-#hexapod.scene : hexapod.blend export-scene.py
-#	$(BLENDER) --background --python export-scene.py -- hexapod.blend:Main '$@'
+../dist/level2.pnct : v.blend export-meshes.py
+	$(BLENDER) --background --python export-meshes.py -- v.blend:L2 '$@'

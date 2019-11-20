@@ -1,13 +1,19 @@
 #include "PlayerMode.hpp"
 #include "demo_menu.hpp"
 #include "collide.hpp"
+#include "data_path.hpp"
 
 #include <iostream>
 #include <algorithm>
 
 #define PI 3.1415926f
 
-PlayerMode::PlayerMode(GameLevel *level_) : level(level_) {
+extern void print_mat4(glm::mat4 const &M);
+extern void print_vec4(glm::vec4 const &v);
+extern void print_vec3(glm::vec3 const &v);
+
+PlayerMode::PlayerMode() {
+  level = new GameLevel(data_path("level1.scene"));
   SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
@@ -45,6 +51,8 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
       controls.sprint = (evt.type == SDL_KEYDOWN);
     } else if (evt.key.keysym.sym == SDLK_SPACE) {
       controls.jump = (evt.type == SDL_KEYDOWN);
+    } else if (evt.key.keysym.sym == SDLK_LSHIFT) {
+      controls_shift.flat = (evt.type == SDL_KEYDOWN);
     } else return false;
   } else if (evt.type == SDL_MOUSEMOTION) {
     //based on trackball camera control from ShowMeshesMode:
@@ -79,7 +87,6 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 }
 
 void PlayerMode::update(float elapsed) {
-  //TEMP: Only detect if position changes
   if (pause) return;
   if (level->detect_win()) {
     won = true;
@@ -87,6 +94,77 @@ void PlayerMode::update(float elapsed) {
   else if (level->detect_lose()) {
     lost = true;
   }
+
+  update_reset_timer(elapsed);
+  update_shift(elapsed);
+  if (shift.progress == 0.0f) {
+    update_player_move(elapsed);
+  }
+  update_movables_move(elapsed);
+
+  update_network();
+
+}
+
+void PlayerMode::update_shift(float elapsed) {
+
+  if (controls_shift.flat) {
+    if (shift.progress == 0.0f) {
+      shift.sc = level->screen_get(pov.camera->transform);
+      if (shift.sc) {
+        std::cout << "Got screen!\n" << std::endl;
+        shift.progress = std::min(shift.progress + shift.speed * elapsed, 1.0f);
+        SDL_SetRelativeMouseMode(SDL_FALSE);
+      }
+    } else {
+      shift.progress = std::min(shift.progress + shift.speed * elapsed, 1.0f);
+    }
+  }
+  else { // !controls_shift.flat
+    if (shift.progress > 0.0f) {
+      shift.progress = std::max(shift.progress - shift.speed * elapsed, 0.0f);
+      if (shift.progress == 0.0f) {
+        shift.sc = nullptr;
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+      }
+    }
+  }
+}
+
+void PlayerMode::update_reset_timer(float elapsed) {
+  if (we_want_reset || they_want_reset) {
+    reset_countdown += elapsed;
+    if (reset_countdown > 15.0f) {
+      std::cout << "Reset timed out" << std::endl;
+      we_want_reset = false;
+      they_want_reset = false;
+      reset_countdown = 0.0f;
+    }
+  }
+}
+
+void PlayerMode::update_movables_move(float elapsed) {
+  std::list< size_t >::iterator mi_ptr = currently_moving.begin();
+  while (mi_ptr != currently_moving.end()) {
+    GameLevel::Movable &m = level->movable_data[*mi_ptr];
+    glm::vec3 diff = m.target_pos - m.transform->position;
+    if (diff == glm::vec3(0.0f)) {
+      currently_moving.erase(mi_ptr++);
+      continue;
+    }
+    float dpos = elapsed * m.vel;
+    if (glm::dot(diff, diff) < dpos * dpos) {
+      m.transform->position = m.target_pos;
+    } else {
+      diff = glm::normalize(diff);
+      m.transform->position += diff * dpos;
+    }
+    // need network update later
+    mi_ptr++;
+  }
+}
+
+void PlayerMode::update_player_move(float elapsed) {
 
   float pl_cosazi = std::cos(pov.azimuth);
   float pl_sinazi = std::sin(pov.azimuth);
@@ -311,16 +389,127 @@ void PlayerMode::update(float elapsed) {
 			glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
 	}
 
-  if (we_want_reset || they_want_reset) {
-    reset_countdown += elapsed;
-    if (reset_countdown > 15.0f) {
-      std::cout << "Reset timed out" << std::endl;
-      we_want_reset = false;
-      they_want_reset = false;
-      reset_countdown = 0.0f;
+}
+
+// Returns -1 for invalid message, 1 for message incomplete, 0 for message read
+int PlayerMode::update_recv_msg(char msg_type, char *buf, size_t buf_len, size_t *used_len) {
+
+  size_t msg_size;
+  size_t msg_unit_size;
+
+  if (msg_type == 'R') {
+    msg_size = 0;
+    //if (buf_len < msg_size) return 1;
+
+    they_want_reset = true;
+    reset_countdown = 0.01f;
+    std::cout << "Received reset" << std::endl;
+
+  } else if (msg_type == 'P') {
+    msg_size = sizeof(glm::vec3) + sizeof(glm::quat);
+    if (buf_len < msg_size) return 1;
+
+    glm::vec3* pos = reinterpret_cast<glm::vec3*> (buf);
+    buf += sizeof(glm::vec3);
+
+    glm::quat* rot = reinterpret_cast<glm::quat*> (buf);
+    buf += sizeof(glm::quat);
+
+    std::cout << "Received reset" << std::endl;
+
+    print_vec3(*pos);
+
+    other_player->position = *pos;
+    other_player->rotation = *rot;
+
+  } else if (msg_type == 'C') {
+
+    msg_unit_size = sizeof(size_t) + sizeof(glm::vec3) + sizeof(glm::vec4);
+    size_t* len = reinterpret_cast<size_t*> (buf);
+    msg_size = sizeof(size_t) + *len * msg_unit_size;
+    if (buf_len < msg_size) return 1;
+
+    //std::cout << *len << std::endl;
+    buf += sizeof(size_t);
+    for (size_t i = 0 ; i < *len; i++) {
+
+      size_t* index = reinterpret_cast<size_t*> (buf);
+      buf += sizeof(size_t);
+
+      glm::vec3* pos = reinterpret_cast<glm::vec3*> (buf);
+      buf += sizeof(glm::vec3);
+
+      glm::vec4* color = reinterpret_cast<glm::vec4*> (buf);
+      buf += sizeof(glm::vec4);
+
+      glm::vec3 offset = *pos - (&(level->movable_data[*index]))->transform->position;
+      level->movable_data[*index].update(offset);
+      level->movable_data[*index].color = *color;
+
+    }
+
+  } else {
+    std::cout << "ERROR: Invalid message type!" << std::endl;
+    return -1;
+  }
+
+  // Return the number of bytes used up
+  if (used_len) *used_len = msg_size;
+  return 0;
+
+}
+
+void PlayerMode::update_recv(std::vector< char >& data) {
+  while (!data.empty()) {
+
+    char msg_type = data[0];
+    size_t msg_size;
+    int status = update_recv_msg(msg_type, &data[1], data.size() - 1, &msg_size);
+    if (status == 0) {
+      data.erase(data.begin(),data.begin() + 1 + msg_size);
+    } else if (status == 1) {
+      break;
+    } else if (status == -1) {
+      std::cout << "Resetting message buffer..." << std::endl;
+      data.clear();
+    }
+
+  }
+}
+
+void PlayerMode::update_send() {
+
+  if (!connect) return;
+
+  if (!currently_moving.empty()) {
+    connect->send('C');
+    size_t len = currently_moving.size();
+    //send number of moved objects
+    connect->send(len);
+    for (auto it = currently_moving.begin(); it != currently_moving.end(); ++it) {
+      //send index
+      connect->send(*it);
+      //send pos
+      glm::vec3 pos = level->movable_data[*it].transform->position;
+      connect->send(pos);
+      //send color
+      glm::vec4 color = level->movable_data[*it].color;
+      connect->send(color);
     }
   }
 
+  //syncing player pos
+  connect->send('P');
+  auto pos = pov.body->position;
+  connect->send(pos);
+  auto rot = pov.body->rotation;
+  connect->send(rot);
+
+}
+
+void PlayerMode::update_network() {
+  update_send();
+  // Can't receive. Needs inherited class to implement!
 }
 
 void PlayerMode::draw(glm::uvec2 const &drawable_size) {

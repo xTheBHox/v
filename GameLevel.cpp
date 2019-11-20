@@ -34,11 +34,6 @@ Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
   mesh_Goal = &ret->lookup("Goal");
 
   //collidable objects:
-  mesh_to_collider.insert(std::make_pair(&ret->lookup("Platform1"), &ret->lookup("Platform1")));
-  mesh_to_collider.insert(std::make_pair(&ret->lookup("Platform2"), &ret->lookup("Platform2")));
-  mesh_to_collider.insert(std::make_pair(&ret->lookup("Platform3"), &ret->lookup("Platform3")));
-  mesh_to_collider.insert(std::make_pair(&ret->lookup("MovePlatform"), &ret->lookup("MovePlatform")));
-  mesh_to_collider.insert(std::make_pair(&ret->lookup("ScreenFrame"), &ret->lookup("ScreenFrame")));
 
 	return ret;
 });
@@ -90,7 +85,8 @@ GameLevel::GameLevel(std::string const &scene_file) {
 
     if (transform->name.substr(0, 4) == "Move") {
       size_t name_len = transform->name.size();
-      if (transform->name.substr(name_len - 6, name_len) == "Screen") {
+      std::cout << transform->name.substr(name_len-7, 6) << std::endl;
+      if (transform->name.substr(name_len-7, 6) == "Screen") {
         std::cout << "Screen detected: " << transform->name << std::endl;
         screens.emplace_back(transform, &pipeline);
         pipeline.set_uniforms = [](){
@@ -108,8 +104,11 @@ GameLevel::GameLevel(std::string const &scene_file) {
         };
 
         auto f = mesh_to_collider.find(mesh);
-        // TODO NOT FOUND CHECK!
-        mesh_colliders.emplace_back(transform, *f->second, *level1_meshes, &data);
+        if (f == mesh_to_collider.end()) {
+          mesh_colliders.emplace_back(transform, *mesh, *level1_meshes, &data);
+        } else {
+          mesh_colliders.emplace_back(transform, *f->second, *level1_meshes, &data);
+        }
       }
     } else if (transform->name.substr(0, 4) == "Goal") {
       goals.emplace_back(transform);
@@ -121,11 +120,16 @@ GameLevel::GameLevel(std::string const &scene_file) {
       body_P2_start = *transform;
     } else {
       auto f = mesh_to_collider.find(mesh);
-      if (f != mesh_to_collider.end()) {
-        mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
+      if (f == mesh_to_collider.end()) {
+        mesh_colliders.emplace_back(transform, *mesh, *level1_meshes);
       } else {
-        decorations++;
+        mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
       }
+      // if (f != mesh_to_collider.end()) {
+      //   mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
+      // } else {
+      //   decorations++;
+      // }
     }
   };
 	//Load scene (using Scene::load function), building proper associations as needed:
@@ -161,7 +165,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
     for (auto &stpt : standpoints) {
       std::string &cam_name = stpt.cam->transform->name; // xyzCam
       std::string &sc_name = sc.transform->name; // xyzScreen
-      if (cam_name.substr(0, cam_name.size()-3) == sc_name.substr(0, sc_name.size()-6)) {
+      if (cam_name == sc_name.substr(0, sc_name.size()-7)) {
         std::cout << "Matched " << cam_name << " to " << sc_name << std::endl;
         std::cout << "Texture #" << stpt.tex << std::endl;
         sc.set_standpoint(&stpt);

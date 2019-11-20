@@ -4,14 +4,28 @@
 #include "GameLevel.hpp"
 #include "Connection.hpp"
 
+#include <functional>
+
 struct PlayerMode : Mode {
-	PlayerMode(GameLevel *level_);
+	PlayerMode();
 	virtual ~PlayerMode();
 
   bool handle_ui(SDL_Event const &, glm::uvec2 const &window_size);
 
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
-	virtual void update(float elapsed) override;
+
+  void update_shift(float elapsed);
+  void update_reset_timer(float elapsed);
+  void update_movables_move(float elapsed);
+  void update_player_move(float elapsed);
+
+  virtual int update_recv_msg(char msg_type, char *buf, size_t buf_len, size_t *used_len);
+  virtual void update_recv(std::vector< char >& data);
+  virtual void update_send();
+  virtual void update_network();
+
+  virtual void update(float elapsed) override;
+
   virtual void draw(glm::uvec2 const &drawable_size) override;
 
   //Current control signals:
@@ -60,8 +74,10 @@ struct PlayerMode : Mode {
   std::list< size_t > currently_moving;
 
   GameLevel::Movable *on_movable = nullptr;
+  Scene::Transform *other_player = nullptr;
 
   Connection *connect;
+  std::function<void(Connection *, Connection::Event)> callback_fn;
 
   GameLevel *level;
 

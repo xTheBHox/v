@@ -22,13 +22,11 @@ Load< void > load_demo_menu(LoadTagDefault, [](){
 	main_items.emplace_back("[[ V ]]");
 	main_items.emplace_back("Client");
 	main_items.back().on_select = [](MenuMode::Item const &){
-    GameLevel *lv = new GameLevel(data_path("level1.scene"));
-		MenuMode::set_current(std::make_shared< PlayerTwoMode >(lv, connect_ip, "12345"));
+		MenuMode::set_current(std::make_shared< PlayerTwoMode >(connect_ip, "12345"));
 	};
 	main_items.emplace_back("Server");
 	main_items.back().on_select = [](MenuMode::Item const &){
-    GameLevel *lv = new GameLevel(data_path("level1.scene"));
-		MenuMode::set_current(std::make_shared< PlayerOneMode >(lv, "12345"));
+		MenuMode::set_current(std::make_shared< PlayerOneMode >("12345"));
 	};
 
 	demo_menu = std::make_shared< MenuMode >(main_items);

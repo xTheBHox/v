@@ -68,6 +68,13 @@ glm::mat4 Scene::Camera::make_projection() const {
 
 //-------------------------
 
+glm::mat4 Scene::OrthoCam::make_projection() const {
+  float w = aspect * scale;
+  return glm::ortho(-w, w, -scale, scale, clip_near, clip_far);
+}
+
+//-------------------------
+
 void Scene::draw(Camera const &camera) const {
 	assert(camera.transform);
 	glm::mat4 world_to_clip = camera.make_projection() * camera.transform->make_world_to_local();
