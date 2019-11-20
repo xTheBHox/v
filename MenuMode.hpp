@@ -45,6 +45,7 @@ struct MenuMode : Mode {
   GLuint vertex_buffer_for_color_texture_program = 0; //VAO that maps buffer locations to color_texture_program attribute locations:
   GLuint white_tex = 0; //Solid white texture:
   glm::mat3x2 clip_to_court = glm::mat3x2(1.0f); //matrix that maps from clip coordinates to court-space coordinates:
+  glm::vec2 view_to_drawable = glm::vec2(1.0f, 1.0f);
   // computed in draw() as the inverse of OBJECT_TO_CLIP
 
 	//----- menu state -----

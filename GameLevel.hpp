@@ -65,6 +65,9 @@ struct GameLevel : Scene {
     Standpoint(OrthoCam *cam_, Movable *movable);
     void resize_texture(glm::uvec2 const &new_size);
     void update_texture(GameLevel *level);
+    glm::vec2 movable_center_to_screen();
+    void move_to(size_t move_pos_index);
+
     OrthoCam *cam;
     Movable *movable;
 
@@ -80,7 +83,7 @@ struct GameLevel : Scene {
       MovePosition(Light *light);
       Transform *transform = nullptr;
       glm::vec3 pos = glm::vec3(0.0f);
-      glm::vec4 color = glm::vec4(0.0f);
+      glm::vec4 color = glm::vec4(1.0f);
     };
 
     std::vector< MovePosition > move_pos;

@@ -79,10 +79,6 @@ GameLevel::GameLevel(std::string const &scene_file) {
     pipeline.start = mesh->start;
     pipeline.count = mesh->count;
 
-    pipeline.set_uniforms = [](){
-      glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
-    };
-
     if (transform->name.substr(0, 4) == "Move") {
       size_t name_len = transform->name.size();
       std::cout << transform->name.substr(name_len-7, 6) << std::endl;
@@ -97,10 +93,11 @@ GameLevel::GameLevel(std::string const &scene_file) {
 
         movable_data.emplace_back(transform);
         Movable &data = movable_data.back();
-        data.index = movable_data.size() - 1;
-        pipeline.set_uniforms = [&data](){
+        size_t mi = movable_data.size() - 1;
+        data.index = mi;
+        pipeline.set_uniforms = [&, mi](){
           glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
-          glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(data.color));
+          glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(movable_data[mi].color));
         };
 
         auto f = mesh_to_collider.find(mesh);
@@ -112,12 +109,24 @@ GameLevel::GameLevel(std::string const &scene_file) {
       }
     } else if (transform->name.substr(0, 4) == "Goal") {
       goals.emplace_back(transform);
+
+      pipeline.set_uniforms = [](){
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+      };
     } else if (transform->name.substr(0, 5) == "Body1") {
       body_P1_transform = transform;
       body_P1_start = *transform;
+
+      pipeline.set_uniforms = [](){
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+      };
     } else if (transform->name.substr(0, 5) == "Body2") {
       body_P2_transform = transform;
       body_P2_start = *transform;
+
+      pipeline.set_uniforms = [](){
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+      };
     } else {
       auto f = mesh_to_collider.find(mesh);
       if (f == mesh_to_collider.end()) {
@@ -125,6 +134,10 @@ GameLevel::GameLevel(std::string const &scene_file) {
       } else {
         mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
       }
+
+      pipeline.set_uniforms = [](){
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+      };
       // if (f != mesh_to_collider.end()) {
       //   mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
       // } else {
@@ -151,6 +164,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
             std::cout << "Matched " << mp_name << " to " << oc.transform->name << std::endl;
             stpt.move_pos.emplace_back(&(*lit));
             print_vec3(stpt.move_pos.back().pos);
+            print_vec4(stpt.move_pos.back().color);
             lights.erase(lit++);
           } else {
             lit++;
@@ -410,6 +424,10 @@ void GameLevel::draw(
 GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
 
   init_pos = transform->position;
+  target_pos = init_pos;
+  color = glm::vec4(1.0f);
+  print_vec3(target_pos);
+  print_vec4(color);
 
 }
 
@@ -424,6 +442,9 @@ void GameLevel::Movable::set_target_pos(glm::vec3 &target, glm::vec4 &color_) {
 
   color = color_;
   target_pos = target;
+  std::cout << "Set to:" << std::endl;
+  print_vec3(target_pos);
+  print_vec4(color);
 
 }
 
@@ -481,6 +502,20 @@ void GameLevel::Standpoint::update_texture(GameLevel *level) {
 
   level->draw(size, pos, proj * w2l, fb.fb_output);
 
+}
+
+glm::vec2 GameLevel::Standpoint::movable_center_to_screen() {
+  glm::vec4 pos = (
+    cam->make_projection() * (
+      cam->transform->make_world_to_local() * (
+        movable->transform->make_local_to_world()
+        * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)
+  ) ) );
+  return glm::vec2(pos.x, pos.y);
+}
+
+void GameLevel::Standpoint::move_to(size_t i) {
+  movable->set_target_pos(move_pos[i].pos, move_pos[i].color);
 }
 
 GameLevel::Standpoint::MovePosition::MovePosition(Light *light) {

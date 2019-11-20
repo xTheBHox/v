@@ -55,27 +55,28 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
       controls_shift.flat = (evt.type == SDL_KEYDOWN);
     } else return false;
   } else if (evt.type == SDL_MOUSEMOTION) {
-    //based on trackball camera control from ShowMeshesMode:
-    //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
-    glm::vec2 delta;
-    delta.x = evt.motion.xrel / float(window_size.x) * 2.0f;
-    delta.x *= float(window_size.y) / float(window_size.x);
-    delta.y = evt.motion.yrel / float(window_size.y) * -2.0f;
+    if (shift.progress == 0.0f) {
+      //based on trackball camera control from ShowMeshesMode:
+      //figure out the motion (as a fraction of a normalized [-a,a]x[-1,1] window):
+      glm::vec2 delta;
+      delta.x = evt.motion.xrel / float(window_size.x) * 2.0f;
+      delta.x *= float(window_size.y) / float(window_size.x);
+      delta.y = evt.motion.yrel / float(window_size.y) * -2.0f;
 
-    delta *= controls.mouse_sensitivity;
+      delta *= controls.mouse_sensitivity;
 
-    pov.azimuth -= delta.x;
-    pov.elevation -= delta.y;
+      pov.azimuth -= delta.x;
+      pov.elevation -= delta.y;
 
-    // Normalize to [-pi, pi)
-    pov.azimuth /= 2.0f * PI;
-    pov.azimuth -= std::round(pov.azimuth);
-    pov.azimuth *= 2.0f * PI;
+      // Normalize to [-pi, pi)
+      pov.azimuth /= 2.0f * PI;
+      pov.azimuth -= std::round(pov.azimuth);
+      pov.azimuth *= 2.0f * PI;
 
-    // Clamp to [-89deg, 89deg]
-    pov.elevation = std::max(-85.0f / 180.0f * PI, pov.elevation);
-    pov.elevation = std::min(60.0f / 180.0f * PI, pov.elevation);
-
+      // Clamp to [-89deg, 89deg]
+      pov.elevation = std::max(-85.0f / 180.0f * PI, pov.elevation);
+      pov.elevation = std::min(60.0f / 180.0f * PI, pov.elevation);
+    }
   } else if (evt.type == SDL_MOUSEBUTTONDOWN || evt.type == SDL_MOUSEBUTTONUP) {
     if (evt.button.button == SDL_BUTTON_LEFT) {
       controls.mouse_down = (evt.type == SDL_MOUSEBUTTONDOWN);

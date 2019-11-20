@@ -209,29 +209,25 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     } else {
       current->handle_event(evt, window_size);
       // Check UI elements:
-      if (current->player_num == 2) {
-        std::shared_ptr< PlayerTwoMode > player = std::static_pointer_cast< PlayerTwoMode > (current);
-        // TODO: find a way to not keep calling screen_get? Same issue in draw_ui.
-        if (player->shift.progress == 1.0f) {
-          // Player is completed shift mode: check color wheel interaction
-          if (evt.type == SDL_MOUSEBUTTONUP && evt.button.button == SDL_BUTTON_LEFT) {
-            int x, y;
-            glm::vec2 center = glm::vec2(window_size.x/2.0f, window_size.y/2.0f);
-            // TODO: Make this a function of wheel_radius
-            float threshold = window_size.y / 15.0f;
-            SDL_GetMouseState(&x, &y);
-            if (glm::distance(center, glm::vec2((float)x,(float)y)) < threshold) {
-              // TODO: Make this work for multiple colors
-              if (y > center.y) {
-                GameLevel::Standpoint::MovePosition &mp = player->shift.sc->stpt->move_pos[0];
-                player->shift.sc->stpt->movable->set_target_pos(mp.pos, mp.color);
-                player->currently_moving.emplace_back(player->shift.sc->stpt->movable->index);
-              } else {
-                GameLevel::Standpoint::MovePosition &mp = player->shift.sc->stpt->move_pos[1];
-                player->shift.sc->stpt->movable->set_target_pos(mp.pos, mp.color);
-                player->currently_moving.emplace_back(player->shift.sc->stpt->movable->index);
-              }
-            }
+      // TODO: find a way to not keep calling screen_get? Same issue in draw_ui.
+      if (current->shift.progress == 1.0f) {
+        // Player is completed shift mode: check color wheel interaction
+        if (evt.type == SDL_MOUSEBUTTONUP && evt.button.button == SDL_BUTTON_LEFT) {
+          GameLevel::Standpoint *stpt = current->shift.sc->stpt;
+          glm::vec2 mpos = glm::vec2(evt.button.x, evt.button.y);
+          glm::vec3 center_clip = glm::vec3(current->shift.sc->stpt->movable_center_to_screen(), 1.0f);
+          glm::vec2 center = view_to_drawable * (clip_to_court * center_clip);
+          // TODO: Make this a function of wheel_radius
+          float threshold = window_size.y / 15.0f;
+          glm::vec2 dist = mpos - center;
+          if (glm::dot(dist, dist) < threshold * threshold) {
+            // TODO: Make this work for multiple colors
+            float angle = glm::atan(dist.y, dist.x);
+            if (angle < 0.0f) angle += 2.0f * 3.1415926f;
+            float sector_angle = 2.0f * 3.1415926f / (float) stpt->move_pos.size();
+            size_t index = (size_t) (angle / sector_angle);
+            stpt->move_to(index);
+            current->currently_moving.emplace_back(stpt->movable->index);
           }
         }
       }
@@ -421,87 +417,98 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
   assert(atlas && "it is an error to try to draw a menu without an atlas");
   DrawSprites draw_sprites(*atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
 
-  if (current->player_num == 2) {
-    std::shared_ptr< PlayerTwoMode > player = std::static_pointer_cast< PlayerTwoMode > (current);
-    // TODO: find a way to not keep calling screen_get? Same issue in handle_event.
-    if (player->level->screen_get(player->pov.camera->transform) && player->shift.progress == 0.0f) {
-      // Player is in position to shift but hasn't started it: draw LSHIFT prompt
-      // TODO: shift entire textbox drawing to another function?
-      glm::vec2 textbox_center = glm::vec2(0.5f*(view_min.x+view_max.x), 0.2f*(view_min.y+view_max.y));
-      std::string text = "LSHIFT";  float text_scale = 0.7f; glm::vec2 text_min, text_max;
-      draw_sprites.get_text_extents(text, textbox_center, text_scale, &text_min, &text_max);
-      glm::vec2 textbox_radius  = glm::vec2(0.5*(text_max.x-text_min.x)+textbox_padding.x, 0.5*(text_max.y-text_min.y)+textbox_padding.y);
-      glm::vec2 text_offset = glm::vec2(0.5f*(text_min.x-text_max.x), text_min.y-text_max.y);
+  glm::mat4 court_to_clip = glm::mat4(
+    glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
+    glm::vec4(0.0f, scale, 0.0f, 0.0f),
+    glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
+    glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
+  );
+  clip_to_court = glm::mat3x2(
+    glm::vec2(aspect / scale, 0.0f),
+    glm::vec2(0.0f, 1.0f / scale),
+    glm::vec2(center.x, center.y)
+  );
+  view_to_drawable = glm::vec2(
+    drawable_size.x / (view_max.x - view_min.x),
+    drawable_size.y / (view_max.y - view_min.y)
+  );
+  // TODO: find a way to not keep calling screen_get? Same issue in handle_event.
+  if (current->level->screen_get(current->pov.camera->transform) && current->shift.progress == 0.0f) {
+    // Player is in position to shift but hasn't started it: draw LSHIFT prompt
+    // TODO: shift entire textbox drawing to another function?
+    glm::vec2 textbox_center = glm::vec2(0.5f*(view_min.x+view_max.x), 0.2f*(view_min.y+view_max.y));
+    std::string text = "LSHIFT";  float text_scale = 0.7f; glm::vec2 text_min, text_max;
+    draw_sprites.get_text_extents(text, textbox_center, text_scale, &text_min, &text_max);
+    glm::vec2 textbox_radius  = glm::vec2(0.5*(text_max.x-text_min.x)+textbox_padding.x, 0.5*(text_max.y-text_min.y)+textbox_padding.y);
+    glm::vec2 text_offset = glm::vec2(0.5f*(text_min.x-text_max.x), text_min.y-text_max.y);
 
-      draw_rectangle(textbox_center, textbox_radius+textbox_border, black);
-      draw_rectangle(textbox_center, textbox_radius, white);
-      glm::mat4 court_to_clip = glm::mat4(
-        glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
-        glm::vec4(0.0f, scale, 0.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
+    draw_rectangle(textbox_center, textbox_radius+textbox_border, black);
+    draw_rectangle(textbox_center, textbox_radius, white);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glUseProgram(color_texture_program.program); //set color_texture_program as current program:
+    glUniformMatrix4fv(color_texture_program.OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(court_to_clip)); //upload OBJECT_TO_CLIP to the proper uniform location:
+    glBindVertexArray(vertex_buffer_for_color_texture_program); //use the mapping vertex_buffer_for_color_texture_program to fetch vertex data
+    glActiveTexture(GL_TEXTURE0); //bind the solid white texture to location zero:
+    glBindTexture(GL_TEXTURE_2D, white_tex);
+    glDrawArrays(GL_TRIANGLES, 0, GLsizei(vertices.size())); //run the OpenGL pipeline
+    glBindTexture(GL_TEXTURE_2D, 0); //unbind the solid white texture
+    glBindVertexArray(0); //reset vertex array to none
+    glUseProgram(0); //reset current program to none
+
+    draw_sprites.draw_text(text, textbox_center+text_offset, text_scale, black);
+  } else if (current->shift.progress == 1.0f) {
+    GameLevel::Standpoint *stpt = current->shift.sc->stpt;
+    // Shift is complete: draw color wheel UI
+    // TODO: Move constants to somewhere more reasonable, pull position from movable target
+    // Scene::Transform *movable_transform = current->shift.sc->stpt->movable->transform;
+    glm::vec3 wheel_center_clip = glm::vec3(current->shift.sc->stpt->movable_center_to_screen(), 1.0f);
+    glm::vec2 wheel_center = clip_to_court * wheel_center_clip;
+    float wheel_radius = 15.0f; //NOTE: view_max = (320,200)
+    float border = 0.5f;
+    glm::vec2 spoke_radius = glm::vec2(2, 2); // TODO: make the wheel size invariant to window size
+
+    draw_circle_sector(wheel_center, wheel_radius+border, 0.0f, 360.0f, gray); // Border
+    float sector_angle = 360.0f / (float) stpt->move_pos.size();
+    for (size_t i = 0; i < stpt->move_pos.size(); i++) {
+      draw_circle_sector(
+        wheel_center, wheel_radius,
+        i * sector_angle, sector_angle,
+        glm::u8vec4(255.0f * stpt->move_pos[i].color)
       );
-      clip_to_court = glm::mat3x2(
-        glm::vec2(aspect / scale, 0.0f),
-        glm::vec2(0.0f, 1.0f / scale),
-        glm::vec2(center.x, center.y)
-      );
-      glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
-      glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
-      glBindBuffer(GL_ARRAY_BUFFER, 0);
-      glUseProgram(color_texture_program.program); //set color_texture_program as current program:
-      glUniformMatrix4fv(color_texture_program.OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(court_to_clip)); //upload OBJECT_TO_CLIP to the proper uniform location:
-      glBindVertexArray(vertex_buffer_for_color_texture_program); //use the mapping vertex_buffer_for_color_texture_program to fetch vertex data
-      glActiveTexture(GL_TEXTURE0); //bind the solid white texture to location zero:
-      glBindTexture(GL_TEXTURE_2D, white_tex);
-      glDrawArrays(GL_TRIANGLES, 0, GLsizei(vertices.size())); //run the OpenGL pipeline
-      glBindTexture(GL_TEXTURE_2D, 0); //unbind the solid white texture
-      glBindVertexArray(0); //reset vertex array to none
-      glUseProgram(0); //reset current program to none
-
-      draw_sprites.draw_text(text, textbox_center+text_offset, text_scale, black);
-    } else if (player->shift.progress == 1.0f) {
-      // Shift is complete: draw color wheel UI
-      // TODO: Move constants to somewhere more reasonable, pull position from movable target
-      // Scene::Transform *movable_transform = player->shift.sc->stpt->movable->transform;
-      glm::vec2 wheel_center = 0.5f * (view_min + view_max); // TODO: get position of movable in screen space
-      // glm::vec2 wheel_center =
-      float wheel_radius = 15.0f; //NOTE: view_max = (320,200)
-      float border = 0.5f;
-      glm::vec2 spoke_radius = glm::vec2(2, 2); // TODO: make the wheel size invariant to window size
-
-      draw_circle_sector(wheel_center, wheel_radius+border, 0.0f, 360.0f, gray); // Border
-      draw_circle_sector(wheel_center, wheel_radius, 0.0f, 180.0f, cyan); // Bottom color
-      draw_circle_sector(wheel_center, wheel_radius, 180.0f, 180.0f, yellow); // Top color
-      draw_rectangle(wheel_center, spoke_radius, black); // Center spoke
-
-    	//build matrix that scales and translates appropriately:
-    	glm::mat4 court_to_clip = glm::mat4(
-    		glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
-    		glm::vec4(0.0f, scale, 0.0f, 0.0f),
-    		glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-    		glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
-    	);
-    	//also build the matrix that takes clip coordinates to court coordinates (used for mouse handling):
-    	clip_to_court = glm::mat3x2(
-    		glm::vec2(aspect / scale, 0.0f),
-    		glm::vec2(0.0f, 1.0f / scale),
-    		glm::vec2(center.x, center.y)
-    	);
-    	//upload vertices to vertex_buffer:
-    	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
-    	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
-    	glBindBuffer(GL_ARRAY_BUFFER, 0);
-    	glUseProgram(color_texture_program.program); //set color_texture_program as current program:
-    	glUniformMatrix4fv(color_texture_program.OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(court_to_clip)); //upload OBJECT_TO_CLIP to the proper uniform location:
-    	glBindVertexArray(vertex_buffer_for_color_texture_program); //use the mapping vertex_buffer_for_color_texture_program to fetch vertex data
-    	glActiveTexture(GL_TEXTURE0); //bind the solid white texture to location zero:
-    	glBindTexture(GL_TEXTURE_2D, white_tex);
-    	glDrawArrays(GL_TRIANGLES, 0, GLsizei(vertices.size())); //run the OpenGL pipeline
-    	glBindTexture(GL_TEXTURE_2D, 0); //unbind the solid white texture
-    	glBindVertexArray(0); //reset vertex array to none
-    	glUseProgram(0); //reset current program to none
     }
+    //draw_circle_sector(wheel_center, wheel_radius, 0.0f, 180.0f, cyan); // Bottom color
+    //draw_circle_sector(wheel_center, wheel_radius, 180.0f, 180.0f, yellow); // Top color
+    draw_rectangle(wheel_center, spoke_radius, black); // Center spoke
+
+  	//build matrix that scales and translates appropriately:
+  	// glm::mat4 court_to_clip = glm::mat4(
+  	// 	glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
+  	// 	glm::vec4(0.0f, scale, 0.0f, 0.0f),
+  	// 	glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
+  	// 	glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
+  	// );
+  	//also build the matrix that takes clip coordinates to court coordinates (used for mouse handling):
+  	// clip_to_court = glm::mat3x2(
+  	// 	glm::vec2(aspect / scale, 0.0f),
+  	// 	glm::vec2(0.0f, 1.0f / scale),
+  	// 	glm::vec2(center.x, center.y)
+  	// );
+  	//upload vertices to vertex_buffer:
+  	glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
+  	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
+  	glBindBuffer(GL_ARRAY_BUFFER, 0);
+  	glUseProgram(color_texture_program.program); //set color_texture_program as current program:
+  	glUniformMatrix4fv(color_texture_program.OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(court_to_clip)); //upload OBJECT_TO_CLIP to the proper uniform location:
+  	glBindVertexArray(vertex_buffer_for_color_texture_program); //use the mapping vertex_buffer_for_color_texture_program to fetch vertex data
+  	glActiveTexture(GL_TEXTURE0); //bind the solid white texture to location zero:
+  	glBindTexture(GL_TEXTURE_2D, white_tex);
+  	glDrawArrays(GL_TRIANGLES, 0, GLsizei(vertices.size())); //run the OpenGL pipeline
+  	glBindTexture(GL_TEXTURE_2D, 0); //unbind the solid white texture
+  	glBindVertexArray(0); //reset vertex array to none
+  	glUseProgram(0); //reset current program to none
   }
 
   if (current->won || current->lost || current->we_want_reset || current->they_want_reset) {
@@ -520,17 +527,17 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
 
     draw_rectangle(textbox_center, textbox_radius+textbox_border, black);
     draw_rectangle(textbox_center, textbox_radius, white);
-    glm::mat4 court_to_clip = glm::mat4(
-      glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
-      glm::vec4(0.0f, scale, 0.0f, 0.0f),
-      glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-      glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
-    );
-    clip_to_court = glm::mat3x2(
-      glm::vec2(aspect / scale, 0.0f),
-      glm::vec2(0.0f, 1.0f / scale),
-      glm::vec2(center.x, center.y)
-    );
+    // glm::mat4 court_to_clip = glm::mat4(
+    //   glm::vec4(scale / aspect, 0.0f, 0.0f, 0.0f),
+    //   glm::vec4(0.0f, scale, 0.0f, 0.0f),
+    //   glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
+    //   glm::vec4(-center.x * (scale / aspect), -center.y * scale, 0.0f, 1.0f)
+    // );
+    // clip_to_court = glm::mat3x2(
+    //   glm::vec2(aspect / scale, 0.0f),
+    //   glm::vec2(0.0f, 1.0f / scale),
+    //   glm::vec2(center.x, center.y)
+    // );
     glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer); //set vertex_buffer as current
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(vertices[0]), vertices.data(), GL_STREAM_DRAW); //upload vertices array
     glBindBuffer(GL_ARRAY_BUFFER, 0);
