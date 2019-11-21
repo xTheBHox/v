@@ -64,9 +64,9 @@ void print_vec3(glm::vec3 const &v) {
 }
 
 GameLevel::GameLevel(std::string const &scene_file) {
-  uint32_t decorations = 0;
-
-  auto load_fn = [this, &decorations](Scene &, Transform *transform, std::string const &mesh_name){
+  //uint32_t decorations = 0;
+  goals.reserve(2);
+  auto load_fn = [this](Scene &, Transform *transform, std::string const &mesh_name){
     Mesh const *mesh = &level1_meshes->lookup(mesh_name);
 
     drawables.emplace_back(transform);
@@ -107,8 +107,14 @@ GameLevel::GameLevel(std::string const &scene_file) {
           mesh_colliders.emplace_back(transform, *f->second, *level1_meshes, &data);
         }
       }
-    } else if (transform->name.substr(0, 4) == "Goal") {
-      goals.emplace_back(transform);
+    } else if (transform->name.substr(0, 5) == "Goal1") {
+      goals[0] = transform;
+
+      pipeline.set_uniforms = [](){
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+      };
+    }else if (transform->name.substr(0, 5) == "Goal2") {
+      goals[1] = transform;
 
       pipeline.set_uniforms = [](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
@@ -208,16 +214,13 @@ bool GameLevel::detect_lose() {
 }
 
 bool GameLevel::detect_win() {
-  for (auto &g: goals){
-    glm::vec3 goalPos = g.transform->position;
-    glm::vec3 p1 = body_P1_transform->position;
-    glm::vec3 p2 = body_P2_transform->position;
-    auto dis1 = glm::distance(goalPos, p1);
-    auto dis2 = glm::distance(goalPos, p2);
-    //std::cout << dis1 << std::endl;
-    return (dis1 < g.spin_acc) || (dis2 < g.spin_acc);
-  }
-  return false;
+  glm::vec3 goalPos1 = goals[0].transform->position;
+  glm::vec3 goalPos2 = goals[1].transform->position;
+  glm::vec3 p1 = body_P1_transform->position;
+  glm::vec3 p2 = body_P2_transform->position;
+  auto dis1 = glm::distance(goalPos1, p1);
+  auto dis2 = glm::distance(goalPos2, p2);
+  return (dis1 < goals[0].spin_acc) && (dis2 < goals[1].spin_acc);
 }
 
 void GameLevel::reset() {

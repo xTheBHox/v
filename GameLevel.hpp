@@ -28,7 +28,7 @@ struct GameLevel : Scene {
 
 	//Goal objects(s) tracked using this structure:
 	struct Goal {
-		Goal(Scene::Transform *transform_) : transform(transform_) { };
+		Goal(Scene::Transform *transform_) : transform(transform_){}
 		Scene::Transform *transform;
 		float spin_acc = 5.0f;
 	};
