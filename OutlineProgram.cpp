@@ -212,11 +212,13 @@ OutlineProgram1::OutlineProgram1() {
     " vec3 py1 = texelFetch(POSITION_TEX, ivec2(pos.x, pos.y + off)).xyz;\n"
     " vec4 cin = texelFetch(COLOR_TEX, pos);\n"
     " vec4 cout = vec4(0.0, 0.0, 0.0, 0.0);\n"
+    " float dpx = dot(normalize(px1 - px0), n);\n"
+    " float dpy = dot(normalize(py1 - py0), n);\n"
     " if (dot(n, n) < 0.77 ||\n"
     "  (dot(nx0, nx1) > 0.5 &&\n"          // Adjacent normals are close
     "  dot(ny0, ny1) > 0.5 &&\n"             // Adjacent normals are close
-    "  abs(dot(normalize(px1 - px0), n)) < 0.1 &&\n"
-    "  abs(dot(normalize(py1 - py0), n)) < 0.1)){\n"
+    "  (dpx > -0.05 && dpx < 0.05) &&\n"
+    "  (dpy > -0.05 && dpy < 0.05))){\n"
     //"  abs(dot(px1 - px0, nx0)) < 0.01 &&\n"
     //"  abs(dot(px1 - px0, nx1)) < 0.01 &&\n"
     //"  abs(dot(py1 - py0, ny0)) < 0.01 &&\n"

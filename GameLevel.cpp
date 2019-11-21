@@ -264,8 +264,8 @@ struct FB {
     };
 
     //set up normal_tex as a 16-bit floating point RGBA texture:
-    alloc_recttex(normal_tex, GL_RGB16F);
-    alloc_recttex(position_tex, GL_RGB16F);
+    alloc_recttex(normal_tex, GL_RGB32F);
+    alloc_recttex(position_tex, GL_RGB32F);
 
     //set up output_tex as an 8-bit fixed point RGBA texture:
     alloc_recttex(color_tex, GL_RGBA8);
