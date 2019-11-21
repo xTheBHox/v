@@ -65,7 +65,7 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
 	};
 	pause_items.emplace_back("Reset");
 	pause_items.back().on_select = [&](Item const &){
-    if (current) {
+    if ((current) && (current->connect)) {
       current->we_want_reset = true;
       current->reset_countdown = 0.01f;
       current->connect->send('R');
