@@ -410,8 +410,6 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
 
   glm::u8vec4 black = glm::u8vec4(0,0,0,255);
   glm::u8vec4 white = glm::u8vec4(255,255,255,255);
-  glm::u8vec4 yellow = glm::u8vec4(255,255,0,255);
-  glm::u8vec4 cyan = glm::u8vec4(0,255,255,255);
   glm::u8vec4 gray = glm::u8vec4(30,30,30,255);
 
   assert(atlas && "it is an error to try to draw a menu without an atlas");

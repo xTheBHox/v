@@ -26,16 +26,16 @@ GLuint vao_color = -1U;
 GLuint vao_outline = -1U;
 
 Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
-	MeshBuffer *ret = new MeshBuffer(data_path("level2.pnct"));
-	vao_color = ret->make_vao_for_program(flat_program->program);
-	vao_outline = ret->make_vao_for_program(outline_program_0->program);
+  MeshBuffer *ret = new MeshBuffer(data_path("level2.pnct"));
+  vao_color = ret->make_vao_for_program(flat_program->program);
+  vao_outline = ret->make_vao_for_program(outline_program_0->program);
 
   //key objects:
   mesh_Goal = &ret->lookup("Goal");
 
   //collidable objects:
 
-	return ret;
+  return ret;
 });
 
 void print_mat4(glm::mat4 const &M) {
@@ -145,8 +145,8 @@ GameLevel::GameLevel(std::string const &scene_file) {
       // }
     }
   };
-	//Load scene (using Scene::load function), building proper associations as needed:
-	load(scene_file, load_fn);
+  //Load scene (using Scene::load function), building proper associations as needed:
+  load(scene_file, load_fn);
 
   // Build the mapping between movables and orthographic cameras
 
@@ -232,27 +232,27 @@ void GameLevel::reset() {
 
 //Helper: maintain a framebuffer to hold rendered geometry
 struct FB {
-	//object data gets stored in these textures:
-	GLuint normal_tex = 0;
+  //object data gets stored in these textures:
+  GLuint normal_tex = 0;
   GLuint position_tex = 0;
 
-	//output image gets written to this texture:
-	GLuint color_tex = 0;
+  //output image gets written to this texture:
+  GLuint color_tex = 0;
 
-	//depth buffer is shared between objects + lights pass:
-	GLuint depth_rb = 0;
+  //depth buffer is shared between objects + lights pass:
+  GLuint depth_rb = 0;
 
-	GLuint fb_color = 0;
+  GLuint fb_color = 0;
   GLuint fb_outline = 0;
   GLuint fb_output = 0;
 
-	glm::uvec2 size = glm::uvec2(0);
+  glm::uvec2 size = glm::uvec2(0);
 
-	void resize(glm::uvec2 const &drawable_size) {
-		if (drawable_size == size) return;
-		size = drawable_size;
+  void resize(glm::uvec2 const &drawable_size) {
+    if (drawable_size == size) return;
+    size = drawable_size;
 
-		//helper to allocate a texture:
+    //helper to allocate a texture:
 
     auto alloc_recttex = [&] (GLuint &tex, GLenum internal_format) {
       if (tex == 0) glGenTextures(1, &tex);
@@ -263,34 +263,34 @@ struct FB {
       glBindTexture(GL_TEXTURE_RECTANGLE, 0);
     };
 
-		//set up normal_tex as a 16-bit floating point RGBA texture:
-		alloc_recttex(normal_tex, GL_RGB32F);
-    alloc_recttex(position_tex, GL_RGB32F);
+    //set up normal_tex as a 16-bit floating point RGBA texture:
+    alloc_recttex(normal_tex, GL_RGB16F);
+    alloc_recttex(position_tex, GL_RGB16F);
 
-		//set up output_tex as an 8-bit fixed point RGBA texture:
-		alloc_recttex(color_tex, GL_RGBA8);
+    //set up output_tex as an 8-bit fixed point RGBA texture:
+    alloc_recttex(color_tex, GL_RGBA8);
 
     GL_ERRORS();
 
-		//if depth_rb does not have a name, name it:
-		if (depth_rb == 0) glGenRenderbuffers(1, &depth_rb);
-		//set up depth_rb as a 24-bit fixed-point depth buffer:
-		glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size.x, size.y);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    //if depth_rb does not have a name, name it:
+    if (depth_rb == 0) glGenRenderbuffers(1, &depth_rb);
+    //set up depth_rb as a 24-bit fixed-point depth buffer:
+    glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size.x, size.y);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
     GL_ERRORS();
 
-		//if color framebuffer doesn't have a name, name it and attach textures:
-		if (fb_color == 0) {
-			glGenFramebuffers(1, &fb_color);
-			//set up framebuffer: (don't need to do when resizing)
-			glBindFramebuffer(GL_FRAMEBUFFER, fb_color);
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, color_tex, 0);
-			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
-			glDrawBuffer(GL_COLOR_ATTACHMENT0);
-			check_fb();
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
+    //if color framebuffer doesn't have a name, name it and attach textures:
+    if (fb_color == 0) {
+      glGenFramebuffers(1, &fb_color);
+      //set up framebuffer: (don't need to do when resizing)
+      glBindFramebuffer(GL_FRAMEBUFFER, fb_color);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, color_tex, 0);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
+      glDrawBuffer(GL_COLOR_ATTACHMENT0);
+      check_fb();
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
     GL_ERRORS();
 
     //if outline framebuffer doesn't have a name, name it and attach textures:
@@ -319,7 +319,7 @@ struct FB {
     }
 
     GL_ERRORS();
-	}
+  }
 } fb;
 
 void GameLevel::draw(
@@ -372,9 +372,9 @@ void GameLevel::draw(
     assert(drawable.transform); //drawables *must* have a transform
     glm::mat4 object_to_world = drawable.transform->make_local_to_world();
 
-		if (outline_program_0->OBJECT_TO_WORLD_mat4 != -1U) {
-			glUniformMatrix4fv(outline_program_0->OBJECT_TO_WORLD_mat4, 1, GL_FALSE, glm::value_ptr(object_to_world));
-		}
+    if (outline_program_0->OBJECT_TO_WORLD_mat4 != -1U) {
+      glUniformMatrix4fv(outline_program_0->OBJECT_TO_WORLD_mat4, 1, GL_FALSE, glm::value_ptr(object_to_world));
+    }
     if (outline_program_0->OBJECT_TO_CLIP_mat4 != -1U) {
       glm::mat4 object_to_clip = world_to_clip * object_to_world;
       glUniformMatrix4fv(outline_program_0->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(object_to_clip));

@@ -24,8 +24,8 @@ PlayerMode::~PlayerMode(){
 
 bool PlayerMode::handle_ui(SDL_Event const &evt, glm::uvec2 const &window_size) {
   if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_M) {
-		MenuMode::set_current(nullptr);
-	} else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE) {
+        MenuMode::set_current(nullptr);
+    } else if (evt.type == SDL_KEYDOWN && evt.key.keysym.sym == SDLK_ESCAPE) {
     pause = !pause;
     if (pause) SDL_SetRelativeMouseMode(SDL_FALSE);
     else SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -381,14 +381,14 @@ void PlayerMode::update_player_move(float elapsed) {
     pov.vel = pl_vel;
   } // end collision compute
 
-	{
+    {
     // body rotation update:
     glm::quat rot_h = glm::angleAxis(pov.azimuth, glm::vec3(0.0f, 0.0f, 1.0f));
     pov.body->rotation = rot_h;
     //camera update:
     pov.camera->transform->rotation =
-			glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
-	}
+            glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
+    }
 
 }
 
@@ -519,6 +519,7 @@ void PlayerMode::draw(glm::uvec2 const &drawable_size) {
 
   if (shift.progress > 0.0f) {
     Scene::OrthoCam *cf = shift.sc->stpt->cam;
+    cf->aspect = aspect;
     //float h = cf->scale;
     //float w = aspect * h;
     //float fp = cf->clip_far;
@@ -543,7 +544,7 @@ void PlayerMode::draw(glm::uvec2 const &drawable_size) {
     level->draw(drawable_size, w2l[3], proj * w2l);
 
   } else {
-    pov.camera->aspect = drawable_size.x / float(drawable_size.y);
+    pov.camera->aspect = aspect;
     glm::vec4 eye = pov.camera->transform->make_local_to_world()[3];
     glm::mat4 world_to_clip = pov.camera->make_projection() * pov.camera->transform->make_world_to_local();
     level->draw(drawable_size, eye, world_to_clip);
