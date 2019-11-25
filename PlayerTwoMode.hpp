@@ -6,7 +6,7 @@
 #include "PlayerMode.hpp"
 
 struct PlayerTwoMode : PlayerMode {
-  PlayerTwoMode(std::string const &host, std::string const &port);
+  PlayerTwoMode(std::string const &host, std::string const &port, uint32_t level_num);
 
 	void update_network() override;
   std::unique_ptr< Client > client = nullptr;

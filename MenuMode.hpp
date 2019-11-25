@@ -18,7 +18,7 @@
 
 struct MenuMode : Mode {
 	struct Item;
-  MenuMode(std::vector< Item > const &main_items);
+  MenuMode(std::string connect_ip);
 	virtual ~MenuMode();
 
 	static std::shared_ptr< PlayerMode > current;
@@ -70,8 +70,11 @@ struct MenuMode : Mode {
 		glm::vec2 at; //location to draw item
 	};
 	std::vector< Item > main_items;
+	std::vector< Item > player_items;
+	std::vector< Item > level_items;
   std::vector< Item > pause_items;
-  std::vector< Item > *current_items;
+  uint32_t main_mode = 0;
+  uint32_t main_level = 1;
 
 	//call to arrange items in a centered list:
 	void layout_items(float gap = 0.0f);

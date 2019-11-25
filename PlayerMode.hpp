@@ -7,7 +7,7 @@
 #include <functional>
 
 struct PlayerMode : Mode {
-	PlayerMode();
+	PlayerMode(uint32_t level_num);
 	virtual ~PlayerMode();
 
   bool handle_ui(SDL_Event const &, glm::uvec2 const &window_size);
