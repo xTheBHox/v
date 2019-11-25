@@ -30,10 +30,10 @@ struct PlayerMode : Mode {
 
   //Current control signals:
 	struct {
-		bool forward = false;
-		bool backward = false;
-		bool left = false;
-		bool right = false;
+    bool forward = false;
+    bool backward = false;
+    bool left = false;
+    bool right = false;
     bool sprint = false;
     bool jump = false;
     bool mouse_down = false;

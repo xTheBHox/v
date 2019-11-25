@@ -336,7 +336,7 @@ void PlayerMode::update_player_move(float elapsed) {
         float d = glm::dot(pl_vel, collision_out); // collision_out already normalized
         // Adjust for surface friction
         if (d < 0.0f) {
-          float friction_coeff = std::pow(0.5f, remain / 0.1f);
+          float friction_coeff = std::pow(0.5f, remain / 0.05f);
           glm::vec3 forward = pl_vel - d * collision_out;
           float forward_magnitude_2 = glm::dot(forward, forward);
           float backward_magnitude = friction_coeff * d;
