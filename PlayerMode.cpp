@@ -13,7 +13,7 @@ extern void print_vec4(glm::vec4 const &v);
 extern void print_vec3(glm::vec3 const &v);
 
 PlayerMode::PlayerMode() {
-  level = new GameLevel(data_path("level2.scene"));
+  level = new GameLevel(data_path("level2"));
   SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 

@@ -16,27 +16,22 @@
 
 #define PI 3.1415926f
 
-//used for lookup later:
-Mesh const *mesh_Goal = nullptr;
+void GameLevel::init_meshes(std::string level_name) {
+  level_name.insert(level_name.size(), ".pnct");
 
-//names of mesh-to-collider-mesh:
-std::unordered_map< Mesh const *, Mesh const * > mesh_to_collider;
+  std::cout << "Loading " << level_name << std::endl;
+  meshes = new MeshBuffer(level_name);
 
-GLuint vao_color = -1U;
-GLuint vao_outline = -1U;
+  std::cout << "Level meshes loaded" << std::endl;
 
-Load< MeshBuffer > level1_meshes(LoadTagDefault, []() -> MeshBuffer const * {
-  MeshBuffer *ret = new MeshBuffer(data_path("level2.pnct"));
-  vao_color = ret->make_vao_for_program(flat_program->program);
-  vao_outline = ret->make_vao_for_program(outline_program_0->program);
+  vao_color = meshes->make_vao_for_program(flat_program->program);
+  vao_outline = meshes->make_vao_for_program(outline_program_0->program);
 
-  //key objects:
-  mesh_Goal = &ret->lookup("Goal");
+  std::cout << "VAOs created" << std::endl;
 
   //collidable objects:
 
-  return ret;
-});
+}
 
 void print_mat4(glm::mat4 const &M) {
   std::cout << std::setprecision(4);
@@ -55,6 +50,7 @@ void print_vec4(glm::vec4 const &v) {
   }
   std::cout << std::endl;
 }
+
 void print_vec3(glm::vec3 const &v) {
   std::cout << std::setprecision(4);
   for (int i = 0; i < 3; i++) {
@@ -63,11 +59,15 @@ void print_vec3(glm::vec3 const &v) {
   std::cout << std::endl;
 }
 
-GameLevel::GameLevel(std::string const &scene_file) {
-  //uint32_t decorations = 0;
+GameLevel::GameLevel(std::string level_name) {
+
+  init_meshes(level_name);
+
+  level_name.insert(level_name.size(), ".scene");
+
   goals.reserve(2);
   auto load_fn = [this](Scene &, Transform *transform, std::string const &mesh_name){
-    Mesh const *mesh = &level1_meshes->lookup(mesh_name);
+    Mesh const *mesh = &meshes->lookup(mesh_name);
 
     drawables.emplace_back(transform);
     Drawable::Pipeline &pipeline = drawables.back().pipeline;
@@ -81,7 +81,6 @@ GameLevel::GameLevel(std::string const &scene_file) {
 
     if (transform->name.substr(0, 4) == "Move") {
       size_t name_len = transform->name.size();
-      std::cout << transform->name.substr(name_len-7, 6) << std::endl;
       if (transform->name.substr(name_len-7, 6) == "Screen") {
         std::cout << "Screen detected: " << transform->name << std::endl;
         screens.emplace_back(transform, &pipeline);
@@ -102,57 +101,67 @@ GameLevel::GameLevel(std::string const &scene_file) {
 
         auto f = mesh_to_collider.find(mesh);
         if (f == mesh_to_collider.end()) {
-          mesh_colliders.emplace_back(transform, *mesh, *level1_meshes, &data);
+          mesh_colliders.emplace_back(transform, *mesh, *meshes, &data);
         } else {
-          mesh_colliders.emplace_back(transform, *f->second, *level1_meshes, &data);
+          mesh_colliders.emplace_back(transform, *f->second, *meshes, &data);
         }
       }
     } else if (transform->name.substr(0, 5) == "Goal1") {
       goals[0] = transform;
 
       pipeline.set_uniforms = [](){
-        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+        glm::vec4 color = glm::vec4(0.0, 0.0, 1.0, 1.0);
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
+        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
+        
       };
     }else if (transform->name.substr(0, 5) == "Goal2") {
       goals[1] = transform;
 
       pipeline.set_uniforms = [](){
-        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+        glm::vec4 color = glm::vec4(1.0, 0.5, 0.0, 1.0);
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
+        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
       };
     } else if (transform->name.substr(0, 5) == "Body1") {
       body_P1_transform = transform;
       body_P1_start = *transform;
 
       pipeline.set_uniforms = [](){
-        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+        glm::vec4 color = glm::vec4(0.0, 0.0, 1.0, 1.0);
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
+        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
       };
     } else if (transform->name.substr(0, 5) == "Body2") {
       body_P2_transform = transform;
       body_P2_start = *transform;
 
       pipeline.set_uniforms = [](){
-        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
+        glm::vec4 color = glm::vec4(1.0, 0.5, 0.0, 1.0);
+        glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
+        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
       };
     } else {
       auto f = mesh_to_collider.find(mesh);
       if (f == mesh_to_collider.end()) {
-        mesh_colliders.emplace_back(transform, *mesh, *level1_meshes);
+        mesh_colliders.emplace_back(transform, *mesh, *meshes);
       } else {
-        mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
+        mesh_colliders.emplace_back(transform, *f->second, *meshes);
       }
 
       pipeline.set_uniforms = [](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_VX_COLORS);
       };
       // if (f != mesh_to_collider.end()) {
-      //   mesh_colliders.emplace_back(transform, *f->second, *level1_meshes);
+      //   mesh_colliders.emplace_back(transform, *f->second, *meshes);
       // } else {
       //   decorations++;
       // }
     }
   };
   //Load scene (using Scene::load function), building proper associations as needed:
-  load(scene_file, load_fn);
+  load(level_name, load_fn);
+  std::cout << "Level scene loaded" << std::endl;
 
   // Build the mapping between movables and orthographic cameras
 
@@ -187,7 +196,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
       std::string &sc_name = sc.transform->name; // xyzScreen
       if (cam_name == sc_name.substr(0, sc_name.size()-7)) {
         std::cout << "Matched " << cam_name << " to " << sc_name << std::endl;
-        std::cout << "Texture #" << stpt.tex << std::endl;
+        std::cout << "\tTexture #" << stpt.tex << std::endl;
         sc.set_standpoint(&stpt);
       }
     }
@@ -205,7 +214,7 @@ GameLevel::GameLevel(std::string const &scene_file) {
 }
 
 GameLevel::~GameLevel() {
-
+  delete meshes;
 }
 
 bool GameLevel::detect_lose() {
@@ -267,8 +276,8 @@ struct FB {
     };
 
     //set up normal_tex as a 16-bit floating point RGBA texture:
-    alloc_recttex(normal_tex, GL_RGB32F);
-    alloc_recttex(position_tex, GL_RGB32F);
+    alloc_recttex(normal_tex, GL_RGB16F);
+    alloc_recttex(position_tex, GL_RGB16F);
 
     //set up output_tex as an 8-bit fixed point RGBA texture:
     alloc_recttex(color_tex, GL_RGBA8);

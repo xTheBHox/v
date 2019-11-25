@@ -10,6 +10,7 @@ PlayerOneMode::PlayerOneMode(std::string const &port) {
   pov.camera = level->cam_P1;
   pov.body = level->body_P1_transform;
   other_player = level->body_P2_transform;
+  connect = nullptr;
   if (port != "") {
 		server.reset(new Server(port));
 	}

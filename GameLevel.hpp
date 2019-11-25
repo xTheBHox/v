@@ -9,7 +9,7 @@
 
 struct GameLevel : Scene {
 
-  GameLevel( std::string const &scene_file );
+  GameLevel( std::string level_name );
   virtual ~GameLevel();
 
   void draw(
@@ -37,7 +37,6 @@ struct GameLevel : Scene {
   bool detect_lose();
 
   float die_y = -40.0;
-
 
   struct Movable {
 
@@ -139,14 +138,24 @@ struct GameLevel : Scene {
 
   Screen *screen_get(Transform *transform);
 
+  void init_meshes(std::string level_name);
+
+  MeshBuffer *meshes = nullptr;
+  std::unordered_map< Mesh const *, Mesh const * >mesh_to_collider;
+  GLuint vao_color = -1U;
+  GLuint vao_outline = -1U;
+
   std::vector< MeshCollider > mesh_colliders;
   std::vector< Goal > goals;
   std::vector< Movable > movable_data;
   std::vector< Standpoint > standpoints;
   std::vector< Screen > screens;
 
+  // The initial player positions for reset
   Transform body_P1_start;
   Transform body_P2_start;
+
+  // Tracking the players
   Transform *body_P1_transform;
   Camera *cam_P1;
   Transform *body_P2_transform;
