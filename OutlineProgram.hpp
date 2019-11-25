@@ -49,6 +49,7 @@ struct OutlineProgram0{
 	//Uniform (per-invocation variable) locations:
 	GLuint OBJECT_TO_CLIP_mat4 = -1U;
   GLuint OBJECT_TO_WORLD_mat4 = -1U;
+  GLuint OBJECT_SMOOTH_ID_float = -1U;
 
 	//Textures:
 	//TEXTURE0 - texture that is accessed by TexCoord

@@ -126,7 +126,8 @@ GameLevel::GameLevel(std::string level_name) {
     } else if (transform->name.substr(0, 5) == "Body1") {
       body_P1_transform = transform;
       body_P1_start = *transform;
-
+      
+      pipeline.smooth_id = 1.0f;
       pipeline.set_uniforms = [](){
         glm::vec4 color = glm::vec4(0.0, 0.0, 1.0, 1.0);
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
@@ -136,6 +137,7 @@ GameLevel::GameLevel(std::string level_name) {
       body_P2_transform = transform;
       body_P2_start = *transform;
 
+      pipeline.smooth_id = 2.0f;
       pipeline.set_uniforms = [](){
         glm::vec4 color = glm::vec4(1.0, 0.5, 0.0, 1.0);
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
@@ -276,8 +278,8 @@ struct FB {
     };
 
     //set up normal_tex as a 16-bit floating point RGBA texture:
-    alloc_recttex(normal_tex, GL_RGB16F);
-    alloc_recttex(position_tex, GL_RGB16F);
+    alloc_recttex(normal_tex, GL_RGBA16F);
+    alloc_recttex(position_tex, GL_RGBA16F);
 
     //set up output_tex as an 8-bit fixed point RGBA texture:
     alloc_recttex(color_tex, GL_RGBA8);
@@ -368,9 +370,11 @@ void GameLevel::draw(
 
   // Draw the outlines
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_outline);
-  GLfloat bg_normal[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  GLfloat bg_normal[4] = {0.0f, 0.0f, 0.0f, 0.5f};
   glClearBufferfv(GL_COLOR, 0, bg_normal);
-  glClear(GL_COLOR_BUFFER_BIT);
+  GLfloat bg_pos[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+  glClearBufferfv(GL_COLOR, 1, bg_pos);
+  //glClear(GL_COLOR_BUFFER_BIT);
 
   glDisable(GL_BLEND);
   glEnable(GL_DEPTH_TEST);
@@ -392,6 +396,9 @@ void GameLevel::draw(
       glUniformMatrix4fv(outline_program_0->OBJECT_TO_CLIP_mat4, 1, GL_FALSE, glm::value_ptr(object_to_clip));
     }
 
+    if (outline_program_0->OBJECT_SMOOTH_ID_float != -1U) {
+      glUniform1f(outline_program_0->OBJECT_SMOOTH_ID_float, drawable.pipeline.smooth_id);
+    }
     // Uses the same pipeline as flat coloring
     Scene::Drawable::Pipeline const &pipeline = drawable.pipeline;
     glDrawArrays(pipeline.type, pipeline.start, pipeline.count);
@@ -400,8 +407,8 @@ void GameLevel::draw(
   GL_ERRORS();
   // Draw to screen
   glBindFramebuffer(GL_FRAMEBUFFER, output_fb);
-  glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  GLfloat bg_out[4] = {0.5f, 0.5f, 0.5f, 1.0f};
+  glClearBufferfv(GL_COLOR, 0, bg_out);
   glDisable(GL_DEPTH_TEST);
 
   glUseProgram(outline_program_1->program);

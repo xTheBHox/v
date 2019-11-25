@@ -75,6 +75,7 @@ struct Scene {
 
 			std::function< void() > set_uniforms; //(optional) function to set any other useful uniforms
 
+      float smooth_id = 0.0f;
 			//texture objects to bind for the first TextureCount textures:
 			enum : uint32_t { TextureCount = 4 };
 			struct TextureInfo {
