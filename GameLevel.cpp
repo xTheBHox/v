@@ -109,6 +109,7 @@ GameLevel::GameLevel(std::string level_name) {
     } else if (transform->name.substr(0, 5) == "Goal1") {
       goals[0] = transform;
 
+      pipeline.smooth_id = 3.0;
       pipeline.set_uniforms = [](){
         glm::vec4 color = glm::vec4(0.0, 0.0, 1.0, 1.0);
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
@@ -118,6 +119,7 @@ GameLevel::GameLevel(std::string level_name) {
     }else if (transform->name.substr(0, 5) == "Goal2") {
       goals[1] = transform;
 
+      pipeline.smooth_id = 4.0;
       pipeline.set_uniforms = [](){
         glm::vec4 color = glm::vec4(1.0, 0.5, 0.0, 1.0);
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
