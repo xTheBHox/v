@@ -5,7 +5,7 @@
 #include <iostream>
 #include <algorithm>
 
-PlayerOneMode::PlayerOneMode(std::string const &port) {
+PlayerOneMode::PlayerOneMode(std::string const &port, uint32_t level_num) : PlayerMode{level_num} {
   player_num = 1;
   pov.camera = level->cam_P1;
   pov.body = level->body_P1_transform;

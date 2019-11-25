@@ -12,8 +12,10 @@ extern void print_mat4(glm::mat4 const &M);
 extern void print_vec4(glm::vec4 const &v);
 extern void print_vec3(glm::vec3 const &v);
 
-PlayerMode::PlayerMode() {
-  level = new GameLevel(data_path("level2"));
+PlayerMode::PlayerMode(uint32_t level_num) {
+  std::string level_str ("level");
+  level_str = level_str + std::to_string(level_num);
+  level = new GameLevel(data_path(level_str));
   SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 

@@ -48,7 +48,7 @@ std::shared_ptr< PlayerMode > MenuMode::get_current() {
 	return current;
 }
 
-MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_items_){
+MenuMode::MenuMode(std::string connect_ip){
 	/*//select first item which can be selected:
 	for (uint32_t i = 0; i < items.size(); ++i) {
 		if (items[i].on_select) {
@@ -56,6 +56,34 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
 		}
 	} */
   current = nullptr;
+
+  main_items.emplace_back("[[ V ]]");
+  main_items.emplace_back("New Game");
+	main_items.back().on_select = [&](Item const &){
+    main_mode = 2; main_level = 1;
+	};
+  main_items.emplace_back("Select Level");
+	main_items.back().on_select = [&](Item const &){
+    main_mode = 1;
+	};
+  main_items.emplace_back("Quit");
+	main_items.back().on_select = [](Item const &){
+    Mode::set_current(nullptr);
+	};
+
+  player_items.emplace_back("[[ Select Player ]]");
+  player_items.emplace_back("Player 1");
+  player_items.back().on_select = [&](MenuMode::Item const &){
+    MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", main_level));
+  };
+  player_items.emplace_back("Player 2");
+  player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
+    MenuMode::set_current(std::make_shared< PlayerTwoMode >(connect_ip, "12345", main_level));
+  };
+	player_items.emplace_back("Back");
+	player_items.back().on_select = [&](MenuMode::Item const &){
+		main_mode = 0;
+	};
 
 	pause_items.emplace_back("[[ PAUSED ]]");
 	pause_items.emplace_back("Resume");
@@ -76,12 +104,35 @@ MenuMode::MenuMode(std::vector< Item > const &main_items_) : main_items(main_ite
     }
 	};
 	pause_items.emplace_back("Main Menu");
-	pause_items.back().on_select = [](Item const &){
+	pause_items.back().on_select = [&](Item const &){
+    main_mode = 0;
     MenuMode::set_current(nullptr);
 	};
 	pause_items.emplace_back("Quit");
 	pause_items.back().on_select = [](Item const &){
     Mode::set_current(nullptr);
+	};
+
+  level_items.emplace_back("[[ SELECT LEVEL ]]");
+  level_items.emplace_back("Level 1");
+	level_items.back().on_select = [&](Item const &){
+    main_mode = 2; main_level = 1;
+	};
+  level_items.emplace_back("Level 2");
+	level_items.back().on_select = [&](Item const &){
+    main_mode = 2; main_level = 2;
+	};
+  level_items.emplace_back("Level 3");
+	level_items.back().on_select = [&](Item const &){
+    main_mode = 2; main_level = 3;
+	};
+  level_items.emplace_back("Level 4");
+	level_items.back().on_select = [&](Item const &){
+    main_mode = 2; main_level = 4;
+	};
+  level_items.emplace_back("Back");
+	level_items.back().on_select = [&](Item const &){
+    main_mode = 0;
 	};
 
 
@@ -234,40 +285,112 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
       return false;
     }
 	} else { // we're on the main menu
-  	if (evt.type == SDL_KEYDOWN) {
-      if (evt.key.keysym.sym == SDLK_ESCAPE){
-        Mode::set_current(nullptr);
-      }
-  		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-  			//skip non-selectable items:
-  			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
-  				if (main_items[i].on_select) {
-  					selected = i;
-  					Sound::play(*sound_click);
-  					break;
-  				}
-  			}
-  			return true;
-  		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-  			//note: skips non-selectable items:
-  			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
-  				if (main_items[i].on_select) {
-  					selected = i;
-  					Sound::play(*sound_click);
-  					break;
-  				}
-  			}
-  			return true;
-  		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-  			if (selected < main_items.size() && main_items[selected].on_select) {
-  				Sound::play(*sound_clonk);
-  				main_items[selected].on_select(main_items[selected]);
-          selected = 1;
-  				return true;
-  			}
-  		}
-  	}
-		return false;
+    if (main_mode == 0) {
+    	if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){
+          Mode::set_current(nullptr);
+        }
+    		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+    			//skip non-selectable items:
+    			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
+    				if (main_items[i].on_select) {
+    					selected = i;
+    					Sound::play(*sound_click);
+    					break;
+    				}
+    			}
+    			return true;
+    		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+    			//note: skips non-selectable items:
+    			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
+    				if (main_items[i].on_select) {
+    					selected = i;
+    					Sound::play(*sound_click);
+    					break;
+    				}
+    			}
+    			return true;
+    		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+    			if (selected < main_items.size() && main_items[selected].on_select) {
+    				Sound::play(*sound_clonk);
+    				main_items[selected].on_select(main_items[selected]);
+            selected = 1;
+    				return true;
+    			}
+    		}
+    	}
+  		return false;
+    } else if (main_mode == 1) {
+    	if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){
+          main_mode = 0;
+        }
+    		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+    			//skip non-selectable items:
+    			for (uint32_t i = selected - 1; i < level_items.size(); --i) {
+    				if (level_items[i].on_select) {
+    					selected = i;
+    					Sound::play(*sound_click);
+    					break;
+    				}
+    			}
+    			return true;
+    		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+    			//note: skips non-selectable items:
+    			for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
+    				if (level_items[i].on_select) {
+    					selected = i;
+    					Sound::play(*sound_click);
+    					break;
+    				}
+    			}
+    			return true;
+    		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+    			if (selected < level_items.size() && level_items[selected].on_select) {
+    				Sound::play(*sound_clonk);
+    				level_items[selected].on_select(level_items[selected]);
+            selected = 1;
+    				return true;
+    			}
+    		}
+    	}
+  		return false;
+    } else {
+    	if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){
+          main_mode = 0;
+        }
+    		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+    			//skip non-selectable items:
+    			for (uint32_t i = selected - 1; i < player_items.size(); --i) {
+    				if (player_items[i].on_select) {
+    					selected = i;
+    					Sound::play(*sound_click);
+    					break;
+    				}
+    			}
+    			return true;
+    		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+    			//note: skips non-selectable items:
+    			for (uint32_t i = selected + 1; i < player_items.size(); ++i) {
+    				if (player_items[i].on_select) {
+    					selected = i;
+    					Sound::play(*sound_click);
+    					break;
+    				}
+    			}
+    			return true;
+    		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+    			if (selected < player_items.size() && player_items[selected].on_select) {
+    				Sound::play(*sound_clonk);
+    				player_items[selected].on_select(player_items[selected]);
+            selected = 1;
+    				return true;
+    			}
+    		}
+    	}
+  		return false;
+    }
 	}
 }
 
@@ -370,24 +493,20 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
   auto draw_circle_sector = [&vertices](glm::vec2 const &center, float const &radius, float angle_offset, float angle, glm::u8vec4 const &color) {
     static const uint8_t sides = 36;
     static const float x_offsets[sides+1] =
-      {-1.0f, -0.98480775301f, -0.93969262078f, -0.86602540378f, -0.76604444311f,
-        -0.64278760968f, -0.5f, -0.34202014332f, -0.17364817766f,
-        0.0f, 0.17364817766f, 0.34202014332f, 0.5f, 0.64278760968f,
-        0.76604444311f, 0.86602540378f, 0.93969262078f, 0.98480775301f,
-        1.0f,  0.98480775301f,  0.93969262078f,  0.86602540378f, 0.76604444311f,
-        0.64278760968f, 0.5f, 0.34202014332f, 0.17364817766f,
-        0.0f, -0.17364817766f, -0.34202014332f, -0.5f, -0.64278760968f,
-        -0.76604444311f, -0.86602540378f, -0.93969262078f, -0.98480775301f, -1.0f
+      { 1.0f,  0.98480775301f,  0.93969262078f,  0.86602540378f, 0.76604444311f, 0.64278760968f,
+        0.5f, 0.34202014332f, 0.17364817766f, 0.0f, -0.17364817766f, -0.34202014332f,
+        -0.5f, -0.64278760968f, -0.76604444311f, -0.86602540378f, -0.93969262078f, -0.98480775301f,
+        -1.0f, -0.98480775301f, -0.93969262078f, -0.86602540378f, -0.76604444311f, -0.64278760968f,
+        -0.5f, -0.34202014332f, -0.17364817766f, 0.0f, 0.17364817766f, 0.34202014332f,
+        0.5f, 0.64278760968f, 0.76604444311f, 0.86602540378f, 0.93969262078f, 0.98480775301f, 1.0f
       };
     static const float y_offsets[sides+1] =
-      {0.0f, -0.17364817766f, -0.34202014332f, -0.5f, -0.64278760968f,
-        -0.76604444311f, -0.86602540378f, -0.93969262078f, -0.98480775301f,
-        -1.0f, -0.98480775301f, -0.93969262078f, -0.86602540378f, -0.76604444311f,
-        -0.64278760968f, -0.5f, -0.34202014332f, -0.17364817766f,
-        0.0f, 0.17364817766f, 0.34202014332f, 0.5f, 0.64278760968f,
-        0.76604444311f, 0.86602540378f, 0.93969262078f, 0.98480775301f,
-        1.0f,  0.98480775301f,  0.93969262078f,  0.86602540378f, 0.76604444311f,
-        0.64278760968f, 0.5f, 0.34202014332f, 0.17364817766f, 0.0f
+      { 0.0f, -0.17364817766f, -0.34202014332f, -0.5f, -0.64278760968f, -0.76604444311f,
+        -0.86602540378f, -0.93969262078f, -0.98480775301f, -1.0f, -0.98480775301f, -0.93969262078f,
+        -0.86602540378f, -0.76604444311f, -0.64278760968f, -0.5f, -0.34202014332f, -0.17364817766f,
+        0.0f, 0.17364817766f, 0.34202014332f, 0.5f, 0.64278760968f, 0.76604444311f,
+        0.86602540378f, 0.93969262078f, 0.98480775301f, 1.0f,  0.98480775301f,  0.93969262078f,
+        0.86602540378f, 0.76604444311f, 0.64278760968f, 0.5f, 0.34202014332f, 0.17364817766f, 0.0f
       };
     //just draw a <sides>-gon with CCW-oriented triangles:
     uint8_t start = (uint8_t)(angle_offset/10.0f);
@@ -571,12 +690,13 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 		//it is an error to remove the last reference to this object in current->draw():
 		assert(hold_me.use_count() > 1);
 	} else {
-    draw_menu(drawable_size, main_items);
+    if (main_mode == 0) draw_menu(drawable_size, main_items);
+    else if (main_mode == 1) draw_menu(drawable_size, level_items);
+    else draw_menu(drawable_size, player_items);
   }
 
 	GL_ERRORS(); //PARANOIA: print errors just in case we did something wrong.
 }
-
 
 void MenuMode::layout_items(float gap) {
 	DrawSprites temp(*atlas, view_min, view_max, view_max - view_min, DrawSprites::AlignPixelPerfect); //<-- doesn't actually draw
@@ -596,6 +716,44 @@ void MenuMode::layout_items(float gap) {
 	}
 	float ofs = -0.5f * y;
 	for (auto &item : main_items) {
+		item.at.y += ofs;
+	}
+
+  // layout for player selection menu items
+	y = view_max.y;
+	for (auto &item : player_items) {
+		glm::vec2 min, max;
+		if (item.sprite) {
+			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
+			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
+		} else {
+			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
+		}
+		item.at.y = y - max.y;
+		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
+		y = y - (max.y - min.y) - gap;
+	}
+	ofs = -0.5f * y;
+	for (auto &item : player_items) {
+		item.at.y += ofs;
+	}
+
+  // layout for level selection menu items
+	y = view_max.y;
+	for (auto &item : level_items) {
+		glm::vec2 min, max;
+		if (item.sprite) {
+			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
+			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
+		} else {
+			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
+		}
+		item.at.y = y - max.y;
+		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
+		y = y - (max.y - min.y) - gap;
+	}
+	ofs = -0.5f * y;
+	for (auto &item : level_items) {
 		item.at.y += ofs;
 	}
 

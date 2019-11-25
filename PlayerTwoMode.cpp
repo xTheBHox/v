@@ -12,7 +12,7 @@
 
 #include <iostream>
 
-PlayerTwoMode::PlayerTwoMode(std::string const &host, std::string const &port) {
+PlayerTwoMode::PlayerTwoMode(std::string const &host, std::string const &port, uint32_t level_num) : PlayerMode{level_num} {
   player_num = 2;
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
