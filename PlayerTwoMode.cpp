@@ -27,7 +27,9 @@ PlayerTwoMode::PlayerTwoMode(std::string const &host, std::string const &port, u
   pov.body = level->body_P2_transform;
   other_player = level->body_P1_transform;
   if (connect_ != nullptr){
-     connect = connect_;
+    std::cout << "Here2" << std::endl;
+    connect = connect_;
+    std::cout << "Here3" << std::endl;
   }else{
     client.reset(new Client(host, port));
     connect = &client->connection;

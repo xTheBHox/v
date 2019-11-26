@@ -23,9 +23,12 @@ PlayerOneMode::PlayerOneMode(std::string const &port, uint32_t level_num, Connec
   other_player = level->body_P2_transform;
   
   if (connect_ != nullptr){
+    std::cout << "Here" << std::endl;
     connect = connect_;
+    std::cout << "Here1" << std::endl;
   }
   else{
+    connect = nullptr;
     if (port != "") {
       server.reset(new Server(port));
     }
