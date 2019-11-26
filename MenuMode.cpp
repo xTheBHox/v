@@ -457,21 +457,33 @@ void MenuMode::update(float elapsed) {
 
     if (current->won){
       current->to_next_level += elapsed;
+			std::cout << current->to_next_level << std::endl;
       if (current->player_num == 1 && current->to_next_level >= 5.0f) {
-        std::shared_ptr<PlayerOneMode> current_player = std::dynamic_pointer_cast< PlayerOneMode >(current);
+        //std::shared_ptr<PlayerOneMode> current_player = std::dynamic_pointer_cast< PlayerOneMode >(current);
         uint32_t level_num = (current->level_num==4)?1:current->level_num+1;
+				std::string level_str ("level");
+  			level_str = level_str + std::to_string(level_num);
+  			p1->level = new GameLevel(data_path(level_str));
+				MenuMode::set_current(p1);
+				p1->won = false;
+				std::cout << "To next level" << std::endl;
         // current->connect->close();
-        current_player->server.reset(nullptr);
-        MenuMode::set_current(nullptr);
-        MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", level_num));
+        //current_player->server.reset(nullptr);
+        //MenuMode::set_current(nullptr);
+        //MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", level_num));
       } else if (current->player_num == 2 && current->to_next_level >= 5.5f) {
-        std::shared_ptr<PlayerTwoMode> current_player = std::dynamic_pointer_cast< PlayerTwoMode >(current);
+        //std::shared_ptr<PlayerTwoMode> current_player = std::dynamic_pointer_cast< PlayerTwoMode >(current);
         uint32_t level_num = (current->level_num==4)?1:current->level_num+1;
+				std::string level_str ("level");
+  			level_str = level_str + std::to_string(level_num);
+  			p2->level = new GameLevel(data_path(level_str));
+				MenuMode::set_current(p2);
+				std::cout << "To next level" << std::endl;
         // current->connect->close();
-        current_player->client.reset(nullptr);
-        MenuMode::set_current(nullptr);
-        std::cout << main_connect_ip << std::endl;
-        MenuMode::set_current(std::make_shared< PlayerTwoMode >(main_connect_ip, "12345", level_num));
+        //current_player->client.reset(nullptr);
+        //MenuMode::set_current(nullptr);
+        //std::cout << main_connect_ip << std::endl;
+        //MenuMode::set_current(std::make_shared< PlayerTwoMode >(main_connect_ip, "12345", level_num));
       }
     }
 	}
