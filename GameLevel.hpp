@@ -41,8 +41,8 @@ struct GameLevel : Scene {
   struct Movable {
 
     Movable(Transform *transform_);
-    void update(glm::vec3 &diff);
-    void set_target_pos(glm::vec3 &target, glm::vec4 &color_);
+    void update(glm::vec3 const &diff);
+    void set_target_pos(glm::vec3 const &target, glm::vec4 const &color_);
 
     // The object's transform.
     Transform *transform = nullptr;
@@ -123,17 +123,17 @@ struct GameLevel : Scene {
       Transform *transform_,
       Mesh const &mesh_,
       MeshBuffer const &buffer_,
-      Movable *movable_ = nullptr
+      int movable_index_ = -1
     ) :
       transform(transform_),
       mesh(&mesh_),
       buffer(&buffer_),
-      movable(movable_)
+      movable_index(movable_index_)
     {}
     Scene::Transform *transform;
     Mesh const *mesh;
     MeshBuffer const *buffer;
-    Movable *movable = nullptr;
+    int movable_index;
   };
 
   Screen *screen_get(Transform *transform);
