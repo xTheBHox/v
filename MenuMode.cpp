@@ -19,6 +19,10 @@ Load< Sound::Sample > music_ambient(LoadTagDefault, []() -> Sound::Sample * {
   return new Sound::Sample(data_path("ambient1.wav"));
 });
 
+Load< Sound::Sample > sound_move(LoadTagDefault, []() -> Sound::Sample * {
+  return new Sound::Sample(data_path("movesh.wav"));
+});
+
 Load< Sound::Sample > sound_click(LoadTagDefault, []() -> Sound::Sample *{
 	std::vector< float > data(size_t(48000 * 0.2f), 0.0f);
 	for (uint32_t i = 0; i < data.size(); ++i) {
@@ -257,7 +261,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     			for (uint32_t i = selected - 1; i < pause_items.size(); --i) {
     				if (pause_items[i].on_select) {
     					selected = i;
-    					Sound::play(*sound_click);
+    					// Sound::play(*sound_click);
     					break;
     				}
     			}
@@ -267,14 +271,14 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     			for (uint32_t i = selected + 1; i < pause_items.size(); ++i) {
     				if (pause_items[i].on_select) {
     					selected = i;
-    					Sound::play(*sound_click);
+    					// Sound::play(*sound_click);
     					break;
     				}
     			}
     			return true;
     		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
     			if (selected < pause_items.size() && pause_items[selected].on_select) {
-    				Sound::play(*sound_clonk);
+    				// Sound::play(*sound_clonk);
     				pause_items[selected].on_select(pause_items[selected]);
             selected = 1;
     				return true;
@@ -332,7 +336,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
     				if (main_items[i].on_select) {
     					selected = i;
-    					Sound::play(*sound_click);
+    					// Sound::play(*sound_click);
     					break;
     				}
     			}
@@ -342,14 +346,14 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
     				if (main_items[i].on_select) {
     					selected = i;
-    					Sound::play(*sound_click);
+    					// Sound::play(*sound_click);
     					break;
     				}
     			}
     			return true;
     		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
     			if (selected < main_items.size() && main_items[selected].on_select) {
-    				Sound::play(*sound_clonk);
+    				// Sound::play(*sound_clonk);
     				main_items[selected].on_select(main_items[selected]);
             selected = 1;
     				return true;
@@ -367,7 +371,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     			for (uint32_t i = selected - 1; i < level_items.size(); --i) {
     				if (level_items[i].on_select) {
     					selected = i;
-    					Sound::play(*sound_click);
+    					// Sound::play(*sound_click);
     					break;
     				}
     			}
@@ -377,14 +381,14 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     			for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
     				if (level_items[i].on_select) {
     					selected = i;
-    					Sound::play(*sound_click);
+    					// Sound::play(*sound_click);
     					break;
     				}
     			}
     			return true;
     		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
     			if (selected < level_items.size() && level_items[selected].on_select) {
-    				Sound::play(*sound_clonk);
+    				// Sound::play(*sound_clonk);
     				level_items[selected].on_select(level_items[selected]);
             selected = 1;
     				return true;
@@ -402,7 +406,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     			for (uint32_t i = selected - 1; i < player_items.size(); --i) {
     				if (player_items[i].on_select) {
     					selected = i;
-    					Sound::play(*sound_click);
+    					// Sound::play(*sound_click);
     					break;
     				}
     			}
@@ -412,14 +416,14 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     			for (uint32_t i = selected + 1; i < player_items.size(); ++i) {
     				if (player_items[i].on_select) {
     					selected = i;
-    					Sound::play(*sound_click);
+    					// Sound::play(*sound_click);
     					break;
     				}
     			}
     			return true;
     		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
     			if (selected < player_items.size() && player_items[selected].on_select) {
-    				Sound::play(*sound_clonk);
+    				// Sound::play(*sound_clonk);
     				player_items[selected].on_select(player_items[selected]);
             selected = 1;
     				return true;
@@ -437,12 +441,19 @@ void MenuMode::update(float elapsed) {
 	select_bounce_acc -= std::floor(select_bounce_acc);
 
 	if (!background_music || background_music->stopped){
-    background_music = Sound::play(*music_ambient, 10.0f);
-    std::cout << "Hi" << std::endl;
+    background_music = Sound::play(*music_ambient, 2.0f);
   }
 
 	if (current) {
+    current->play_moving_sound = 0;
     current->update(elapsed);
+    if (!current->currently_moving.empty() || current->play_moving_sound){
+      if (!moving_sound || moving_sound->stopped) {
+        moving_sound = Sound::play(*sound_move, 2.0f);
+      }
+    } else if (moving_sound && !moving_sound->stopped) {
+      moving_sound->stop();
+    }
     if (current->we_want_reset && current->they_want_reset) {
       current->level->reset();
       current->pause = false;
