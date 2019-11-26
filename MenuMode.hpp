@@ -113,4 +113,6 @@ struct MenuMode : Mode {
 	// std::shared_ptr< Mode > background;
   std::shared_ptr< Sound::PlayingSample > background_music;
 
+	std::shared_ptr<PlayerOneMode> p1 = nullptr;
+	std::shared_ptr<PlayerTwoMode> p2 = nullptr;
 };

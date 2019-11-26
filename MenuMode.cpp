@@ -79,11 +79,32 @@ MenuMode::MenuMode(std::string connect_ip) {
   player_items.emplace_back("[[ Select Player ]]");
   player_items.emplace_back("Player 1");
   player_items.back().on_select = [&](MenuMode::Item const &){
-    MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", main_level));
+		if (p1 != nullptr){
+			std::string level_str ("level");
+  		level_str = level_str + std::to_string(main_level);
+  		p1->level = new GameLevel(data_path(level_str));
+			MenuMode::set_current(p1);
+		}else{
+			p1.reset(new PlayerOneMode("12345", main_level));
+			//p1 = std::move(p1_);
+			MenuMode::set_current(p1);
+		}
   };
   player_items.emplace_back("Player 2");
   player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
-    MenuMode::set_current(std::make_shared< PlayerTwoMode >(connect_ip, "12345", main_level));
+    //MenuMode::set_current(std::make_shared< PlayerTwoMode >(connect_ip, "12345", main_level));
+		if (p2 != nullptr){
+			std::string level_str ("level");
+  		level_str = level_str + std::to_string(main_level);
+  		p2->level = new GameLevel(data_path(level_str));
+			MenuMode::set_current(p2);
+		}else{
+			//std::shared_ptr<PlayerTwoMode> p2_(new PlayerTwoMode(connect_ip, "12345", main_level));
+			//p2.reset(p2_);
+			//p2 = std::move(p2_);
+			p2.reset(new PlayerTwoMode(connect_ip, "12345", main_level));
+			MenuMode::set_current(p2);
+		}
   };
 	player_items.emplace_back("Back");
 	player_items.back().on_select = [&](MenuMode::Item const &){
