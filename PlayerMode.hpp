@@ -78,6 +78,7 @@ struct PlayerMode : Mode {
   } shift;
 
   std::list< size_t > currently_moving;
+  uint32_t play_moving_sound = 0;
 
   GameLevel::Movable *on_movable = nullptr;
   Scene::Transform *other_player;

@@ -112,6 +112,7 @@ struct MenuMode : Mode {
 	//  the last shared_ptr that references it), then it will crash. Don't do that!
 	// std::shared_ptr< Mode > background;
   std::shared_ptr< Sound::PlayingSample > background_music;
+  std::shared_ptr< Sound::PlayingSample > moving_sound;
 
 	std::shared_ptr<PlayerOneMode> p1 = nullptr;
 	std::shared_ptr<PlayerTwoMode> p2 = nullptr;

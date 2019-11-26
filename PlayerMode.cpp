@@ -419,7 +419,7 @@ void PlayerMode::update_player_move(float elapsed) {
     pov.camera->transform->rotation =
             glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
     }
-    
+
 }
 
 // Returns -1 for invalid message, 1 for message incomplete, 0 for message read
@@ -450,7 +450,7 @@ int PlayerMode::update_recv_msg(char msg_type, char *buf, size_t buf_len, size_t
     other_player->rotation = *rot;
 
   } else if (msg_type == 'C') {
-
+    play_moving_sound = 1;
     msg_unit_size = sizeof(size_t) + sizeof(glm::vec3) + sizeof(glm::vec4);
     size_t* len = reinterpret_cast<size_t*> (buf);
     msg_size = sizeof(size_t) + *len * msg_unit_size;
