@@ -5,8 +5,8 @@
 #include "Connection.hpp"
 
 struct PlayerOneMode : PlayerMode {
-	PlayerOneMode(std::string const &server_port = "", uint32_t level_num = 1);
-
+	//PlayerOneMode(std::string const &server_port = "", uint32_t level_num = 1);
+	PlayerOneMode(std::string const &server_port = "", uint32_t level_num = 1, Connection *connect_=nullptr);
 	void update_network() override;
   std::unique_ptr< Server > server;
 
