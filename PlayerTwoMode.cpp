@@ -11,30 +11,21 @@
 #include <algorithm>
 
 #include <iostream>
-/**
-PlayerTwoMode::PlayerTwoMode(std::string const &host, std::string const &port, uint32_t level_num) : PlayerMode{level_num} {
+
+PlayerTwoMode::PlayerTwoMode(std::string const &host, std::string const &port, uint32_t level_num_) : PlayerMode(level_num_) {
   player_num = 2;
-  pov.camera = level->cam_P2;
-  pov.body = level->body_P2_transform;
-  other_player = level->body_P1_transform;
+  level_change(level_num_);
   client.reset(new Client(host, port));
   connect = &client->connection;
 }
-**/
-PlayerTwoMode::PlayerTwoMode(std::string const &host, std::string const &port, uint32_t level_num, Connection *connect_) : PlayerMode{level_num} {
-  player_num = 2;
+
+void PlayerTwoMode::level_change(uint32_t level_num_) {
+  
+  PlayerMode::level_change(level_num_);
   pov.camera = level->cam_P2;
   pov.body = level->body_P2_transform;
   other_player = level->body_P1_transform;
-  if (connect_ != nullptr){
-    std::cout << "Here2" << std::endl;
-    connect = connect_;
-    std::cout << "Here3" << std::endl;
-  }else{
-    client.reset(new Client(host, port));
-    connect = &client->connection;
-  }
- 
+  
 }
 
 void PlayerTwoMode::update_network() {

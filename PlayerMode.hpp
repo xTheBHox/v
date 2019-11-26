@@ -8,12 +8,15 @@
 #include <functional>
 
 struct PlayerMode : Mode {
-	PlayerMode(uint32_t level_num_);
-	virtual ~PlayerMode();
+  PlayerMode(uint32_t level_num_);
+  virtual ~PlayerMode();
+  
+  virtual void level_change(uint32_t level_num_);
+  virtual void level_reset();
 
   bool handle_ui(SDL_Event const &, glm::uvec2 const &window_size);
 
-	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
+  virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
 
   void update_shift(float elapsed);
   void update_reset_timer(float elapsed);
@@ -30,7 +33,7 @@ struct PlayerMode : Mode {
   virtual void draw(glm::uvec2 const &drawable_size) override;
 
   //Current control signals:
-	struct {
+  struct {
     bool forward = false;
     bool backward = false;
     bool left = false;
@@ -39,9 +42,9 @@ struct PlayerMode : Mode {
     bool jump = false;
     bool mouse_down = false;
     float mouse_sensitivity = 4.0f;
-	} controls;
+  } controls;
 
-	bool DEBUG_fly = false;  //fly around for collsion debug
+  bool DEBUG_fly = false;  //fly around for collsion debug
   bool pause = false;
   bool won = false;
   float to_next_level = 0.0f;
@@ -49,8 +52,8 @@ struct PlayerMode : Mode {
   bool we_want_reset = false;
   bool they_want_reset = false;
   float reset_countdown = 0.0f;
-  uint32_t player_num = 0;
-  uint32_t level_num = 0;
+  uint32_t player_num;
+  uint32_t level_num;
 
   // Player camera tracked using this structure:
   struct {
@@ -77,11 +80,11 @@ struct PlayerMode : Mode {
   std::list< size_t > currently_moving;
 
   GameLevel::Movable *on_movable = nullptr;
-  Scene::Transform *other_player = nullptr;
+  Scene::Transform *other_player;
 
   Connection *connect;
   std::function<void(Connection *, Connection::Event)> callback_fn;
 
-  GameLevel *level;
+  GameLevel *level = nullptr;
 
 };

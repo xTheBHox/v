@@ -89,11 +89,11 @@ MenuMode::MenuMode(std::string connect_ip) {
 			p1.reset(new PlayerOneMode("12345", main_level));
 			MenuMode::set_current(p1);
 		}**/
-		MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", main_level, nullptr));
+		MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", main_level));
   };
   player_items.emplace_back("Player 2");
   player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
-    MenuMode::set_current(std::make_shared< PlayerTwoMode >(connect_ip, "12345", main_level, nullptr));
+    MenuMode::set_current(std::make_shared< PlayerTwoMode >(connect_ip, "12345", main_level));
 		/**
 		if (p2 != nullptr){
 			std::string level_str ("level");
@@ -444,52 +444,20 @@ void MenuMode::update(float elapsed) {
 	if (current) {
     current->update(elapsed);
     if (current->we_want_reset && current->they_want_reset) {
-      current->level->reset();
-      current->pause = false;
-      current->won = false;
-      current->lost = false;
-      current->we_want_reset = false;
-      current->they_want_reset = false;
+      current->level_reset();
       std::cout << "Reset!" << std::endl;
       SDL_SetRelativeMouseMode(SDL_TRUE);
     }
 
-    if (current->won){
+    if (current->won) {
       current->to_next_level += elapsed;
-			std::cout << current->to_next_level << std::endl;
-      if (current->player_num == 1 && current->to_next_level >= 5.0f) {
-        //std::shared_ptr<PlayerOneMode> current_player = std::dynamic_pointer_cast< PlayerOneMode >(current);
-        uint32_t level_num = (current->level_num==4)?1:current->level_num+1;
-				//std::string level_str ("level");
-  			//level_str = level_str + std::to_string(level_num);
-  			//p1->level = new GameLevel(data_path(level_str));
-				//MenuMode::set_current(p1);
-				//p1->won = false;
-				std::cout << "To next level" << std::endl;
-        // current->connect->close();
-        //current_player->server.reset(nullptr);
-        //MenuMode::set_current(nullptr);
-				connect_server = current->connect;
-        MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", level_num, connect_server));
-
-      } else if (current->player_num == 2 && current->to_next_level >= 5.5f) {
-        //std::shared_ptr<PlayerTwoMode> current_player = std::dynamic_pointer_cast< PlayerTwoMode >(current);
-        uint32_t level_num = (current->level_num==4)?1:current->level_num+1;
-				//std::string level_str ("level");
-  			//level_str = level_str + std::to_string(level_num);
-  			//p2->level = new GameLevel(data_path(level_str));
-				//MenuMode::set_current(p2);
-				std::cout << "To next level" << std::endl;
-        // current->connect->close();
-        //current_player->client.reset(nullptr);
-        //MenuMode::set_current(nullptr);
-        //std::cout << main_connect_ip << std::endl;
-				connect_client = current->connect;
-        MenuMode::set_current(std::make_shared< PlayerTwoMode >(main_connect_ip, "12345", level_num, connect_client));
-
+      std::cout << current->to_next_level << std::endl;
+      if (current->to_next_level >= 5.0f) {
+        uint32_t level_num = (current->level_num == 4) ? 1 : current->level_num + 1;
+        current->level_change(level_num);
       }
-    }
 	}
+  }
 }
 
 void MenuMode::draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> items) {

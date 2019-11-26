@@ -11,16 +11,13 @@ extern void print_mat4(glm::mat4 const &M);
 extern void print_vec4(glm::vec4 const &v);
 extern void print_vec3(glm::vec3 const &v);
 
-PlayerMode::PlayerMode(uint32_t level_num_) : level_num(level_num_) {
-  std::string level_str ("level");
-  level_str = level_str + std::to_string(level_num);
-  level = new GameLevel(data_path(level_str));
+PlayerMode::PlayerMode(uint32_t level_num_) {
   SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
 PlayerMode::~PlayerMode(){
   SDL_SetRelativeMouseMode(SDL_FALSE);
-  delete level; //TODO VVVBad. Remove when network
+  delete level;
 }
 
 bool PlayerMode::handle_ui(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -33,6 +30,38 @@ bool PlayerMode::handle_ui(SDL_Event const &evt, glm::uvec2 const &window_size) 
   } else return false;
 
   return true;
+}
+
+void PlayerMode::level_change(uint32_t level_num_) {
+  std::cout << "Deleting old level" << std::endl;
+  if (level) delete level;
+  
+  level_num = level_num_;
+  std::string level_str ("level");
+  level_str = level_str + std::to_string(level_num);
+  std::cout << "Loading new level" << std::endl;
+  level = new GameLevel(data_path(level_str));
+  level_reset();
+}
+
+void PlayerMode::level_reset() {
+
+  std::cout << "Resetting level" << std::endl;
+  level->reset();
+
+  won = false;
+  to_next_level = 0.0f;
+  lost = false;
+  pause = false;
+  we_want_reset = false;
+  they_want_reset = false;
+  reset_countdown = 0.0f;
+  
+  std::cout << "Clearing old moving data" << std::endl;
+  
+  currently_moving.clear();
+  on_movable = nullptr;
+  
 }
 
 bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -90,7 +119,7 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 
 void PlayerMode::update(float elapsed) {
   if (pause) return;
-  if (level->detect_win()) {
+  if (!won && level->detect_win()) {
     won = true;
     to_next_level = 0.0f;
   }
@@ -209,7 +238,6 @@ void PlayerMode::update_player_move(float elapsed) {
     pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / 0.01f));
     // pov.vel *= std::pow(0.5f, elapsed / 0.01f); // friction
   }
-
 
   // Compute collisions for normal contact force
   {
