@@ -157,10 +157,10 @@ void PlayerMode::update_movables_move(float elapsed) {
     }
     float dpos = elapsed * m.vel;
     if (glm::dot(diff, diff) < dpos * dpos) {
-      m.transform->position = m.target_pos;
+      m.update(diff);
     } else {
-      diff = glm::normalize(diff);
-      m.transform->position += diff * dpos;
+      diff = dpos * glm::normalize(diff);
+      m.update(diff);
     }
     // need network update later
     mi_ptr++;
@@ -293,10 +293,10 @@ void PlayerMode::update_player_move(float elapsed) {
 
           if (did_collide) {
             collided = true;
-            if (collider.movable) {
-              on_movable = collider.movable;
-              collider.movable->player = pov.body;
-              // std::cout << collider.movable->transform->name << " got player" << std::endl;
+            if (collider.movable_index >= 0) {
+              on_movable = &level->movable_data[collider.movable_index];
+              on_movable->player = pov.body;
+              //std::cout << "Got player!" << std::endl;
             }
           }
 
@@ -391,7 +391,7 @@ void PlayerMode::update_player_move(float elapsed) {
     pov.camera->transform->rotation =
             glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
     }
-
+    
 }
 
 // Returns -1 for invalid message, 1 for message incomplete, 0 for message read

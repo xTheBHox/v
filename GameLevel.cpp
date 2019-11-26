@@ -101,9 +101,9 @@ GameLevel::GameLevel(std::string level_name) {
 
         auto f = mesh_to_collider.find(mesh);
         if (f == mesh_to_collider.end()) {
-          mesh_colliders.emplace_back(transform, *mesh, *meshes, &data);
+          mesh_colliders.emplace_back(transform, *mesh, *meshes, (int)mi);
         } else {
-          mesh_colliders.emplace_back(transform, *f->second, *meshes, &data);
+          mesh_colliders.emplace_back(transform, *f->second, *meshes, (int)mi);
         }
       }
     } else if (transform->name.substr(0, 5) == "Goal1") {
@@ -181,6 +181,7 @@ GameLevel::GameLevel(std::string level_name) {
           std::string &mp_name = lit->transform->name;
           if (mp_name.substr(0, mp_name.size()-9) == oc.transform->name) {
             std::cout << "Matched " << mp_name << " to " << oc.transform->name << std::endl;
+            std::cout << "\tScreen has texture #" << stpt.tex << std::endl;
             stpt.move_pos.emplace_back(&(*lit));
             print_vec3(stpt.move_pos.back().pos);
             print_vec4(stpt.move_pos.back().color);
@@ -200,7 +201,6 @@ GameLevel::GameLevel(std::string level_name) {
       std::string &sc_name = sc.transform->name; // xyzScreen
       if (cam_name == sc_name.substr(0, sc_name.size()-7)) {
         std::cout << "Matched " << cam_name << " to " << sc_name << std::endl;
-        std::cout << "\tTexture #" << stpt.tex << std::endl;
         sc.set_standpoint(&stpt);
       }
     }
@@ -452,14 +452,14 @@ GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
 
 }
 
-void GameLevel::Movable::update(glm::vec3 &diff) {
+void GameLevel::Movable::update(glm::vec3 const &diff) {
   transform->position += diff;
   if (player) {
     player->position += diff;
   }
 }
 
-void GameLevel::Movable::set_target_pos(glm::vec3 &target, glm::vec4 &color_) {
+void GameLevel::Movable::set_target_pos(glm::vec3 const &target, glm::vec4 const &color_) {
 
   color = color_;
   target_pos = target;
