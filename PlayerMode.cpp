@@ -35,7 +35,7 @@ bool PlayerMode::handle_ui(SDL_Event const &evt, glm::uvec2 const &window_size) 
 void PlayerMode::level_change(uint32_t level_num_) {
   std::cout << "Deleting old level" << std::endl;
   if (level) delete level;
-  
+
   level_num = level_num_;
   std::string level_str ("level");
   level_str = level_str + std::to_string(level_num);
@@ -56,12 +56,12 @@ void PlayerMode::level_reset() {
   we_want_reset = false;
   they_want_reset = false;
   reset_countdown = 0.0f;
-  
+
   std::cout << "Clearing old moving data" << std::endl;
-  
+
   currently_moving.clear();
   on_movable = nullptr;
-  
+
 }
 
 bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -366,7 +366,7 @@ void PlayerMode::update_player_move(float elapsed) {
         float d = glm::dot(pl_vel, collision_out); // collision_out already normalized
         // Adjust for surface friction
         if (d < 0.0f) {
-          float friction_coeff = std::pow(0.5f, remain / 0.05f);
+          float friction_coeff = std::pow(0.5f, remain / 0.01f);
           glm::vec3 forward = pl_vel - d * collision_out;
           float forward_magnitude_2 = glm::dot(forward, forward);
           float backward_magnitude = friction_coeff * d;

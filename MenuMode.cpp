@@ -69,7 +69,8 @@ MenuMode::MenuMode(std::string connect_ip) {
   main_items.emplace_back("[[ V ]]");
   main_items.emplace_back("New Game");
 	main_items.back().on_select = [&](Item const &){
-    main_mode = 2; main_level = 1;
+    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1); }
+    else { main_mode = 2; main_level = 1; }
 	};
   main_items.emplace_back("Select Level");
 	main_items.back().on_select = [&](Item const &){
@@ -135,7 +136,7 @@ MenuMode::MenuMode(std::string connect_ip) {
 	pause_items.emplace_back("Main Menu");
 	pause_items.back().on_select = [&](Item const &){
     main_mode = 0;
-    MenuMode::set_current(nullptr);
+    // MenuMode::set_current(nullptr);
 	};
 	pause_items.emplace_back("Quit");
 	pause_items.back().on_select = [](Item const &){
@@ -145,19 +146,23 @@ MenuMode::MenuMode(std::string connect_ip) {
   level_items.emplace_back("[[ SELECT LEVEL ]]");
   level_items.emplace_back("Level 1");
 	level_items.back().on_select = [&](Item const &){
-    main_mode = 2; main_level = 1;
+    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1); }
+    else { main_mode = 2; main_level = 1; }
 	};
   level_items.emplace_back("Level 2");
 	level_items.back().on_select = [&](Item const &){
-    main_mode = 2; main_level = 2;
+    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(2); }
+    else { main_mode = 2; main_level = 2; }
 	};
   level_items.emplace_back("Level 3");
 	level_items.back().on_select = [&](Item const &){
-    main_mode = 2; main_level = 3;
+    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(3); }
+    else { main_mode = 2; main_level = 3; }
 	};
   level_items.emplace_back("Level 4");
 	level_items.back().on_select = [&](Item const &){
-    main_mode = 2; main_level = 4;
+    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(4); }
+    else { main_mode = 2; main_level = 4; }
 	};
   level_items.emplace_back("Back");
 	level_items.back().on_select = [&](Item const &){
@@ -250,42 +255,109 @@ MenuMode::~MenuMode() {
 bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 	if (current) {
     if (current->pause) {
-      // we're on the pause menu
-    	if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){
-          current->pause = false;
-          SDL_SetRelativeMouseMode(SDL_TRUE);
+      // we're on the pause menu or the main menu
+        if (main_mode == 0) { // main menu
+        	if (evt.type == SDL_KEYDOWN) {
+            if (evt.key.keysym.sym == SDLK_ESCAPE){
+              Mode::set_current(nullptr);
+            }
+        		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+        			//skip non-selectable items:
+        			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
+        				if (main_items[i].on_select) {
+        					selected = i;
+        					// Sound::play(*sound_click);
+        					break;
+        				}
+        			}
+        			return true;
+        		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+        			//note: skips non-selectable items:
+        			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
+        				if (main_items[i].on_select) {
+        					selected = i;
+        					// Sound::play(*sound_click);
+        					break;
+        				}
+        			}
+        			return true;
+        		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+        			if (selected < main_items.size() && main_items[selected].on_select) {
+        				// Sound::play(*sound_clonk);
+        				main_items[selected].on_select(main_items[selected]);
+                selected = 1;
+        				return true;
+        			}
+        		}
+        	}
+      		return false;
+        } else if (main_mode == 1) { // level select
+        	if (evt.type == SDL_KEYDOWN) {
+            if (evt.key.keysym.sym == SDLK_ESCAPE){
+              main_mode = 0;
+            }
+        		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+        			//skip non-selectable items:
+        			for (uint32_t i = selected - 1; i < level_items.size(); --i) {
+        				if (level_items[i].on_select) {
+        					selected = i;
+        					// Sound::play(*sound_click);
+        					break;
+        				}
+        			}
+        			return true;
+        		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+        			//note: skips non-selectable items:
+        			for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
+        				if (level_items[i].on_select) {
+        					selected = i;
+        					// Sound::play(*sound_click);
+        					break;
+        				}
+        			}
+        			return true;
+        		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+        			if (selected < level_items.size() && level_items[selected].on_select) {
+        				// Sound::play(*sound_clonk);
+        				level_items[selected].on_select(level_items[selected]);
+                selected = 1;
+        				return true;
+        			}
+        		}
+        	}
+      		return false;
+        } else { // pause menu
+          if (evt.type == SDL_KEYDOWN) {
+            if (evt.key.keysym.sym == SDLK_ESCAPE){
+              current->pause = false;
+              SDL_SetRelativeMouseMode(SDL_TRUE);
+            }
+        		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+        			//skip non-selectable items:
+        			for (uint32_t i = selected - 1; i < pause_items.size(); --i) {
+        				if (pause_items[i].on_select) {
+        					selected = i; break;
+        				}
+        			}
+        			return true;
+        		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+        			//note: skips non-selectable items:
+        			for (uint32_t i = selected + 1; i < pause_items.size(); ++i) {
+        				if (pause_items[i].on_select) {
+        					selected = i; break;
+        				}
+        			}
+        			return true;
+        		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+        			if (selected < pause_items.size() && pause_items[selected].on_select) {
+        				pause_items[selected].on_select(pause_items[selected]);
+                selected = 1;
+        				return true;
+        			}
+        		}
+        	}
+      		return false;
         }
-    		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-    			//skip non-selectable items:
-    			for (uint32_t i = selected - 1; i < pause_items.size(); --i) {
-    				if (pause_items[i].on_select) {
-    					selected = i;
-    					// Sound::play(*sound_click);
-    					break;
-    				}
-    			}
-    			return true;
-    		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-    			//note: skips non-selectable items:
-    			for (uint32_t i = selected + 1; i < pause_items.size(); ++i) {
-    				if (pause_items[i].on_select) {
-    					selected = i;
-    					// Sound::play(*sound_click);
-    					break;
-    				}
-    			}
-    			return true;
-    		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-    			if (selected < pause_items.size() && pause_items[selected].on_select) {
-    				// Sound::play(*sound_clonk);
-    				pause_items[selected].on_select(pause_items[selected]);
-            selected = 1;
-    				return true;
-    			}
-    		}
-    	}
-  		return false;
     } else {
       current->handle_event(evt, window_size);
       // Reset if R is pressed
@@ -326,7 +398,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
       return false;
     }
 	} else { // we're on the main menu
-    if (main_mode == 0) {
+    if (main_mode == 0) { // main menu
     	if (evt.type == SDL_KEYDOWN) {
         if (evt.key.keysym.sym == SDLK_ESCAPE){
           Mode::set_current(nullptr);
@@ -361,7 +433,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     		}
     	}
   		return false;
-    } else if (main_mode == 1) {
+    } else if (main_mode == 1) { // level select
     	if (evt.type == SDL_KEYDOWN) {
         if (evt.key.keysym.sym == SDLK_ESCAPE){
           main_mode = 0;
@@ -396,7 +468,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
     		}
     	}
   		return false;
-    } else {
+    } else { // player select
     	if (evt.type == SDL_KEYDOWN) {
         if (evt.key.keysym.sym == SDLK_ESCAPE){
           main_mode = 0;
@@ -462,7 +534,7 @@ void MenuMode::update(float elapsed) {
 
     if (current->won) {
       current->to_next_level += elapsed;
-      std::cout << current->to_next_level << std::endl;
+      // std::cout << current->to_next_level << std::endl;
       if (current->to_next_level >= 5.0f) {
         uint32_t level_num = (current->level_num == 4) ? 1 : current->level_num + 1;
         current->level_change(level_num);
@@ -737,7 +809,9 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 		std::shared_ptr< Mode > hold_me = shared_from_this();
     if (current->pause) {
       // draw pause menu
-      draw_menu(drawable_size, pause_items);
+      if (main_mode == 0) draw_menu(drawable_size, main_items);
+      else if (main_mode == 1) draw_menu(drawable_size, level_items);
+      else draw_menu(drawable_size, pause_items);
     } else {
       // draw level
       current->draw(drawable_size);
