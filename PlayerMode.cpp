@@ -2,7 +2,6 @@
 #include "demo_menu.hpp"
 #include "collide.hpp"
 #include "data_path.hpp"
-
 #include <iostream>
 #include <algorithm>
 
@@ -461,7 +460,6 @@ int PlayerMode::update_recv_msg(char msg_type, char *buf, size_t buf_len, size_t
 
 void PlayerMode::update_recv(std::vector< char >& data) {
   while (!data.empty()) {
-
     char msg_type = data[0];
     size_t msg_size;
     int status = update_recv_msg(msg_type, &data[1], data.size() - 1, &msg_size);

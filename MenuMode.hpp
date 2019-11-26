@@ -12,6 +12,7 @@
 #include "PlayerMode.hpp"
 #include "PlayerOneMode.hpp"
 #include "PlayerTwoMode.hpp"
+#include "Sound.hpp"
 
 #include <vector>
 #include <functional>
@@ -110,5 +111,6 @@ struct MenuMode : Mode {
 	//IMPORTANT NOTE: this means that if background->draw() ends up deleting this (e.g., by removing
 	//  the last shared_ptr that references it), then it will crash. Don't do that!
 	// std::shared_ptr< Mode > background;
+  std::shared_ptr< Sound::PlayingSample > background_music;
 
 };

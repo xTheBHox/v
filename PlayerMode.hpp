@@ -3,6 +3,7 @@
 #include "Mode.hpp"
 #include "GameLevel.hpp"
 #include "Connection.hpp"
+#include "Sound.hpp"
 
 #include <functional>
 

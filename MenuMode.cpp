@@ -8,12 +8,16 @@
 
 //for playing movement sounds:
 #include "Sound.hpp"
-
+#include "data_path.hpp"
 //for loading:
 #include "Load.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include <random>
+
+Load< Sound::Sample > music_ambient(LoadTagDefault, []() -> Sound::Sample * {
+  return new Sound::Sample(data_path("ambient1.wav"));
+});
 
 Load< Sound::Sample > sound_click(LoadTagDefault, []() -> Sound::Sample *{
 	std::vector< float > data(size_t(48000 * 0.2f), 0.0f);
@@ -411,6 +415,11 @@ void MenuMode::update(float elapsed) {
 
 	select_bounce_acc = select_bounce_acc + elapsed / 0.7f;
 	select_bounce_acc -= std::floor(select_bounce_acc);
+
+	if (!background_music || background_music->stopped){
+    background_music = Sound::play(*music_ambient, 10.0f);
+    std::cout << "Hi" << std::endl;
+  }
 
 	if (current) {
     current->update(elapsed);
