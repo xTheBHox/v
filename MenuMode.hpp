@@ -75,6 +75,7 @@ struct MenuMode : Mode {
   std::vector< Item > pause_items;
   uint32_t main_mode = 0;
   uint32_t main_level = 1;
+  std::string main_connect_ip = "";
 
 	//call to arrange items in a centered list:
 	void layout_items(float gap = 0.0f);

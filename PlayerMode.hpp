@@ -7,7 +7,7 @@
 #include <functional>
 
 struct PlayerMode : Mode {
-	PlayerMode(uint32_t level_num);
+	PlayerMode(uint32_t level_num_);
 	virtual ~PlayerMode();
 
   bool handle_ui(SDL_Event const &, glm::uvec2 const &window_size);
@@ -43,11 +43,13 @@ struct PlayerMode : Mode {
 	bool DEBUG_fly = false;  //fly around for collsion debug
   bool pause = false;
   bool won = false;
+  float to_next_level = 0.0f;
   bool lost = false;
   bool we_want_reset = false;
   bool they_want_reset = false;
   float reset_countdown = 0.0f;
   uint32_t player_num = 0;
+  uint32_t level_num = 0;
 
   // Player camera tracked using this structure:
   struct {

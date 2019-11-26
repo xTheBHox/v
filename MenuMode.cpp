@@ -48,7 +48,7 @@ std::shared_ptr< PlayerMode > MenuMode::get_current() {
 	return current;
 }
 
-MenuMode::MenuMode(std::string connect_ip){
+MenuMode::MenuMode(std::string connect_ip) {
 	/*//select first item which can be selected:
 	for (uint32_t i = 0; i < items.size(); ++i) {
 		if (items[i].on_select) {
@@ -56,6 +56,7 @@ MenuMode::MenuMode(std::string connect_ip){
 		}
 	} */
   current = nullptr;
+  main_connect_ip = connect_ip;
 
   main_items.emplace_back("[[ V ]]");
   main_items.emplace_back("New Game");
@@ -259,6 +260,18 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
   		return false;
     } else {
       current->handle_event(evt, window_size);
+      // Reset if R is pressed
+      if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_R) {
+        if (current->connect) {
+          current->we_want_reset = true;
+          current->reset_countdown = 0.01f;
+          current->connect->send('R');
+          std::cout << "Requested reset" << std::endl;
+          // TODO just call resume at the end
+          current->pause = false;
+          SDL_SetRelativeMouseMode(SDL_TRUE);
+        }
+      }
       // Check UI elements:
       // TODO: find a way to not keep calling screen_get? Same issue in draw_ui.
       if (current->shift.progress == 1.0f) {
@@ -411,7 +424,26 @@ void MenuMode::update(float elapsed) {
       std::cout << "Reset!" << std::endl;
       SDL_SetRelativeMouseMode(SDL_TRUE);
     }
-    //}
+
+    if (current->won){
+      current->to_next_level += elapsed;
+      if (current->player_num == 1 && current->to_next_level >= 5.0f) {
+        std::shared_ptr<PlayerOneMode> current_player = std::dynamic_pointer_cast< PlayerOneMode >(current);
+        uint32_t level_num = (current->level_num==4)?1:current->level_num+1;
+        // current->connect->close();
+        current_player->server.reset(nullptr);
+        MenuMode::set_current(nullptr);
+        MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", level_num));
+      } else if (current->player_num == 2 && current->to_next_level >= 5.5f) {
+        std::shared_ptr<PlayerTwoMode> current_player = std::dynamic_pointer_cast< PlayerTwoMode >(current);
+        uint32_t level_num = (current->level_num==4)?1:current->level_num+1;
+        // current->connect->close();
+        current_player->client.reset(nullptr);
+        MenuMode::set_current(nullptr);
+        std::cout << main_connect_ip << std::endl;
+        MenuMode::set_current(std::make_shared< PlayerTwoMode >(main_connect_ip, "12345", level_num));
+      }
+    }
 	}
 }
 

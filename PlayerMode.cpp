@@ -12,7 +12,7 @@ extern void print_mat4(glm::mat4 const &M);
 extern void print_vec4(glm::vec4 const &v);
 extern void print_vec3(glm::vec3 const &v);
 
-PlayerMode::PlayerMode(uint32_t level_num) {
+PlayerMode::PlayerMode(uint32_t level_num_) : level_num(level_num_) {
   std::string level_str ("level");
   level_str = level_str + std::to_string(level_num);
   level = new GameLevel(data_path(level_str));
@@ -93,6 +93,7 @@ void PlayerMode::update(float elapsed) {
   if (pause) return;
   if (level->detect_win()) {
     won = true;
+    to_next_level = 0.0f;
   }
   else if (level->detect_lose()) {
     lost = true;
