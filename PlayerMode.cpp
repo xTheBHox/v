@@ -11,7 +11,9 @@ extern void print_mat4(glm::mat4 const &M);
 extern void print_vec4(glm::vec4 const &v);
 extern void print_vec3(glm::vec3 const &v);
 
-PlayerMode::PlayerMode(uint32_t level_num_) {
+PlayerMode::PlayerMode(uint32_t level_num_, uint32_t player_num_)
+: player_num(player_num_) {
+  level_change(level_num_);
   SDL_SetRelativeMouseMode(SDL_TRUE);
 }
 
@@ -41,6 +43,7 @@ void PlayerMode::level_change(uint32_t level_num_) {
   level_str = level_str + std::to_string(level_num);
   std::cout << "Loading new level" << std::endl;
   level = new GameLevel(data_path(level_str));
+  player_set();
   level_reset();
 }
 
@@ -62,6 +65,19 @@ void PlayerMode::level_reset() {
   currently_moving.clear();
   on_movable = nullptr;
 
+}
+
+void PlayerMode::player_set() {
+  assert((player_num == 1 || player_num == 2) && "Invalid player number");
+  if (player_num == 1) {
+    pov.camera = level->cam_P1;
+    pov.body = level->body_P1_transform;
+    other_player = level->body_P2_transform;
+  } else if (player_num == 2) {
+    pov.camera = level->cam_P2;
+    pov.body = level->body_P2_transform;
+    other_player = level->body_P1_transform;
+  }
 }
 
 bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {

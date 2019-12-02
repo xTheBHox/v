@@ -8,11 +8,12 @@
 #include <functional>
 
 struct PlayerMode : Mode {
-  PlayerMode(uint32_t level_num_);
+  PlayerMode(uint32_t level_num_, uint32_t player_num_);
   virtual ~PlayerMode();
-  
+
   virtual void level_change(uint32_t level_num_);
   virtual void level_reset();
+  virtual void player_set();
 
   bool handle_ui(SDL_Event const &, glm::uvec2 const &window_size);
 

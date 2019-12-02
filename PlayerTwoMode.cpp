@@ -12,20 +12,9 @@
 
 #include <iostream>
 
-PlayerTwoMode::PlayerTwoMode(std::string const &host, std::string const &port, uint32_t level_num_) : PlayerMode(level_num_) {
-  player_num = 2;
-  level_change(level_num_);
+PlayerTwoMode::PlayerTwoMode(std::string const &host, std::string const &port, uint32_t level_num_) : PlayerMode(level_num_, 2) {
   client.reset(new Client(host, port));
   connect = &client->connection;
-}
-
-void PlayerTwoMode::level_change(uint32_t level_num_) {
-  
-  PlayerMode::level_change(level_num_);
-  pov.camera = level->cam_P2;
-  pov.body = level->body_P2_transform;
-  other_player = level->body_P1_transform;
-  
 }
 
 void PlayerTwoMode::update_network() {
