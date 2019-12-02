@@ -114,7 +114,7 @@ GameLevel::GameLevel(std::string level_name) {
         glm::vec4 color = glm::vec4(0.0, 0.0, 1.0, 1.0);
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
         glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
-        
+
       };
     }else if (transform->name.substr(0, 5) == "Goal2") {
       goals[1] = transform;
@@ -128,7 +128,7 @@ GameLevel::GameLevel(std::string level_name) {
     } else if (transform->name.substr(0, 5) == "Body1") {
       body_P1_transform = transform;
       body_P1_start = *transform;
-      
+
       pipeline.smooth_id = 1.0f;
       pipeline.set_uniforms = [](){
         glm::vec4 color = glm::vec4(0.0, 0.0, 1.0, 1.0);
@@ -239,6 +239,9 @@ bool GameLevel::detect_win() {
 void GameLevel::reset() {
   for (Movable &m : movable_data) {
     m.transform->position = m.init_pos;
+    m.color = glm::vec4(1.0f);
+    m.players[0] = nullptr;
+    m.players[1] = nullptr;
   }
   body_P1_transform->position = body_P1_start.position;
   body_P1_transform->rotation = body_P1_start.rotation;
@@ -454,9 +457,16 @@ GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
 
 void GameLevel::Movable::update(glm::vec3 const &diff) {
   transform->position += diff;
-  if (player) {
-    player->position += diff;
-  }
+  if (players[0]) players[0]->position += diff;
+  if (players[1]) players[1]->position += diff;
+}
+
+void GameLevel::Movable::add_player(Transform *pl, uint32_t player_num) {
+  players[player_num % 2] = pl;
+}
+
+void GameLevel::Movable::remove_player(uint32_t player_num) {
+  players[player_num % 2] = nullptr;
 }
 
 void GameLevel::Movable::set_target_pos(glm::vec3 const &target, glm::vec4 const &color_) {

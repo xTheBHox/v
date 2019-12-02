@@ -63,7 +63,7 @@ void PlayerMode::level_reset() {
   std::cout << "Clearing old moving data" << std::endl;
 
   currently_moving.clear();
-  on_movable = nullptr;
+  pov.on_movable = nullptr;
 
 }
 
@@ -78,6 +78,10 @@ void PlayerMode::player_set() {
     pov.body = level->body_P2_transform;
     other_player = level->body_P1_transform;
   }
+}
+
+void PlayerMode::handle_reset() {
+  //Needs inherited class to implement!
 }
 
 bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -146,7 +150,7 @@ void PlayerMode::update(float elapsed) {
   update_reset_timer(elapsed);
   update_shift(elapsed);
   if (shift.progress == 0.0f) {
-    update_player_move(elapsed);
+    update_me_move(elapsed);
   }
   update_movables_move(elapsed);
 
@@ -180,7 +184,12 @@ void PlayerMode::update_shift(float elapsed) {
 }
 
 void PlayerMode::update_reset_timer(float elapsed) {
-  if (we_want_reset || they_want_reset) {
+
+  if (we_want_reset && they_want_reset) {
+    level_reset();
+    std::cout << "Reset!" << std::endl;
+  }
+  else if (we_want_reset || they_want_reset) {
     reset_countdown += elapsed;
     if (reset_countdown > 15.0f) {
       std::cout << "Reset timed out" << std::endl;
@@ -212,7 +221,7 @@ void PlayerMode::update_movables_move(float elapsed) {
   }
 }
 
-void PlayerMode::update_player_move(float elapsed) {
+void PlayerMode::update_me_move(float elapsed) {
 
   float pl_cosazi = std::cos(pov.azimuth);
   float pl_sinazi = std::sin(pov.azimuth);
@@ -221,14 +230,14 @@ void PlayerMode::update_player_move(float elapsed) {
   glm::vec3 pl_vel = pov.vel;
 
   { // Gravitational accel
-    pl_vel += elapsed * pov.gravity;
+    pl_vel += elapsed * gravity;
   }
 
   { // Jumping force
     if (controls.jump) {
       if (!pov.in_air) {
         pov.in_air = true;
-        pl_vel += -0.3f * pov.gravity; // jumping force, constant
+        pl_vel += -0.3f * gravity; // jumping force, constant
       }
       controls.jump = false;
     }
@@ -259,9 +268,9 @@ void PlayerMode::update_player_move(float elapsed) {
   {
     float remain = elapsed;
 
-    if (on_movable) {
-      on_movable->player = nullptr;
-      on_movable = nullptr;
+    if (pov.on_movable) {
+      pov.on_movable->remove_player(player_num);
+      pov.on_movable = nullptr;
     }
 
     // Iterate for multiple bounces. Stop at a certain number.
@@ -338,8 +347,8 @@ void PlayerMode::update_player_move(float elapsed) {
           if (did_collide) {
             collided = true;
             if (collider.movable_index >= 0) {
-              on_movable = &level->movable_data[collider.movable_index];
-              on_movable->player = pov.body;
+              pov.on_movable = &level->movable_data[collider.movable_index];
+              pov.on_movable->add_player(pov.body, player_num);
               //std::cout << "Got player!" << std::endl;
             }
           }
@@ -433,7 +442,7 @@ void PlayerMode::update_player_move(float elapsed) {
     pov.body->rotation = rot_h;
     //camera update:
     pov.camera->transform->rotation =
-            glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
+      glm::angleAxis(-pov.elevation + 0.5f * PI, glm::vec3(1.0f, 0.0f, 0.0f));
     }
 
 }

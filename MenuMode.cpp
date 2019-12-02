@@ -82,33 +82,17 @@ MenuMode::MenuMode(std::string connect_ip) {
 	};
 
   player_items.emplace_back("[[ Select Player ]]");
+  player_items.emplace_back("Solo");
+  player_items.back().on_select = [&](MenuMode::Item const &){
+		MenuMode::set_current(std::make_shared< SinglePlayerMode >(main_level));
+  };
   player_items.emplace_back("Player 1");
   player_items.back().on_select = [&](MenuMode::Item const &){
-		/**
-		if (p1 != nullptr){
-			std::string level_str ("level");
-  		level_str = level_str + std::to_string(main_level);
-  		p1->level = new GameLevel(data_path(level_str));
-			MenuMode::set_current(p1);
-		}else{
-			p1.reset(new PlayerOneMode("12345", main_level));
-			MenuMode::set_current(p1);
-		}**/
-		MenuMode::set_current(std::make_shared< PlayerOneMode >("12345", main_level));
+		MenuMode::set_current(std::make_shared< ServerMode >("12345", main_level));
   };
   player_items.emplace_back("Player 2");
   player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
-    MenuMode::set_current(std::make_shared< PlayerTwoMode >(connect_ip, "12345", main_level));
-		/**
-		if (p2 != nullptr){
-			std::string level_str ("level");
-  		level_str = level_str + std::to_string(main_level);
-  		p2->level = new GameLevel(data_path(level_str));
-			MenuMode::set_current(p2);
-		}else{
-			p2.reset(new PlayerTwoMode(connect_ip, "12345", main_level));
-			MenuMode::set_current(p2);
-		}**/
+    MenuMode::set_current(std::make_shared< ClientMode >(connect_ip, "12345", main_level));
   };
 	player_items.emplace_back("Back");
 	player_items.back().on_select = [&](MenuMode::Item const &){
@@ -123,13 +107,8 @@ MenuMode::MenuMode(std::string connect_ip) {
 	};
 	pause_items.emplace_back("Reset");
 	pause_items.back().on_select = [&](Item const &){
-    if ((current) && (current->connect)) {
-      current->we_want_reset = true;
-      current->reset_countdown = 0.01f;
-      current->connect->send('R');
-      std::cout << "Requested reset" << std::endl;
-      // TODO just call resume at the end
-      current->pause = false;
+    if (current) {
+      current->handle_reset();
       SDL_SetRelativeMouseMode(SDL_TRUE);
     }
 	};
@@ -362,13 +341,8 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
       current->handle_event(evt, window_size);
       // Reset if R is pressed
       if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_R) {
-        if (current->connect) {
-          current->we_want_reset = true;
-          current->reset_countdown = 0.01f;
-          current->connect->send('R');
-          std::cout << "Requested reset" << std::endl;
-          // TODO just call resume at the end
-          current->pause = false;
+        if (current) {
+          current->handle_reset();
           SDL_SetRelativeMouseMode(SDL_TRUE);
         }
       }
@@ -525,11 +499,6 @@ void MenuMode::update(float elapsed) {
       }
     } else if (moving_sound && !moving_sound->stopped) {
       moving_sound->stop();
-    }
-    if (current->we_want_reset && current->they_want_reset) {
-      current->level_reset();
-      std::cout << "Reset!" << std::endl;
-      SDL_SetRelativeMouseMode(SDL_TRUE);
     }
 
     if (current->won) {

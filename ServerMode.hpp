@@ -1,22 +1,16 @@
 #pragma once
 
-#include "Mode.hpp"
-#include "Scene.hpp"
+#include "PlayerMode.hpp"
 #include "Connection.hpp"
 
-#include <memory>
+struct ServerMode : PlayerMode {
 
-//based on PoolMode.hpp in base5
-struct ServerMode : Mode {
-	ServerMode(std::string const &server_port = "");;
-	virtual ~ServerMode();
+  ServerMode(std::string const &server_port = "", uint32_t level_num = 1);
 
-	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
-	virtual void update(float elapsed) override;
-	virtual void draw(glm::uvec2 const &drawable_size) override;
+  void handle_reset() override;
 
-	//remote connection:
-	std::unique_ptr< Server > server;
+  void update_network() override;
 
-	//std::unordered_map< Connection const *, PlayerInfo > connection_infos;
+  std::unique_ptr< Server > server;
+
 };

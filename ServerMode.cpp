@@ -1,64 +1,45 @@
-#include "DrawLines.hpp"
-#include "LitColorTextureProgram.hpp"
-#include "Mesh.hpp"
-#include "Sprite.hpp"
-#include "DrawSprites.hpp"
-#include "data_path.hpp"
-#include "Sound.hpp"
-#include "collide.hpp"
-#include "gl_errors.hpp"
-
-//for glm::pow(quaternion, float):
-#include <glm/gtx/quaternion.hpp>
+#include "ServerMode.hpp"
 
 #include <algorithm>
+
 #include <iostream>
 
-Load< SpriteAtlas > trade_font_atlas(LoadTagDefault, []() -> SpriteAtlas const * {
-	return new SpriteAtlas(data_path("trade-font"));
-});
+ServerMode::ServerMode(std::string const &port, uint32_t level_num_) : PlayerMode(level_num_, 1) {
 
+  connect = nullptr;
+  if (port != "") {
+	  server.reset(new Server(port));
+  }
 
-ServerMode::ServerMode(std::string const &port) : start(start_) {
-	if (port != "") {
-		server.reset(new Server(port));
-	}
-	//restart();
 }
 
-ServerMode::~ServerMode() {
+void ServerMode::handle_reset() {
+  if (connect) {
+    we_want_reset = true;
+    reset_countdown = 0.01f;
+    connect->send('R');
+    std::cout << "Requested reset" << std::endl;
+    // TODO just call resume at the end
+    pause = false;
+  } else {
+
+  }
 }
 
+void ServerMode::update_network() {
 
-bool ServerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
-	return true;
-}
+  update_send();
+  server->poll([this](Connection *connection, Connection::Event evt) {
+    //Read server state
+    if (evt == Connection::OnRecv) {
+      update_recv(connection->recv_buffer);
+    } else if (evt == Connection::OnClose) {
+      connect = nullptr;
+    } else if (evt == Connection::OnOpen) {
+      if (server->connections.size() == 1) {
+        connect = &server->connections.front();
+      }
+    }
+  }, 0.0);
 
-void ServerMode::update(float elapsed) {
-	if (server){
-		while (true) {
-			server.poll([](Connection *connection, Connection::Event evt){
-				if (evt == Connection::OnRecv) {
-					//extract and erase data from the connection's recv_buffer:
-					std::vector< uint8_t > data = connection->recv_buffer;
-					uint8_t type = data[0];
-					uint8_t length = data[1];
-					if (type == 'C'){
-
-					}else{
-						//invalid data type
-					}
-					connection->recv_buffer.clear();
-					//send to other connections:
-
-				}
-			},
-			1.0 //timeout (in seconds)
-			);
-		}
-	}
-}
-
-void ServerMode::draw(glm::uvec2 const &drawable_size) {
-	//--- actual drawing ---
 }

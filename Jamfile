@@ -171,9 +171,9 @@ GAME_NAMES =
 	Sprite
   GameLevel
   PlayerMode
-  PlayerTwoMode
-  PlayerOneMode
-  ConnectionHelper
+  ClientMode
+  ServerMode
+  SinglePlayerMode
 	MenuMode
 	main
 	data_path

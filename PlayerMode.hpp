@@ -15,14 +15,15 @@ struct PlayerMode : Mode {
   virtual void level_reset();
   virtual void player_set();
 
-  bool handle_ui(SDL_Event const &, glm::uvec2 const &window_size);
+  virtual void handle_reset();
+  bool handle_ui(SDL_Event const &evt, glm::uvec2 const &window_size);
 
-  virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
+  virtual bool handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) override;
 
   void update_shift(float elapsed);
   void update_reset_timer(float elapsed);
   void update_movables_move(float elapsed);
-  void update_player_move(float elapsed);
+  void update_me_move(float elapsed);
 
   virtual int update_recv_msg(char msg_type, char *buf, size_t buf_len, size_t *used_len);
   virtual void update_recv(std::vector< char >& data);
@@ -56,16 +57,19 @@ struct PlayerMode : Mode {
   uint32_t player_num;
   uint32_t level_num;
 
+  glm::vec3 gravity = glm::vec3(0.0f, 0.0f, -100.0f);
   // Player camera tracked using this structure:
-  struct {
+  struct PlayerData {
     Scene::Camera *camera = nullptr;
     Scene::Transform *body = nullptr;
     glm::vec3 vel = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 gravity = glm::vec3(0.0f, 0.0f, -100.0f);
     float azimuth = 90.0f;
     float elevation = 30.0f / 180.0f * 3.1415926f;
     bool in_air = false;
-  } pov;
+    GameLevel::Movable *on_movable = nullptr;
+  };
+
+  PlayerData pov;
 
   struct {
     bool flat = false;
@@ -81,7 +85,6 @@ struct PlayerMode : Mode {
   std::list< size_t > currently_moving;
   uint32_t play_moving_sound = 0;
 
-  GameLevel::Movable *on_movable = nullptr;
   Scene::Transform *other_player;
 
   Connection *connect;

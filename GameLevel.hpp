@@ -43,6 +43,8 @@ struct GameLevel : Scene {
     Movable(Transform *transform_);
     void update(glm::vec3 const &diff);
     void set_target_pos(glm::vec3 const &target, glm::vec4 const &color_);
+    void add_player(Transform *pl, uint32_t player_num);
+    void remove_player(uint32_t player_num);
 
     // The object's transform.
     Transform *transform = nullptr;
@@ -53,7 +55,7 @@ struct GameLevel : Scene {
     glm::vec3 target_pos = glm::vec3(0.0f);
     float vel = 20.0f;
 
-    Transform *player = nullptr;
+    Transform *players[2] = {nullptr, nullptr};
 
     size_t index; // index in the vector
 
