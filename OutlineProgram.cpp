@@ -227,7 +227,7 @@ OutlineProgram1::OutlineProgram1() {
     " float dpy0 = dot(py0.xyz - p, n);\n"
     " float dpy1 = dot(py1.xyz - p, n);\n"
     " bool sm = (sid != 0.0 && nx0.w == sid && nx1.w == sid && ny0.w == sid && ny1.w == sid);\n"
-    " float NT = 0.8;\n"
+    " float NT = 0.95;\n"
     " float PT = 0.1;\n"
     " bool not_bent = (dot(nx0.xyz, n) > NT && dot(nx1.xyz, n) > NT && dot(ny0.xyz, n) > NT && dot(ny1.xyz, n) > NT);\n"
     " bool flvl = (abs(dpx0) < PT) && (abs(dpx1) < PT) && (abs(dpy0) < PT) && (abs(dpy1) < PT);\n"
@@ -244,7 +244,6 @@ OutlineProgram1::OutlineProgram1() {
     " if (sm || (not_bent && flvl)) {\n"
     "   cout = cin;\n"
     " }\n"
-    //" if (sid != 0.0) cout = vec4(0.0, 0.0, 0.0, 1.0);\n"
 		"	fragColor = cout;\n"
 		"}\n"
 	);
