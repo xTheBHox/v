@@ -379,7 +379,6 @@ void GameLevel::draw(
   glClearBufferfv(GL_COLOR, 0, bg_normal);
   GLfloat bg_pos[4] = {0.0f, 0.0f, 0.0f, 0.0f};
   glClearBufferfv(GL_COLOR, 1, bg_pos);
-  //glClear(GL_COLOR_BUFFER_BIT);
 
   glDisable(GL_BLEND);
   glEnable(GL_DEPTH_TEST);
