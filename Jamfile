@@ -156,49 +156,30 @@ if $(OS) = NT { #Windows
 
 #Store the names of all the .cpp files to build into a variable:
 GAME_NAMES =
-  collide
+	collide
 	demo_menu
-	BasicMaterialProgram
-	LightMeshes
 	OutlineProgram
 	Sound
 	load_wav
 	load_opus
 	DrawSprites
 	ColorTextureProgram
-	LitColorTextureProgram
-	BoneLitColorTextureProgram
 	Sprite
-  GameLevel
-  PlayerMode
-  ClientMode
-  ServerMode
-  SinglePlayerMode
+	GameLevel
+	PlayerMode
+	ClientMode
+	ServerMode
+	SinglePlayerMode
 	MenuMode
 	main
 	data_path
 	;
 
-#Uncomment if you want to build a second "client" program for multiplayer stuff
-CLIENT_NAMES =
-	ClientMode
-	Sound
-	load_wav
-	load_opus
-	DrawSprites
-	ColorTextureProgram
-	LitColorTextureProgram
-	Sprite
-	client
-	data_path
-	ServerMode
-	;
-
 COMMON_NAMES =
 	Connection
+	DrawLines
 	PathFont
 	PathFont-font
-	DrawLines
 	ColorProgram
 	Scene
 	Mesh

@@ -53,9 +53,6 @@ bool SinglePlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &wind
 
 void SinglePlayerMode::update_other_move(float elapsed) {
 
-  float pl_cosazi = std::cos(other_pov.azimuth);
-  float pl_sinazi = std::sin(other_pov.azimuth);
-
   glm::vec3 pl_pos = other_pov.body->position;
   glm::vec3 pl_vel = other_pov.vel;
 
