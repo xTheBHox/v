@@ -110,40 +110,40 @@ GameLevel::GameLevel(std::string level_name) {
       goals[0] = transform;
 
       pipeline.smooth_id = 3.0;
-      pipeline.set_uniforms = [](){
-        glm::vec4 color = glm::vec4(0.0, 0.0, 1.0, 1.0);
+      glm::vec4 tmp_color = p1_color;
+      pipeline.set_uniforms = [tmp_color](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
-        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
+        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
 
       };
     }else if (transform->name.substr(0, 5) == "Goal2") {
       goals[1] = transform;
 
       pipeline.smooth_id = 4.0;
-      pipeline.set_uniforms = [](){
-        glm::vec4 color = glm::vec4(1.0, 0.5, 0.0, 1.0);
+      glm::vec4 tmp_color = p2_color;
+      pipeline.set_uniforms = [tmp_color](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
-        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
+        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
       };
     } else if (transform->name.substr(0, 5) == "Body1") {
       body_P1_transform = transform;
       body_P1_start = *transform;
 
       pipeline.smooth_id = 1.0f;
-      pipeline.set_uniforms = [](){
-        glm::vec4 color = glm::vec4(0.0, 0.0, 1.0, 1.0);
+      glm::vec4 tmp_color = p1_color;
+      pipeline.set_uniforms = [tmp_color](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
-        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
+        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
       };
     } else if (transform->name.substr(0, 5) == "Body2") {
       body_P2_transform = transform;
       body_P2_start = *transform;
 
       pipeline.smooth_id = 2.0f;
-      pipeline.set_uniforms = [](){
-        glm::vec4 color = glm::vec4(1.0, 0.5, 0.0, 1.0);
+      glm::vec4 tmp_color = p2_color;
+      pipeline.set_uniforms = [tmp_color](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
-        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(color));
+        glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
       };
     } else {
       auto f = mesh_to_collider.find(mesh);

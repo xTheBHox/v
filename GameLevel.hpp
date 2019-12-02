@@ -12,6 +12,8 @@ struct GameLevel : Scene {
   GameLevel( std::string level_name );
   virtual ~GameLevel();
 
+  void init_meshes(std::string level_name);
+
   void draw(
     glm::vec2 const &drawable_size,
     glm::vec3 const &eye,
@@ -26,6 +28,9 @@ struct GameLevel : Scene {
 
   void reset();
 
+  bool detect_win();
+  bool detect_lose();
+
 	//Goal objects(s) tracked using this structure:
 	struct Goal {
 		Goal(Scene::Transform *transform_) : transform(transform_){}
@@ -33,10 +38,7 @@ struct GameLevel : Scene {
 		float spin_acc = 5.0f;
 	};
 
-  bool detect_win();
-  bool detect_lose();
-
-  float die_y = -40.0;
+  const float die_y = -40.0;
 
   struct Movable {
 
@@ -140,8 +142,6 @@ struct GameLevel : Scene {
 
   Screen *screen_get(Transform *transform);
 
-  void init_meshes(std::string level_name);
-
   MeshBuffer *meshes = nullptr;
   std::unordered_map< Mesh const *, Mesh const * >mesh_to_collider;
   GLuint vao_color = -1U;
@@ -162,5 +162,8 @@ struct GameLevel : Scene {
   Camera *cam_P1;
   Transform *body_P2_transform;
   Camera *cam_P2;
+
+  const glm::vec4 p1_color = glm::vec4(0.0, 0.0, 1.0, 1.0);
+  const glm::vec4 p2_color = glm::vec4(1.0, 0.6, 0.0, 1.0);
 
 };
