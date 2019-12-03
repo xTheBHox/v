@@ -354,8 +354,12 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
           GameLevel::Standpoint *stpt = current->shift.sc->stpt;
           glm::vec2 mpos = glm::vec2(evt.button.x, evt.button.y);
           glm::vec3 center_clip = glm::vec3(current->shift.sc->stpt->movable_center_to_screen(), 1.0f);
+					view_to_drawable = glm::vec2(
+						window_size.x / (view_max.x - view_min.x),
+						window_size.y / (view_max.y - view_min.y)
+					);
           glm::vec2 center = view_to_drawable * (clip_to_court * center_clip);
-          // TODO: Make this a function of wheel_radius
+					// TODO: Make this a function of wheel_radius
           float threshold = window_size.y / 15.0f;
           glm::vec2 dist = mpos - center;
           if (glm::dot(dist, dist) < threshold * threshold) {
@@ -642,10 +646,8 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
     glm::vec2(0.0f, 1.0f / scale),
     glm::vec2(center.x, center.y)
   );
-  view_to_drawable = glm::vec2(
-    drawable_size.x / (view_max.x - view_min.x),
-    drawable_size.y / (view_max.y - view_min.y)
-  );
+
+
   // TODO: find a way to not keep calling screen_get? Same issue in handle_event.
   if (current->level->screen_get(current->pov.camera->transform) && current->shift.progress == 0.0f) {
     // Player is in position to shift but hasn't started it: draw LSHIFT prompt
