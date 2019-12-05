@@ -16,7 +16,7 @@
 #include <random>
 
 Load< Sound::Sample > music_ambient(LoadTagDefault, []() -> Sound::Sample * {
-  return new Sound::Sample(data_path("ambient1.wav"));
+  return new Sound::Sample(data_path("ambient.wav"));
 });
 
 Load< Sound::Sample > sound_move(LoadTagDefault, []() -> Sound::Sample * {

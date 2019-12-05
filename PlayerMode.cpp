@@ -565,10 +565,6 @@ void PlayerMode::update_network() {
 
 void PlayerMode::draw(glm::uvec2 const &drawable_size) {
 
-  for (auto &stpt : level->standpoints) {
-    stpt.resize_texture(drawable_size);
-    stpt.update_texture(level);
-  }
   float aspect = drawable_size.x / float(drawable_size.y);
 
   if (shift.progress > 0.0f) {

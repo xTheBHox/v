@@ -1,4 +1,4 @@
-# (TODO: your game's title)
+V
 
 Author: (TODO: your name)
 
@@ -14,6 +14,14 @@ How To Play:
 
 Sources:
 
-(TODO: fill in information about the sources of any **artwork** or **sounds** you used in the game that you did not create yourself. Feel free to also credit yourself for things you did make.)
+Zoom in sound from freesounds.com:
+https://freesound.org/people/sheepfilms/sounds/154795/
+This work is licensed under the Creative Commons 0 License.
+
+Background music:
+Abyss by | e s c p | https://escp-music.bandcamp.com
+Music promoted by https://www.free-stock-music.com
+Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
 
 This game was built with [NEST](NEST.md).
