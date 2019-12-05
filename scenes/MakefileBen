@@ -9,7 +9,9 @@ all : \
     ..\dist\level3.pnct \
     ..\dist\level3.scene \
     ..\dist\level4.pnct \
-    ..\dist\level4.scene
+    ..\dist\level4.scene \
+    ..\dist\level5.pnct \
+    ..\dist\level5.scene
 
 ..\dist\level1.scene: v.blend export-scene.py
 	$(BLENDER) --background --python export-scene.py -- v.blend:Level1 $@
@@ -34,3 +36,9 @@ all : \
 
 ..\dist\level4.pnct: v.blend export-meshes.py
 	$(BLENDER) --background --python export-meshes.py -- v.blend:L4 $@
+  
+..\dist\level5.scene: v.blend export-scene.py
+	$(BLENDER) --background --python export-scene.py -- v.blend:L5 $@
+
+..\dist\level5.pnct: v.blend export-meshes.py
+	$(BLENDER) --background --python export-meshes.py -- v.blend:L5 $@
