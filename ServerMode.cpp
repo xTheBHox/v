@@ -4,7 +4,9 @@
 
 #include <iostream>
 
-ServerMode::ServerMode(std::string const &port, uint32_t level_num_) : PlayerMode(level_num_, 1) {
+ServerMode::ServerMode(std::string const &port,
+                       uint32_t level_num_,
+                       uint32_t player_num_) : PlayerMode(level_num_, player_num_) {
 
   connect = nullptr;
   if (port != "") {
