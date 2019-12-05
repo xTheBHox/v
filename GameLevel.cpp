@@ -271,6 +271,8 @@ struct FB {
     if (drawable_size == size) return;
     size = drawable_size;
 
+    std::cout << "Resizing draw textures and framebuffers!" << std::endl;
+
     //helper to allocate a texture:
 
     auto alloc_recttex = [&] (GLuint &tex, GLenum internal_format) {
@@ -516,6 +518,8 @@ void GameLevel::Standpoint::resize_texture(glm::uvec2 const &new_size) {
 
   if (size == new_size) return;
   size = new_size;
+
+  std::cout << "Resizing screen texture #" << tex << std::endl;
 
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
