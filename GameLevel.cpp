@@ -346,22 +346,38 @@ void GameLevel::draw(
   glm::vec3 const &eye,
   glm::mat4 const &world_to_clip
 ) {
-  draw(drawable_size, eye, world_to_clip, 0);
+
+  fb.resize(drawable_size);
+
+  screens_standpoints_texture_update(eye);
+
+  if (first_draw) {
+    for (auto &stpt : standpoints) {
+      stpt.resize_texture(drawable_size);
+      stpt.update_texture(this);
+    }
+  } else {
+    for (auto &sc : screens) {
+      if (sc.draw && !sc.stpt->updated) {
+        sc.stpt->resize_texture(drawable_size);
+        sc.stpt->update_texture(this);
+      }
+    }
+  }
+  draw_fb(eye, world_to_clip, 0);
+
 }
 
-void GameLevel::draw(
-  glm::vec2 const &drawable_size,
+void GameLevel::draw_fb(
   glm::vec3 const &eye,
   glm::mat4 const &world_to_clip,
   GLuint output_fb
 ) {
-
-  fb.resize(drawable_size);
   GL_ERRORS();
   // Color drawing
 
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_color);
-  GLfloat bg_color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+  GLfloat bg_color[4] = {0.95f, 0.95f, 1.0f, 1.0f};
   glClearBufferfv(GL_COLOR, 0, bg_color);
   glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -530,7 +546,8 @@ void GameLevel::Standpoint::update_texture(GameLevel *level) {
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   GL_ERRORS();
 
-  level->draw(size, pos, proj * w2l, fb.fb_output);
+  level->draw_fb(pos, proj * w2l, fb.fb_output);
+  updated = true;
 
 }
 
@@ -565,7 +582,7 @@ void GameLevel::Screen::set_standpoint(GameLevel::Standpoint *stpt_) {
   pipeline->textures[0].target = GL_TEXTURE_2D;
 }
 
-GameLevel::Screen *GameLevel::screen_get(Transform *transform) {
+GameLevel::Screen *GameLevel::screen_get(Transform const *transform) {
 
   glm::vec3 pos = transform->make_local_to_world()[3]; // * (0,0,0,1)
   glm::vec3 axis = transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
@@ -583,12 +600,25 @@ GameLevel::Screen *GameLevel::screen_get(Transform *transform) {
     if (glm::dot(dist, dist) <= sc.pos_tolerance * sc.pos_tolerance) {
       //std::cout << "Position within threshhold. Checking axis..." << std::endl;
       //std::cout << "Dot: " << glm::dot(axis, dist) << std::endl;
-      if (glm::dot(axis, dist) > sc.axis_tolerance) {
+      if (glm::dot(axis, glm::normalize(dist)) > sc.axis_tolerance) {
         return &sc;
       }
     }
   }
 
   return nullptr;
+
+}
+
+void GameLevel::screens_standpoints_texture_update(glm::vec3 const &pos) {
+
+  for (auto &stpt : standpoints) {
+    stpt.updated = false;
+  }
+
+  for (Screen &sc : screens) {
+    glm::vec3 dist = sc.pos - pos;
+    sc.draw = (glm::dot(dist, dist) <= sc.draw_distance * sc.draw_distance);
+  }
 
 }

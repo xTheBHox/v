@@ -14,17 +14,8 @@ struct GameLevel : Scene {
 
   void init_meshes(std::string level_name);
 
-  void draw(
-    glm::vec2 const &drawable_size,
-    glm::vec3 const &eye,
-    glm::mat4 const &world_to_clip
-  );
-  void draw(
-    glm::vec2 const &drawable_size,
-    glm::vec3 const &eye,
-    glm::mat4 const &world_to_clip,
-    GLuint output_fb
-  );
+  void draw(glm::vec2 const &drawable_size, glm::vec3 const &eye, glm::mat4 const &world_to_clip);
+  void draw_fb(glm::vec3 const &eye, glm::mat4 const &world_to_clip, GLuint output_fb);
 
   void reset();
 
@@ -80,7 +71,9 @@ struct GameLevel : Scene {
     glm::vec3 pos = glm::vec3(0.0f);
 
     GLuint tex = 0;
-    glm::uvec2 size = glm::uvec2(0);
+    glm::uvec2 size = glm::uvec2(0, 0);
+    bool updated = false;
+    bool first_draw = false;
 
     struct MovePosition {
       MovePosition(Light *light);
@@ -113,13 +106,16 @@ struct GameLevel : Scene {
     Drawable::Pipeline *pipeline = nullptr;
 
     Standpoint *stpt = nullptr;
+    bool draw = false;
 
     // The position player 2 needs to stand to move the object
     glm::vec3 pos = glm::vec3(0.0f);
     // The margin of error in position (distance units)
     const float pos_tolerance = 5.0f;
     // The margin of error in viewing direction (cos(max error angle))
-    const float axis_tolerance = 0.9f;
+    const float axis_tolerance = 0.85f;
+    // The margin of error in position (distance units)
+    const float draw_distance = 20.0f;
   };
 
   struct MeshCollider {
@@ -140,7 +136,9 @@ struct GameLevel : Scene {
     int movable_index;
   };
 
-  Screen *screen_get(Transform *transform);
+  Screen *screen_get(Transform const *transform);
+  void screens_standpoints_texture_update(glm::vec3 const &pos);
+  bool first_draw = true;
 
   MeshBuffer *meshes = nullptr;
   std::unordered_map< Mesh const *, Mesh const * >mesh_to_collider;
