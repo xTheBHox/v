@@ -358,6 +358,7 @@ void GameLevel::draw(
       stpt.resize_texture(drawable_size);
       stpt.update_texture(this);
     }
+    first_draw = false;
   } else {
     for (auto &sc : screens) {
       if (sc.draw && !sc.stpt->updated) {
@@ -534,6 +535,8 @@ void GameLevel::Standpoint::resize_texture(glm::uvec2 const &new_size) {
 }
 
 void GameLevel::Standpoint::update_texture(GameLevel *level) {
+
+  // std::cout << "Drawing screen texture #" << tex << std::endl;
 
   float tex_h = cam->scale;
   float tex_w = (w / h) * tex_h;
