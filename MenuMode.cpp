@@ -215,13 +215,13 @@ MenuMode::MenuMode(std::string connect_ip) {
     pause_items.emplace_back("[[ PAUSED ]]");
     pause_items.emplace_back("Resume");
     pause_items.back().on_select = [&](Item const &){
-      if (current && current->connect != nullptr) {
+      if (current) {
         current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE);
       }
     };
     pause_items.emplace_back("Reset");
     pause_items.back().on_select = [&](Item const &){
-      if (current && current->connect != nullptr) {
+      if (current) {
         current->handle_reset(); SDL_SetRelativeMouseMode(SDL_TRUE);
       }
     };
