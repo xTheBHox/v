@@ -2,7 +2,8 @@ V
 
 Author: Benjamin Huang, Colin Gay, Cliff Zhu
 
-Design: (TODO: In two sentences or fewer, describe what is new and interesting about your game.)
+Design: V is a coop escape game where both players have to help each other navigate through 
+the puzzle through perspective tricks.
 
 Screen Shot:
 
@@ -10,7 +11,10 @@ Screen Shot:
 
 How To Play:
 
-(TODO: describe the controls and (if needed) goals/strategy.)
+WASD: Moving Left/Forward/Backward/Right
+Space: Jump
+LShift: Perspective screen
+Mouse click: Color selection/shifting
 
 Sources:
 
