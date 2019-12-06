@@ -15,22 +15,6 @@ Load< FlatProgram > flat_program(LoadTagEarly, []() -> FlatProgram const * {
 	flat_program_pipeline.OBJECT_TO_LIGHT_mat4x3 = ret->OBJECT_TO_LIGHT_mat4x3;
 	flat_program_pipeline.NORMAL_TO_LIGHT_mat3 = ret->NORMAL_TO_LIGHT_mat3;
 
-	//make a 1-pixel white texture to bind by default:
-	GLuint tex;
-	glGenTextures(1, &tex);
-
-	glBindTexture(GL_TEXTURE_2D, tex);
-	std::vector< glm::u8vec4 > tex_data(1, glm::u8vec4(0xff));
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, tex_data.data());
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glBindTexture(GL_TEXTURE_2D, 0);
-
-	flat_program_pipeline.textures[0].texture = tex;
-	flat_program_pipeline.textures[0].target = GL_TEXTURE_2D;
-
 	return ret;
 });
 
@@ -56,12 +40,12 @@ FlatProgram::FlatProgram() {
 	,
 		//fragment shader:
 		"#version 330\n"
-		"uniform sampler2D TEX;\n"
+		"uniform usampler2D TEX;\n"
     "uniform uint USE_TEX;\n"
     "uniform vec4 UNIFORM_COLOR;\n"
 		"in vec4 color;\n"
 		"in vec2 texCoord;\n"
-		"out vec4 fragColor;\n"
+		"layout(location=0) out vec4 fragColor;\n"
 		"void main() {\n"
     " vec4 cout = vec4(1.0, 1.0, 1.0, 1.0);\n"
     " if (USE_TEX == 0U) {\n"
@@ -200,7 +184,7 @@ OutlineProgram1::OutlineProgram1() {
 		"uniform sampler2DRect COLOR_TEX;\n"
 		"uniform sampler2DRect NORMAL_TEX;\n"
 		"uniform sampler2DRect POSITION_TEX;\n"
-		"out vec4 fragColor;\n"
+		"layout(location=0) out vec4 fragColor;\n"
 		"void main() {\n"
     " ivec2 pos = ivec2(gl_FragCoord);\n"
     " vec4 n_sid = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y));\n"
@@ -240,7 +224,6 @@ OutlineProgram1::OutlineProgram1() {
 //    "   else cout = vec4(0.0, 1.0, 1.0, 1.0);\n"
 //    " }\n"
 //    " else cout = vec4(1.0, 1.0, 1.0, 1.0);\n"
-
     " if (sm || (not_bent && flvl)) {\n"
     "   cout = cin;\n"
     " }\n"

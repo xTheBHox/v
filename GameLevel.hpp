@@ -14,7 +14,7 @@ struct GameLevel : Scene {
 
   void init_meshes(std::string level_name);
 
-  void draw(glm::vec2 const &drawable_size, glm::vec3 const &eye, glm::mat4 const &world_to_clip);
+  void draw(glm::uvec2 const &drawable_size, glm::vec3 const &eye, glm::mat4 const &world_to_clip);
   void draw_fb(glm::vec3 const &eye, glm::mat4 const &world_to_clip, GLuint output_fb);
 
   void reset();
