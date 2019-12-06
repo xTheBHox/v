@@ -211,7 +211,7 @@ OutlineProgram1::OutlineProgram1() {
     " float bg = p_bg.w;\n"
     " float dist2 = dot(p.xyz - EYE, p.xyz - EYE);\n"
     " float off = 1.0;\n"
-    " if (sid == 0.0) off = floor(5.0 / (sqrt(dist2) + 1.0) + 1.0);\n"
+    // " if (sid == 0.0) off = floor(5.0 / (sqrt(dist2) + 1.0) + 1.0);\n"
     " vec4 nx0 = texelFetch(NORMAL_TEX, ivec2(pos.x - off, pos.y));\n"
     " vec4 nx1 = texelFetch(NORMAL_TEX, ivec2(pos.x + off, pos.y));\n"
     " vec4 ny0 = texelFetch(NORMAL_TEX, ivec2(pos.x, pos.y - off));\n"

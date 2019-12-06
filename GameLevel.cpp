@@ -59,6 +59,188 @@ void print_vec3(glm::vec3 const &v) {
   std::cout << std::endl;
 }
 
+//Helper: maintain a framebuffer to hold rendered geometry
+struct FB {
+  //object data gets stored in these textures:
+  GLuint normal_tex = 0;
+  GLuint position_tex = 0;
+
+  //output image gets written to this texture:
+  GLuint color_tex = 0;
+  //depth buffer is shared between objects + lights pass:
+  GLuint depth_rb = 0;
+
+  GLuint fb_color = 0;
+  GLuint fb_outline = 0;
+
+  GLuint normal_tex_main = 0;
+  GLuint position_tex_main = 0;
+
+  //output image gets written to this texture:
+  GLuint color_tex_main = 0;
+  //depth buffer is shared between objects + lights pass:
+  GLuint depth_rb_main = 0;
+
+  GLuint fb_color_main = 0;
+  GLuint fb_outline_main = 0;
+
+  GLuint color_tex_sc = 0;
+  GLuint normal_tex_sc = 0;
+  GLuint position_tex_sc = 0;
+  GLuint depth_rb_sc = 0;
+
+  GLuint fb_color_sc = 0;
+  GLuint fb_outline_sc = 0;
+  GLuint fb_output_sc = 0;
+
+  glm::uvec2 size = glm::uvec2(0);
+  glm::uvec2 size_sc = glm::uvec2(640, 480);
+
+  void init_sc() {
+    auto alloc_recttex = [&] (GLuint &tex, GLenum internal_format) {
+      if (tex == 0) glGenTextures(1, &tex);
+      glBindTexture(GL_TEXTURE_RECTANGLE, tex);
+      glTexImage2D(GL_TEXTURE_RECTANGLE, 0, internal_format, size_sc.x, size_sc.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glBindTexture(GL_TEXTURE_RECTANGLE, 0);
+    };
+    //set up normal_tex as a 16-bit floating point RGBA texture:
+    alloc_recttex(normal_tex_sc, GL_RGBA32F);
+    alloc_recttex(position_tex_sc, GL_RGBA32F);
+    //set up output_tex as an 8-bit fixed point RGBA texture:
+    alloc_recttex(color_tex_sc, GL_RGBA8);
+    if (depth_rb_sc == 0) glGenRenderbuffers(1, &depth_rb_sc);
+    //set up depth_rb as a 24-bit fixed-point depth buffer:
+    glBindRenderbuffer(GL_RENDERBUFFER, depth_rb_sc);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size_sc.x, size_sc.y);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    GL_ERRORS();
+
+    if (fb_color_sc == 0) {
+      glGenFramebuffers(1, &fb_color_sc);
+      //set up framebuffer: (don't need to do when resizing)
+      glBindFramebuffer(GL_FRAMEBUFFER, fb_color_sc);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, color_tex_sc, 0);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb_sc);
+      glDrawBuffer(GL_COLOR_ATTACHMENT0);
+      check_fb();
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+    GL_ERRORS();
+
+    //if outline framebuffer doesn't have a name, name it and attach textures:
+    if (fb_outline == 0) {
+      glGenFramebuffers(1, &fb_outline_sc);
+      //set up framebuffer: (don't need to do when resizing)
+      glBindFramebuffer(GL_FRAMEBUFFER, fb_outline_sc);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, normal_tex_sc, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, position_tex_sc, 0);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb_sc);
+      GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+      glDrawBuffers(2, bufs);
+      check_fb();
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    GL_ERRORS();
+    // The output framebuffer is used to hold the flattened textures when rendering
+    // the orthographic windows.
+    if (fb_output_sc == 0) {
+      glGenFramebuffers(1, &fb_output_sc);
+      //set up framebuffer: (don't need to do when resizing)
+      //glBindFramebuffer(GL_FRAMEBUFFER, fb_output_sc);
+      //glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb_sc);
+      //glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    GL_ERRORS();
+  }
+
+  void resize_main(glm::uvec2 const &drawable_size) {
+    if (drawable_size == size) return;
+    size = drawable_size;
+
+    std::cout << "Resizing draw textures and framebuffers!" << std::endl;
+
+    //helper to allocate a texture:
+
+    auto alloc_recttex = [&] (GLuint &tex, GLenum internal_format) {
+      if (tex == 0) glGenTextures(1, &tex);
+      glBindTexture(GL_TEXTURE_RECTANGLE, tex);
+      glTexImage2D(GL_TEXTURE_RECTANGLE, 0, internal_format, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+      glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glBindTexture(GL_TEXTURE_RECTANGLE, 0);
+    };
+
+    //set up normal_tex as a 16-bit floating point RGBA texture:
+    alloc_recttex(normal_tex_main, GL_RGBA32F);
+    alloc_recttex(position_tex_main, GL_RGBA32F);
+
+    //set up output_tex as an 8-bit fixed point RGBA texture:
+    alloc_recttex(color_tex_main, GL_RGBA8);
+
+    GL_ERRORS();
+
+    //if depth_rb does not have a name, name it:
+    if (depth_rb_main == 0) glGenRenderbuffers(1, &depth_rb_main);
+    //set up depth_rb as a 24-bit fixed-point depth buffer:
+    glBindRenderbuffer(GL_RENDERBUFFER, depth_rb_main);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size.x, size.y);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    GL_ERRORS();
+
+    //if color framebuffer doesn't have a name, name it and attach textures:
+    if (fb_color_main == 0) {
+      glGenFramebuffers(1, &fb_color_main);
+      //set up framebuffer: (don't need to do when resizing)
+      glBindFramebuffer(GL_FRAMEBUFFER, fb_color_main);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, color_tex_main, 0);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb_main);
+      glDrawBuffer(GL_COLOR_ATTACHMENT0);
+      check_fb();
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+    GL_ERRORS();
+
+    //if outline framebuffer doesn't have a name, name it and attach textures:
+    if (fb_outline_main == 0) {
+      glGenFramebuffers(1, &fb_outline_main);
+      //set up framebuffer: (don't need to do when resizing)
+      glBindFramebuffer(GL_FRAMEBUFFER, fb_outline_main);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, normal_tex_main, 0);
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, position_tex_main, 0);
+      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb_main);
+      GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+      glDrawBuffers(2, bufs);
+      check_fb();
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    GL_ERRORS();
+  }
+
+  void set_main() {
+    normal_tex = normal_tex_main;
+    position_tex = position_tex_main;
+    color_tex = color_tex_main;
+    depth_rb = depth_rb_main;
+    fb_color = fb_color_main;
+    fb_outline = fb_outline_main;
+  }
+
+  void set_sc() {
+    normal_tex = normal_tex_sc;
+    position_tex = position_tex_sc;
+    color_tex = color_tex_sc;
+    depth_rb = depth_rb_sc;
+    fb_color = fb_color_sc;
+    fb_outline = fb_outline_sc;
+
+  }
+} fb;
+
 GameLevel::GameLevel(std::string level_name) {
 
   init_meshes(level_name);
@@ -116,7 +298,7 @@ GameLevel::GameLevel(std::string level_name) {
         glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
 
       };
-    }else if (transform->name.substr(0, 5) == "Goal2") {
+    } else if (transform->name.substr(0, 5) == "Goal2") {
       goals[1] = transform;
 
       pipeline.smooth_id = 4.0;
@@ -176,12 +358,12 @@ GameLevel::GameLevel(std::string level_name) {
         std::cout << "Matched " << xf_name << " to " << oc.transform->name << std::endl;
         standpoints.emplace_back(&oc, &m);
         Standpoint &stpt = standpoints.back();
+        std::cout << "\tTexture #" << stpt.tex << std::endl;
         std::list< Light >::iterator lit = lights.begin();
         while (lit != lights.end()) {
           std::string &mp_name = lit->transform->name;
           if (mp_name.substr(0, mp_name.size()-9) == oc.transform->name) {
             std::cout << "Matched " << mp_name << " to " << oc.transform->name << std::endl;
-            std::cout << "\tScreen has texture #" << stpt.tex << std::endl;
             stpt.move_pos.emplace_back(&(*lit));
             print_vec3(stpt.move_pos.back().pos);
             print_vec4(stpt.move_pos.back().color);
@@ -214,6 +396,8 @@ GameLevel::GameLevel(std::string level_name) {
       cam_P2 = &c;
     }
   }
+
+  fb.init_sc();
 
 }
 
@@ -249,124 +433,31 @@ void GameLevel::reset() {
   body_P2_transform->rotation = body_P2_start.rotation;
 }
 
-//Helper: maintain a framebuffer to hold rendered geometry
-struct FB {
-  //object data gets stored in these textures:
-  GLuint normal_tex = 0;
-  GLuint position_tex = 0;
-
-  //output image gets written to this texture:
-  GLuint color_tex = 0;
-
-  //depth buffer is shared between objects + lights pass:
-  GLuint depth_rb = 0;
-
-  GLuint fb_color = 0;
-  GLuint fb_outline = 0;
-  GLuint fb_output = 0;
-
-  glm::uvec2 size = glm::uvec2(0);
-
-  void resize(glm::uvec2 const &drawable_size) {
-    if (drawable_size == size) return;
-    size = drawable_size;
-
-    std::cout << "Resizing draw textures and framebuffers!" << std::endl;
-
-    //helper to allocate a texture:
-
-    auto alloc_recttex = [&] (GLuint &tex, GLenum internal_format) {
-      if (tex == 0) glGenTextures(1, &tex);
-      glBindTexture(GL_TEXTURE_RECTANGLE, tex);
-      glTexImage2D(GL_TEXTURE_RECTANGLE, 0, internal_format, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-      glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-      glBindTexture(GL_TEXTURE_RECTANGLE, 0);
-    };
-
-    //set up normal_tex as a 16-bit floating point RGBA texture:
-    alloc_recttex(normal_tex, GL_RGBA32F);
-    alloc_recttex(position_tex, GL_RGBA32F);
-
-    //set up output_tex as an 8-bit fixed point RGBA texture:
-    alloc_recttex(color_tex, GL_RGBA8);
-
-    GL_ERRORS();
-
-    //if depth_rb does not have a name, name it:
-    if (depth_rb == 0) glGenRenderbuffers(1, &depth_rb);
-    //set up depth_rb as a 24-bit fixed-point depth buffer:
-    glBindRenderbuffer(GL_RENDERBUFFER, depth_rb);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, size.x, size.y);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-    GL_ERRORS();
-
-    //if color framebuffer doesn't have a name, name it and attach textures:
-    if (fb_color == 0) {
-      glGenFramebuffers(1, &fb_color);
-      //set up framebuffer: (don't need to do when resizing)
-      glBindFramebuffer(GL_FRAMEBUFFER, fb_color);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, color_tex, 0);
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
-      glDrawBuffer(GL_COLOR_ATTACHMENT0);
-      check_fb();
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-    GL_ERRORS();
-
-    //if outline framebuffer doesn't have a name, name it and attach textures:
-    if (fb_outline == 0) {
-      glGenFramebuffers(1, &fb_outline);
-      //set up framebuffer: (don't need to do when resizing)
-      glBindFramebuffer(GL_FRAMEBUFFER, fb_outline);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_RECTANGLE, normal_tex, 0);
-      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, GL_TEXTURE_RECTANGLE, position_tex, 0);
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
-      GLenum bufs[2] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-      glDrawBuffers(2, bufs);
-      check_fb();
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    GL_ERRORS();
-    // The output framebuffer is used to hold the flattened textures when rendering
-    // the orthographic windows.
-    if (fb_output == 0) {
-      glGenFramebuffers(1, &fb_output);
-      //set up framebuffer: (don't need to do when resizing)
-      glBindFramebuffer(GL_FRAMEBUFFER, fb_output);
-      glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rb);
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-
-    GL_ERRORS();
-  }
-} fb;
-
 void GameLevel::draw(
   glm::vec2 const &drawable_size,
   glm::vec3 const &eye,
   glm::mat4 const &world_to_clip
 ) {
 
-  fb.resize(drawable_size);
+  fb.resize_main(drawable_size);
 
   screens_standpoints_texture_update(eye);
-
   if (first_draw) {
     for (auto &stpt : standpoints) {
-      stpt.resize_texture(drawable_size);
+      //stpt.resize_texture(drawable_size);
       stpt.update_texture(this);
     }
     first_draw = false;
   } else {
     for (auto &sc : screens) {
       if (sc.draw && !sc.stpt->updated) {
-        sc.stpt->resize_texture(drawable_size);
+        //sc.stpt->resize_texture(drawable_size);
         sc.stpt->update_texture(this);
       }
     }
   }
+
+  fb.set_main();
   draw_fb(eye, world_to_clip, 0);
 
 }
@@ -459,6 +550,7 @@ void GameLevel::draw_fb(
 
   glBindVertexArray(0);
   glUseProgram(0);
+  if (output_fb != 0) glBindFramebuffer(GL_FRAMEBUFFER, 0);
   GL_ERRORS();
 
 }
@@ -512,6 +604,7 @@ GameLevel::Standpoint::Standpoint(OrthoCam *cam_, Movable *movable_)
 
   glGenTextures(1, &tex);
   GL_ERRORS();
+  resize_texture(glm::uvec2(640, 480));
 
 }
 
@@ -546,14 +639,15 @@ void GameLevel::Standpoint::update_texture(GameLevel *level) {
   glm::mat4 proj = glm::ortho(-tex_w, tex_w, -tex_h, tex_h, np ,fp);
   glm::mat4 w2l = cam->transform->make_world_to_local();
 
-  glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_output);
+  glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_output_sc);
   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
   glDrawBuffer(GL_COLOR_ATTACHMENT0);
   check_fb();
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
   GL_ERRORS();
 
-  level->draw_fb(pos, proj * w2l, fb.fb_output);
+  fb.set_sc();
+  level->draw_fb(pos, proj * w2l, fb.fb_output_sc);
   updated = true;
 
 }
