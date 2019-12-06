@@ -70,13 +70,14 @@ struct MenuMode : Mode {
 		std::function< void(Item const &) > on_select; //if set, item is selectable
 		glm::vec2 at; //location to draw item
 	};
-  enum MenuStage { MENU_MAIN, MENU_CONNECT, MENU_START, MENU_LEVEL, MENU_PLAYER, MENU_PAUSE };
+  enum MenuStage { MENU_MAIN, MENU_CONNECT, MENU_IP, MENU_START, MENU_LEVEL, MENU_PLAYER, MENU_PAUSE };
   enum MenuPlayer { MENU_PLAYER_SOLO, MENU_PLAYER_SERVER, MENU_PLAYER_CLIENT };
   MenuStage menu_stage = MENU_MAIN;
   MenuPlayer menu_player = MENU_PLAYER_SOLO;
   uint32_t menu_level = 1;
 	std::vector< Item > main_items;
 	std::vector< Item > connect_items;
+  std::vector< Item > ip_items;
 	std::vector< Item > start_items;
 	std::vector< Item > level_items;
 	std::vector< Item > player_items;

@@ -94,11 +94,23 @@ MenuMode::MenuMode(std::string connect_ip) {
   	};
     connect_items.emplace_back("Join Game");
   	connect_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_START; menu_player = MENU_PLAYER_CLIENT;
+      menu_stage = MENU_IP;
   	};
     connect_items.emplace_back("Back");
   	connect_items.back().on_select = [&](Item const &){
       menu_stage = MENU_MAIN;
+  	};
+  }
+  { // IP Menu
+    ip_items.emplace_back("Enter IP address:");
+    ip_items.emplace_back("localhost");
+  	ip_items.back().on_select = [&](Item const &){
+      /// TODO
+      menu_stage = MENU_START; menu_player = MENU_PLAYER_CLIENT;
+  	};
+    ip_items.emplace_back("Back");
+  	ip_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_CONNECT;
   	};
   }
   { // Start Menu
@@ -194,7 +206,7 @@ MenuMode::MenuMode(std::string connect_ip) {
       if (menu_player == MENU_PLAYER_SERVER) {
         MenuMode::set_current(std::make_shared< ServerMode >("12345", menu_level, 1));
       } else if (menu_player == MENU_PLAYER_CLIENT) {
-        MenuMode::set_current(std::make_shared< ClientMode >(connect_ip, "12345", menu_level, 1));
+        MenuMode::set_current(std::make_shared< ClientMode >(ip_items[1].name, "12345", menu_level, 1));
       }
     };
     player_items.emplace_back("Player 2");
@@ -203,7 +215,7 @@ MenuMode::MenuMode(std::string connect_ip) {
       if (menu_player == MENU_PLAYER_SERVER) {
         MenuMode::set_current(std::make_shared< ServerMode >("12345", menu_level, 2));
       } else if (menu_player == MENU_PLAYER_CLIENT) {
-        MenuMode::set_current(std::make_shared< ClientMode >(connect_ip, "12345", menu_level, 2));
+        MenuMode::set_current(std::make_shared< ClientMode >(ip_items[1].name, "12345", menu_level, 2));
       }
     };
     player_items.emplace_back("Back");
@@ -622,6 +634,40 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
         }
       }
       return false;
+    }  else if (menu_stage == MENU_IP) {
+      if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_CONNECT; }
+        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+          for (uint32_t i = selected - 1; i < ip_items.size(); --i) {
+            if (ip_items[i].on_select) { //skip non-selectable items
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+          for (uint32_t i = selected + 1; i < ip_items.size(); ++i) {
+            if (ip_items[i].on_select) {
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+          if (selected < ip_items.size() && ip_items[selected].on_select) {
+            ip_items[selected].on_select(ip_items[selected]);
+            selected = 1; return true;
+          }
+        } else if (selected == 1) {
+          if (evt.key.keysym.sym == SDLK_PERIOD ||
+            (evt.key.keysym.sym >= SDLK_0 && evt.key.keysym.sym <= SDLK_9)) {
+            ip_items[1].name.push_back(evt.key.keysym.sym);
+            return true;
+          } else if (evt.key.keysym.sym == SDLK_BACKSPACE) {
+            if (!ip_items[1].name.empty()) ip_items[1].name.pop_back();
+            return true;
+          }
+        }
+      }
+      return false;
     } else if (menu_stage == MENU_START) {
       if (evt.type == SDL_KEYDOWN) {
         if (evt.key.keysym.sym == SDLK_ESCAPE){
@@ -1022,6 +1068,7 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 	} else {
     if (menu_stage == MENU_MAIN) draw_menu(drawable_size, main_items);
     else if (menu_stage == MENU_CONNECT) draw_menu(drawable_size, connect_items);
+    else if (menu_stage == MENU_IP) draw_menu(drawable_size, ip_items);
     else if (menu_stage == MENU_START) draw_menu(drawable_size, start_items);
     else if (menu_stage == MENU_LEVEL) draw_menu(drawable_size, level_items);
     else if (menu_stage == MENU_PLAYER) draw_menu(drawable_size, player_items);
@@ -1033,117 +1080,33 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 
 void MenuMode::layout_items(float gap) {
 	DrawSprites temp(*atlas, view_min, view_max, view_max - view_min, DrawSprites::AlignPixelPerfect); //<-- doesn't actually draw
+  auto layout_fn = [this, &temp, gap](std::vector< Item >&items){
+    float y = view_max.y;
+  	for (auto &item : items) {
+  		glm::vec2 min, max;
+  		if (item.sprite) {
+  			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
+  			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
+  		} else {
+  			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
+  		}
+  		item.at.y = y - max.y;
+  		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
+  		y = y - (max.y - min.y) - gap;
+  	}
+  	float ofs = -0.5f * y;
+  	for (auto &item : items) {
+  		item.at.y += ofs;
+  	}
+  };
+
   // layout for main menu items
-  float y = view_max.y;
-	for (auto &item : main_items) {
-		glm::vec2 min, max;
-		if (item.sprite) {
-			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
-			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
-		} else {
-			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
-		}
-		item.at.y = y - max.y;
-		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
-		y = y - (max.y - min.y) - gap;
-	}
-	float ofs = -0.5f * y;
-	for (auto &item : main_items) {
-		item.at.y += ofs;
-	}
+  layout_fn(main_items);
+  layout_fn(connect_items);
+  layout_fn(ip_items);
+  layout_fn(start_items);
+  layout_fn(level_items);
+  layout_fn(player_items);
+  layout_fn(pause_items);
 
-  // layout for connect menu items
-	y = view_max.y;
-	for (auto &item : connect_items) {
-		glm::vec2 min, max;
-		if (item.sprite) {
-			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
-			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
-		} else {
-			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
-		}
-		item.at.y = y - max.y;
-		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
-		y = y - (max.y - min.y) - gap;
-	}
-	ofs = -0.5f * y;
-	for (auto &item : connect_items) {
-		item.at.y += ofs;
-	}
-
-  // layout for start menu items
-	y = view_max.y;
-	for (auto &item : start_items) {
-		glm::vec2 min, max;
-		if (item.sprite) {
-			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
-			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
-		} else {
-			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
-		}
-		item.at.y = y - max.y;
-		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
-		y = y - (max.y - min.y) - gap;
-	}
-	ofs = -0.5f * y;
-	for (auto &item : start_items) {
-		item.at.y += ofs;
-	}
-
-  // layout for level selection menu items
-	y = view_max.y;
-	for (auto &item : level_items) {
-		glm::vec2 min, max;
-		if (item.sprite) {
-			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
-			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
-		} else {
-			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
-		}
-		item.at.y = y - max.y;
-		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
-		y = y - (max.y - min.y) - gap;
-	}
-	ofs = -0.5f * y;
-	for (auto &item : level_items) {
-		item.at.y += ofs;
-	}
-
-  // layout for player selection menu items
-	y = view_max.y;
-	for (auto &item : player_items) {
-		glm::vec2 min, max;
-		if (item.sprite) {
-			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
-			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
-		} else {
-			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
-		}
-		item.at.y = y - max.y;
-		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
-		y = y - (max.y - min.y) - gap;
-	}
-	ofs = -0.5f * y;
-	for (auto &item : player_items) {
-		item.at.y += ofs;
-	}
-
-  // layout for pause menu items
-	y = view_max.y;
-	for (auto &item : pause_items) {
-		glm::vec2 min, max;
-		if (item.sprite) {
-			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
-			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
-		} else {
-			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
-		}
-		item.at.y = y - max.y;
-		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
-		y = y - (max.y - min.y) - gap;
-	}
-	ofs = -0.5f * y;
-	for (auto &item : pause_items) {
-		item.at.y += ofs;
-	}
 }
