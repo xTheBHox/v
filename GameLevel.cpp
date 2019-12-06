@@ -236,6 +236,20 @@ bool GameLevel::detect_win() {
   return (dis1 < goals[0].spin_acc) && (dis2 < goals[1].spin_acc);
 }
 
+bool GameLevel::detect_goal(uint32_t player_num){
+  if (player_num == 1){
+    glm::vec3 goalPos1 = goals[0].transform->position;
+    glm::vec3 p1 = body_P1_transform->position;
+    auto dis1 = glm::distance(goalPos1, p1);
+    return dis1 < goals[0].spin_acc;
+  }else{
+    glm::vec3 goalPos2 = goals[1].transform->position;
+    glm::vec3 p2 = body_P2_transform->position;
+    auto dis2 = glm::distance(goalPos2, p2);
+    return dis2 < goals[1].spin_acc;
+  }
+}
+
 void GameLevel::reset() {
   for (Movable &m : movable_data) {
     m.transform->position = m.init_pos;

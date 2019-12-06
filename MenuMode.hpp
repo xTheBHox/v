@@ -113,6 +113,9 @@ struct MenuMode : Mode {
 	// std::shared_ptr< Mode > background;
   std::shared_ptr< Sound::PlayingSample > background_music;
   std::shared_ptr< Sound::PlayingSample > moving_sound;
+	std::shared_ptr< Sound::PlayingSample > win_sound;
+
+	bool we_just_reached_goal = false;
 
 	Connection *connect_client = nullptr;
 	Connection *connect_server = nullptr;

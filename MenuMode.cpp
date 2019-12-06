@@ -23,6 +23,10 @@ Load< Sound::Sample > sound_move(LoadTagDefault, []() -> Sound::Sample * {
   return new Sound::Sample(data_path("movesh.wav"));
 });
 
+Load< Sound::Sample > sound_win(LoadTagDefault, []() -> Sound::Sample * {
+  return new Sound::Sample(data_path("ding.wav"));
+});
+
 Load< Sound::Sample > sound_click(LoadTagDefault, []() -> Sound::Sample *{
 	std::vector< float > data(size_t(48000 * 0.2f), 0.0f);
 	for (uint32_t i = 0; i < data.size(); ++i) {
@@ -504,6 +508,13 @@ void MenuMode::update(float elapsed) {
     } else if (moving_sound && !moving_sound->stopped) {
       moving_sound->stop();
     }
+
+		if ((current->we_reached_goal)&& (!we_just_reached_goal)){
+			win_sound = Sound::play(*sound_win, 2.0f);
+			we_just_reached_goal = true;
+		}else if (!current->we_reached_goal){
+			we_just_reached_goal = false;
+		}
 
     if (current->won) {
       current->to_next_level += elapsed;

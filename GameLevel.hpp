@@ -21,6 +21,7 @@ struct GameLevel : Scene {
 
   bool detect_win();
   bool detect_lose();
+  bool detect_goal(uint32_t player_num);
 
 	//Goal objects(s) tracked using this structure:
 	struct Goal {

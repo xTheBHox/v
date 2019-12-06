@@ -53,6 +53,7 @@ struct PlayerMode : Mode {
   bool lost = false;
   bool we_want_reset = false;
   bool they_want_reset = false;
+  bool we_reached_goal = false;
   float reset_countdown = 0.0f;
   uint32_t player_num;
   uint32_t level_num;

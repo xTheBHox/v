@@ -190,6 +190,7 @@ void SinglePlayerMode::update_other_move(float elapsed) {
 
 void SinglePlayerMode::update(float elapsed) {
   if (pause) return;
+  we_reached_goal = level->detect_goal(player_num);
   if (!won && level->detect_win()) {
     won = true;
     to_next_level = 0.0f;

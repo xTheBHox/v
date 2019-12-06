@@ -139,6 +139,7 @@ bool PlayerMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 
 void PlayerMode::update(float elapsed) {
   if (pause) return;
+  we_reached_goal = level->detect_goal(player_num);
   if (!won && level->detect_win()) {
     won = true;
     to_next_level = 0.0f;
