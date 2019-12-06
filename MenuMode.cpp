@@ -16,7 +16,7 @@
 #include <random>
 
 Load< Sound::Sample > music_ambient(LoadTagDefault, []() -> Sound::Sample * {
-  return new Sound::Sample(data_path("ambient1.wav"));
+  return new Sound::Sample(data_path("ambient.wav"));
 });
 
 Load< Sound::Sample > sound_move(LoadTagDefault, []() -> Sound::Sample * {
@@ -66,7 +66,172 @@ MenuMode::MenuMode(std::string connect_ip) {
   current = nullptr;
   main_connect_ip = connect_ip;
 
-  main_items.emplace_back("[[ V ]]");
+  { // Main Menu
+    main_items.emplace_back("[[ V ]]");
+    main_items.emplace_back("Play Single Player");
+  	main_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_START; menu_player = MENU_PLAYER_SOLO;
+  	};
+    main_items.emplace_back("Play Cooperative Game");
+  	main_items.back().on_select = [&](Item const &){
+      if (current && current->connect != nullptr) { menu_stage = MENU_START; }
+      else { menu_stage = MENU_CONNECT; }
+  	};
+    main_items.emplace_back("Quit");
+  	main_items.back().on_select = [](Item const &){
+      Mode::set_current(nullptr);
+  	};
+  }
+  { // Connect Menu
+    connect_items.emplace_back("[[ Co-op ]]");
+    connect_items.emplace_back("Create Game");
+  	connect_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_START; menu_player = MENU_PLAYER_SERVER;
+  	};
+    connect_items.emplace_back("Join Game");
+  	connect_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_START; menu_player = MENU_PLAYER_CLIENT;
+  	};
+    connect_items.emplace_back("Back");
+  	connect_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_MAIN;
+  	};
+  }
+  { // Start Menu
+    start_items.emplace_back("[[ V ]]");
+    start_items.emplace_back("Start Game");
+  	start_items.back().on_select = [&](Item const &){
+      menu_level = 1;
+      if (menu_player == MENU_PLAYER_SOLO) {
+        menu_stage = MENU_PAUSE;
+        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+      } else if (current && current->connect != nullptr) {
+        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1);
+      } else { menu_stage = MENU_PLAYER; }
+  	};
+    start_items.emplace_back("Select Level");
+  	start_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_LEVEL;
+  	};
+    start_items.emplace_back("Back");
+  	start_items.back().on_select = [&](Item const &){
+      if (menu_player == MENU_PLAYER_SOLO || (current && current->connect != nullptr)) { menu_stage = MENU_MAIN; }
+      else { menu_stage = MENU_CONNECT; }
+  	};
+  }
+  { // Level Menu
+    level_items.emplace_back("[[ SELECT LEVEL ]]");
+    level_items.emplace_back("Level 1");
+  	level_items.back().on_select = [&](Item const &){
+      menu_level = 1;
+      if (menu_player == MENU_PLAYER_SOLO) {
+        menu_stage = MENU_PAUSE;
+        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+      } else if (current && current->connect != nullptr) {
+        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1);
+      } else { menu_stage = MENU_PLAYER; }
+  	};
+    level_items.emplace_back("Level 2");
+  	level_items.back().on_select = [&](Item const &){
+      menu_level = 2;
+      if (menu_player == MENU_PLAYER_SOLO) {
+        menu_stage = MENU_PAUSE;
+        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+      } else if (current && current->connect != nullptr) {
+        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(2);
+      } else { menu_stage = MENU_PLAYER; }
+  	};
+    level_items.emplace_back("Level 3");
+  	level_items.back().on_select = [&](Item const &){
+      menu_level = 3;
+      if (menu_player == MENU_PLAYER_SOLO) {
+        menu_stage = MENU_PAUSE;
+        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+      } else if (current && current->connect != nullptr) {
+        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(3);
+      } else { menu_stage = MENU_PLAYER; }
+  	};
+    level_items.emplace_back("Level 4");
+  	level_items.back().on_select = [&](Item const &){
+      menu_level = 4;
+      if (menu_player == MENU_PLAYER_SOLO) {
+        menu_stage = MENU_PAUSE;
+        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+      } else if (current && current->connect != nullptr) {
+        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(4);
+      } else { menu_stage = MENU_PLAYER; }
+  	};
+    level_items.emplace_back("Level 5");
+  	level_items.back().on_select = [&](Item const &){
+      menu_level = 5;
+      if (menu_player == MENU_PLAYER_SOLO) {
+        menu_stage = MENU_PAUSE;
+        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
+        SDL_SetRelativeMouseMode(SDL_TRUE);
+      } else if (current && current->connect != nullptr) {
+        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(5);
+      } else { menu_stage = MENU_PLAYER; }
+  	};
+    level_items.emplace_back("Back");
+  	level_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_START;
+  	};
+  }
+  { // Player Menu
+    player_items.emplace_back("[[ Select Player ]]");
+    player_items.emplace_back("Player 1");
+    player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
+      menu_stage = MENU_PAUSE;
+      if (menu_player == MENU_PLAYER_SERVER) {
+        MenuMode::set_current(std::make_shared< ServerMode >("12345", menu_level, 1));
+      } else if (menu_player == MENU_PLAYER_CLIENT) {
+        MenuMode::set_current(std::make_shared< ClientMode >(connect_ip, "12345", menu_level, 1));
+      }
+    };
+    player_items.emplace_back("Player 2");
+    player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
+      menu_stage = MENU_PAUSE;
+      if (menu_player == MENU_PLAYER_SERVER) {
+        MenuMode::set_current(std::make_shared< ServerMode >("12345", menu_level, 2));
+      } else if (menu_player == MENU_PLAYER_CLIENT) {
+        MenuMode::set_current(std::make_shared< ClientMode >(connect_ip, "12345", menu_level, 2));
+      }
+    };
+    player_items.emplace_back("Back");
+    player_items.back().on_select = [&](MenuMode::Item const &){
+      menu_stage = MENU_START;
+    };
+  }
+  { // Pause Menu
+    pause_items.emplace_back("[[ PAUSED ]]");
+    pause_items.emplace_back("Resume");
+    pause_items.back().on_select = [&](Item const &){
+      if (current && current->connect != nullptr) {
+        current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE);
+      }
+    };
+    pause_items.emplace_back("Reset");
+    pause_items.back().on_select = [&](Item const &){
+      if (current && current->connect != nullptr) {
+        current->handle_reset(); SDL_SetRelativeMouseMode(SDL_TRUE);
+      }
+    };
+    pause_items.emplace_back("Main Menu");
+    pause_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_START;
+    };
+    pause_items.emplace_back("Quit");
+    pause_items.back().on_select = [](Item const &){
+      Mode::set_current(nullptr);
+    };
+  }
+
+  /* main_items.emplace_back("[[ V ]]");
   main_items.emplace_back("New Game");
 	main_items.back().on_select = [&](Item const &){
     if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1); }
@@ -99,29 +264,6 @@ MenuMode::MenuMode(std::string connect_ip) {
 		main_mode = 0;
 	};
 
-	pause_items.emplace_back("[[ PAUSED ]]");
-	pause_items.emplace_back("Resume");
-	pause_items.back().on_select = [&](Item const &){
-    // current = MenuMode::get_current();
-    if (current) { current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); }
-	};
-	pause_items.emplace_back("Reset");
-	pause_items.back().on_select = [&](Item const &){
-    if (current) {
-      current->handle_reset();
-      SDL_SetRelativeMouseMode(SDL_TRUE);
-    }
-	};
-	pause_items.emplace_back("Main Menu");
-	pause_items.back().on_select = [&](Item const &){
-    main_mode = 0;
-    // MenuMode::set_current(nullptr);
-	};
-	pause_items.emplace_back("Quit");
-	pause_items.back().on_select = [](Item const &){
-    Mode::set_current(nullptr);
-	};
-
   level_items.emplace_back("[[ SELECT LEVEL ]]");
   level_items.emplace_back("Level 1");
 	level_items.back().on_select = [&](Item const &){
@@ -146,8 +288,7 @@ MenuMode::MenuMode(std::string connect_ip) {
   level_items.emplace_back("Back");
 	level_items.back().on_select = [&](Item const &){
     main_mode = 0;
-	};
-
+	}; */
 
 	//----- allocate OpenGL resources -----
 	{ //vertex buffer:
@@ -235,108 +376,159 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	if (current) {
     if (current->pause) {
       // we're on the pause menu or the main menu
-        if (main_mode == 0) { // main menu
-        	if (evt.type == SDL_KEYDOWN) {
-            if (evt.key.keysym.sym == SDLK_ESCAPE){
-              Mode::set_current(nullptr);
-            }
-        		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-        			//skip non-selectable items:
-        			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
-        				if (main_items[i].on_select) {
-        					selected = i;
-        					// Sound::play(*sound_click);
-        					break;
-        				}
-        			}
-        			return true;
-        		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-        			//note: skips non-selectable items:
-        			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
-        				if (main_items[i].on_select) {
-        					selected = i;
-        					// Sound::play(*sound_click);
-        					break;
-        				}
-        			}
-        			return true;
-        		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-        			if (selected < main_items.size() && main_items[selected].on_select) {
-        				// Sound::play(*sound_clonk);
-        				main_items[selected].on_select(main_items[selected]);
-                selected = 1;
-        				return true;
-        			}
-        		}
-        	}
-      		return false;
-        } else if (main_mode == 1) { // level select
-        	if (evt.type == SDL_KEYDOWN) {
-            if (evt.key.keysym.sym == SDLK_ESCAPE){
-              main_mode = 0;
-            }
-        		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-        			//skip non-selectable items:
-        			for (uint32_t i = selected - 1; i < level_items.size(); --i) {
-        				if (level_items[i].on_select) {
-        					selected = i;
-        					// Sound::play(*sound_click);
-        					break;
-        				}
-        			}
-        			return true;
-        		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-        			//note: skips non-selectable items:
-        			for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
-        				if (level_items[i].on_select) {
-        					selected = i;
-        					// Sound::play(*sound_click);
-        					break;
-        				}
-        			}
-        			return true;
-        		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-        			if (selected < level_items.size() && level_items[selected].on_select) {
-        				// Sound::play(*sound_clonk);
-        				level_items[selected].on_select(level_items[selected]);
-                selected = 1;
-        				return true;
-        			}
-        		}
-        	}
-      		return false;
-        } else { // pause menu
-          if (evt.type == SDL_KEYDOWN) {
-            if (evt.key.keysym.sym == SDLK_ESCAPE){
-              current->pause = false;
-              SDL_SetRelativeMouseMode(SDL_TRUE);
-            }
-        		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-        			//skip non-selectable items:
-        			for (uint32_t i = selected - 1; i < pause_items.size(); --i) {
-        				if (pause_items[i].on_select) {
-        					selected = i; break;
-        				}
-        			}
-        			return true;
-        		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-        			//note: skips non-selectable items:
-        			for (uint32_t i = selected + 1; i < pause_items.size(); ++i) {
-        				if (pause_items[i].on_select) {
-        					selected = i; break;
-        				}
-        			}
-        			return true;
-        		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-        			if (selected < pause_items.size() && pause_items[selected].on_select) {
-        				pause_items[selected].on_select(pause_items[selected]);
-                selected = 1;
-        				return true;
-        			}
-        		}
-        	}
-      		return false;
-        }
+      if (menu_stage == MENU_MAIN) {
+      	if (evt.type == SDL_KEYDOWN) {
+          if (evt.key.keysym.sym == SDLK_ESCAPE){ Mode::set_current(nullptr); }
+      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+      			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
+      				if (main_items[i].on_select) { //skip non-selectable items
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+      			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
+      				if (main_items[i].on_select) {
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+      			if (selected < main_items.size() && main_items[selected].on_select) {
+      				main_items[selected].on_select(main_items[selected]);
+              selected = 1; return true;
+      			}
+      		}
+      	}
+    		return false;
+      }/* else if (menu_stage == MENU_CONNECT) {
+      	if (evt.type == SDL_KEYDOWN) {
+          if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_MAIN; }
+      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+      			for (uint32_t i = selected - 1; i < connect_items.size(); --i) {
+      				if (connect_items[i].on_select) { //skip non-selectable items
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+      			for (uint32_t i = selected + 1; i < connect_items.size(); ++i) {
+      				if (connect_items[i].on_select) {
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+      			if (selected < connect_items.size() && connect_items[selected].on_select) {
+      				connect_items[selected].on_select(connect_items[selected]);
+              selected = 1; return true;
+      			}
+      		}
+      	}
+    		return false;
+      }*/ else if (menu_stage == MENU_START) {
+      	if (evt.type == SDL_KEYDOWN) {
+          if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_MAIN; }
+      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+      			for (uint32_t i = selected - 1; i < start_items.size(); --i) {
+      				if (start_items[i].on_select) { //skip non-selectable items
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+      			for (uint32_t i = selected + 1; i < start_items.size(); ++i) {
+      				if (start_items[i].on_select) {
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+      			if (selected < start_items.size() && start_items[selected].on_select) {
+      				start_items[selected].on_select(start_items[selected]);
+              selected = 1; return true;
+      			}
+      		}
+      	}
+    		return false;
+      } else if (menu_stage == MENU_LEVEL) {
+      	if (evt.type == SDL_KEYDOWN) {
+          if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_START; }
+      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+      			for (uint32_t i = selected - 1; i < level_items.size(); --i) {
+      				if (level_items[i].on_select) { //skip non-selectable items
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+      			for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
+      				if (level_items[i].on_select) {
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+      			if (selected < level_items.size() && level_items[selected].on_select) {
+      				level_items[selected].on_select(level_items[selected]);
+              selected = 1; return true;
+      			}
+      		}
+      	}
+    		return false;
+      }/* else if (menu_stage == MENU_PLAYER) {
+      	if (evt.type == SDL_KEYDOWN) {
+          if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_START; }
+      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+      			for (uint32_t i = selected - 1; i < player_items.size(); --i) {
+      				if (player_items[i].on_select) { //skip non-selectable items
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+      			for (uint32_t i = selected + 1; i < player_items.size(); ++i) {
+      				if (player_items[i].on_select) {
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+      			if (selected < player_items.size() && player_items[selected].on_select) {
+      				player_items[selected].on_select(player_items[selected]);
+              selected = 1; return true;
+      			}
+      		}
+      	}
+    		return false;
+      }*/ else { // pause menu
+        if (evt.type == SDL_KEYDOWN) {
+          if (evt.key.keysym.sym == SDLK_ESCAPE){
+            current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE);
+          }
+      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+      			for (uint32_t i = selected - 1; i < pause_items.size(); --i) {
+      				if (pause_items[i].on_select) { //skip non-selectable items
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+      			for (uint32_t i = selected + 1; i < pause_items.size(); ++i) {
+      				if (pause_items[i].on_select) {
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+      			if (selected < pause_items.size() && pause_items[selected].on_select) {
+      				pause_items[selected].on_select(pause_items[selected]);
+              selected = 1; return true;
+      			}
+      		}
+      	}
+    		return false;
+      }
     } else {
       current->handle_event(evt, window_size);
       // Reset if R is pressed
@@ -375,113 +567,137 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
       }
       return false;
     }
-	} else { // we're on the main menu
-    if (main_mode == 0) { // main menu
-    	if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){
-          Mode::set_current(nullptr);
+	} else { // we're on the first encounter with the main menu
+    if (menu_stage == MENU_MAIN) {
+      if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){ Mode::set_current(nullptr); }
+        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+          for (uint32_t i = selected - 1; i < main_items.size(); --i) {
+            if (main_items[i].on_select) { //skip non-selectable items
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+          for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
+            if (main_items[i].on_select) {
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+          if (selected < main_items.size() && main_items[selected].on_select) {
+            main_items[selected].on_select(main_items[selected]);
+            selected = 1; return true;
+          }
         }
-    		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-    			//skip non-selectable items:
-    			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
-    				if (main_items[i].on_select) {
-    					selected = i;
-    					// Sound::play(*sound_click);
-    					break;
-    				}
-    			}
-    			return true;
-    		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-    			//note: skips non-selectable items:
-    			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
-    				if (main_items[i].on_select) {
-    					selected = i;
-    					// Sound::play(*sound_click);
-    					break;
-    				}
-    			}
-    			return true;
-    		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-    			if (selected < main_items.size() && main_items[selected].on_select) {
-    				// Sound::play(*sound_clonk);
-    				main_items[selected].on_select(main_items[selected]);
-            selected = 1;
-    				return true;
-    			}
-    		}
-    	}
-  		return false;
-    } else if (main_mode == 1) { // level select
-    	if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){
-          main_mode = 0;
+      }
+      return false;
+    } else if (menu_stage == MENU_CONNECT) {
+      if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_MAIN; }
+        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+          for (uint32_t i = selected - 1; i < connect_items.size(); --i) {
+            if (connect_items[i].on_select) { //skip non-selectable items
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+          for (uint32_t i = selected + 1; i < connect_items.size(); ++i) {
+            if (connect_items[i].on_select) {
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+          if (selected < connect_items.size() && connect_items[selected].on_select) {
+            connect_items[selected].on_select(connect_items[selected]);
+            selected = 1; return true;
+          }
         }
-    		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-    			//skip non-selectable items:
-    			for (uint32_t i = selected - 1; i < level_items.size(); --i) {
-    				if (level_items[i].on_select) {
-    					selected = i;
-    					// Sound::play(*sound_click);
-    					break;
-    				}
-    			}
-    			return true;
-    		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-    			//note: skips non-selectable items:
-    			for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
-    				if (level_items[i].on_select) {
-    					selected = i;
-    					// Sound::play(*sound_click);
-    					break;
-    				}
-    			}
-    			return true;
-    		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-    			if (selected < level_items.size() && level_items[selected].on_select) {
-    				// Sound::play(*sound_clonk);
-    				level_items[selected].on_select(level_items[selected]);
-            selected = 1;
-    				return true;
-    			}
-    		}
-    	}
-  		return false;
-    } else { // player select
-    	if (evt.type == SDL_KEYDOWN) {
+      }
+      return false;
+    } else if (menu_stage == MENU_START) {
+      if (evt.type == SDL_KEYDOWN) {
         if (evt.key.keysym.sym == SDLK_ESCAPE){
-          main_mode = 0;
+          if (menu_player == MENU_PLAYER_SOLO) { menu_stage = MENU_MAIN; }
+          else { menu_stage = MENU_CONNECT; }
         }
-    		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-    			//skip non-selectable items:
-    			for (uint32_t i = selected - 1; i < player_items.size(); --i) {
-    				if (player_items[i].on_select) {
-    					selected = i;
-    					// Sound::play(*sound_click);
-    					break;
-    				}
-    			}
-    			return true;
-    		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-    			//note: skips non-selectable items:
-    			for (uint32_t i = selected + 1; i < player_items.size(); ++i) {
-    				if (player_items[i].on_select) {
-    					selected = i;
-    					// Sound::play(*sound_click);
-    					break;
-    				}
-    			}
-    			return true;
-    		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-    			if (selected < player_items.size() && player_items[selected].on_select) {
-    				// Sound::play(*sound_clonk);
-    				player_items[selected].on_select(player_items[selected]);
-            selected = 1;
-    				return true;
-    			}
-    		}
-    	}
-  		return false;
+        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+          for (uint32_t i = selected - 1; i < start_items.size(); --i) {
+            if (start_items[i].on_select) { //skip non-selectable items
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+          for (uint32_t i = selected + 1; i < start_items.size(); ++i) {
+            if (start_items[i].on_select) {
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+          if (selected < start_items.size() && start_items[selected].on_select) {
+            start_items[selected].on_select(start_items[selected]);
+            selected = 1; return true;
+          }
+        }
+      }
+      return false;
+    } else if (menu_stage == MENU_LEVEL) {
+      if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_START; }
+        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+          for (uint32_t i = selected - 1; i < level_items.size(); --i) {
+            if (level_items[i].on_select) { //skip non-selectable items
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+          for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
+            if (level_items[i].on_select) {
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+          if (selected < level_items.size() && level_items[selected].on_select) {
+            level_items[selected].on_select(level_items[selected]);
+            selected = 1; return true;
+          }
+        }
+      }
+      return false;
+    } else if (menu_stage == MENU_PLAYER) {
+      if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_START; }
+        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+          for (uint32_t i = selected - 1; i < player_items.size(); --i) {
+            if (player_items[i].on_select) { //skip non-selectable items
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+          for (uint32_t i = selected + 1; i < player_items.size(); ++i) {
+            if (player_items[i].on_select) {
+              selected = i; break;
+            }
+          }
+          return true;
+        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+          if (selected < player_items.size() && player_items[selected].on_select) {
+            player_items[selected].on_select(player_items[selected]);
+            selected = 1; return true;
+          }
+        }
+      }
+      return false;
     }
+    return false;
 	}
 }
 
@@ -491,7 +707,7 @@ void MenuMode::update(float elapsed) {
 	select_bounce_acc -= std::floor(select_bounce_acc);
 
 	if (!background_music || background_music->stopped){
-    background_music = Sound::play(*music_ambient, 2.0f);
+    // background_music = Sound::play(*music_ambient, 2.0f);
   }
 
 	if (current) {
@@ -509,10 +725,10 @@ void MenuMode::update(float elapsed) {
       current->to_next_level += elapsed;
       // std::cout << current->to_next_level << std::endl;
       if (current->to_next_level >= 5.0f) {
-        uint32_t level_num = (current->level_num == 4) ? 1 : current->level_num + 1;
+        uint32_t level_num = (current->level_num == 5) ? 1 : current->level_num + 1;
         current->level_change(level_num);
       }
-	}
+  	}
   }
 }
 
@@ -647,7 +863,6 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
     glm::vec2(center.x, center.y)
   );
 
-
   // TODO: find a way to not keep calling screen_get? Same issue in handle_event.
   if (current->level->screen_get(current->pov.camera->transform) && current->shift.progress == 0.0f) {
     // Player is in position to shift but hasn't started it: draw LSHIFT prompt
@@ -733,7 +948,7 @@ void MenuMode::draw_ui(glm::uvec2 const &drawable_size) {
     else { textbox_center = glm::vec2(0.5f*(view_min.x+view_max.x), 0.2f*(view_min.y+view_max.y)); }
     std::string text; float text_scale;
     if (current->won)                { text = "You Won!"; text_scale = 0.9f; }
-    else if (current->lost)          { text = "Game Over"; text_scale = 0.9f; }
+    else if (current->lost)          { text = "Game Over. Press R to reset"; text_scale = 0.7f; }
     else if (current->we_want_reset) { text = "Waiting for other player to reset..."; text_scale = 0.7f; }
     else                             { text = "Reset request received"; text_scale = 0.7f; }
     glm::vec2 text_min, text_max;
@@ -779,9 +994,12 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 	if (current) {
 		std::shared_ptr< Mode > hold_me = shared_from_this();
     if (current->pause) {
-      // draw pause menu
-      if (main_mode == 0) draw_menu(drawable_size, main_items);
-      else if (main_mode == 1) draw_menu(drawable_size, level_items);
+      // draw menu
+      if (menu_stage == MENU_MAIN) draw_menu(drawable_size, main_items);
+      // else if (menu_stage == MENU_CONNECT) draw_menu(drawable_size, connect_items);
+      else if (menu_stage == MENU_START) draw_menu(drawable_size, start_items);
+      else if (menu_stage == MENU_LEVEL) draw_menu(drawable_size, level_items);
+      // else if (menu_stage == MENU_PLAYER) draw_menu(drawable_size, player_items);
       else draw_menu(drawable_size, pause_items);
     } else {
       // draw level
@@ -791,9 +1009,12 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 		//it is an error to remove the last reference to this object in current->draw():
 		assert(hold_me.use_count() > 1);
 	} else {
-    if (main_mode == 0) draw_menu(drawable_size, main_items);
-    else if (main_mode == 1) draw_menu(drawable_size, level_items);
-    else draw_menu(drawable_size, player_items);
+    if (menu_stage == MENU_MAIN) draw_menu(drawable_size, main_items);
+    else if (menu_stage == MENU_CONNECT) draw_menu(drawable_size, connect_items);
+    else if (menu_stage == MENU_START) draw_menu(drawable_size, start_items);
+    else if (menu_stage == MENU_LEVEL) draw_menu(drawable_size, level_items);
+    else if (menu_stage == MENU_PLAYER) draw_menu(drawable_size, player_items);
+    else draw_menu(drawable_size, pause_items);
   }
 
 	GL_ERRORS(); //PARANOIA: print errors just in case we did something wrong.
@@ -820,9 +1041,9 @@ void MenuMode::layout_items(float gap) {
 		item.at.y += ofs;
 	}
 
-  // layout for player selection menu items
+  // layout for connect menu items
 	y = view_max.y;
-	for (auto &item : player_items) {
+	for (auto &item : connect_items) {
 		glm::vec2 min, max;
 		if (item.sprite) {
 			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
@@ -835,7 +1056,26 @@ void MenuMode::layout_items(float gap) {
 		y = y - (max.y - min.y) - gap;
 	}
 	ofs = -0.5f * y;
-	for (auto &item : player_items) {
+	for (auto &item : connect_items) {
+		item.at.y += ofs;
+	}
+
+  // layout for start menu items
+	y = view_max.y;
+	for (auto &item : start_items) {
+		glm::vec2 min, max;
+		if (item.sprite) {
+			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
+			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
+		} else {
+			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
+		}
+		item.at.y = y - max.y;
+		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
+		y = y - (max.y - min.y) - gap;
+	}
+	ofs = -0.5f * y;
+	for (auto &item : start_items) {
 		item.at.y += ofs;
 	}
 
@@ -855,6 +1095,25 @@ void MenuMode::layout_items(float gap) {
 	}
 	ofs = -0.5f * y;
 	for (auto &item : level_items) {
+		item.at.y += ofs;
+	}
+
+  // layout for player selection menu items
+	y = view_max.y;
+	for (auto &item : player_items) {
+		glm::vec2 min, max;
+		if (item.sprite) {
+			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
+			max = item.scale * (item.sprite->max_px - item.sprite->anchor_px);
+		} else {
+			temp.get_text_extents(item.name, glm::vec2(0.0f), item.scale, &min, &max);
+		}
+		item.at.y = y - max.y;
+		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
+		y = y - (max.y - min.y) - gap;
+	}
+	ofs = -0.5f * y;
+	for (auto &item : player_items) {
 		item.at.y += ofs;
 	}
 

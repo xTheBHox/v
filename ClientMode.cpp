@@ -4,7 +4,10 @@
 
 #include <iostream>
 
-ClientMode::ClientMode(std::string const &host, std::string const &port, uint32_t level_num_) : PlayerMode(level_num_, 2) {
+ClientMode::ClientMode(std::string const &host,
+                       std::string const &port,
+                       uint32_t level_num_,
+                       uint32_t player_num_) : PlayerMode(level_num_, player_num_) {
 
   client.reset(new Client(host, port));
   connect = &client->connection;
@@ -20,7 +23,7 @@ void ClientMode::handle_reset() {
     // TODO just call resume at the end
     pause = false;
   } else {
-    
+
   }
 }
 
