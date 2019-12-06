@@ -88,7 +88,7 @@ struct PlayerMode : Mode {
 
   Scene::Transform *other_player;
 
-  Connection *connect;
+  Connection *connect = nullptr;
   std::function<void(Connection *, Connection::Event)> callback_fn;
 
   GameLevel *level = nullptr;

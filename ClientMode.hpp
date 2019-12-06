@@ -5,7 +5,7 @@
 
 struct ClientMode : PlayerMode {
 
-  ClientMode(std::string const &host, std::string const &port, uint32_t level_num);
+  ClientMode(std::string const &host, std::string const &port, uint32_t level_num, uint32_t player_num);
 
   void handle_reset() override;
 
