@@ -454,7 +454,7 @@ void GameLevel::reset() {
 }
 
 void GameLevel::draw(
-  glm::vec2 const &drawable_size,
+  glm::uvec2 const &drawable_size,
   glm::vec3 const &eye,
   glm::mat4 const &world_to_clip
 ) {
@@ -478,6 +478,7 @@ void GameLevel::draw(
 
   fb.resize_main(drawable_size);
   fb.set_main();
+  glViewport(0, 0, drawable_size.x, drawable_size.y);
   draw_fb(eye, world_to_clip, 0);
 
 }
@@ -642,8 +643,8 @@ void GameLevel::Standpoint::resize_texture(glm::uvec2 const &new_size) {
 
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
   glBindTexture(GL_TEXTURE_2D, 0);
@@ -672,6 +673,7 @@ void GameLevel::Standpoint::update_texture(GameLevel *level) {
   GL_ERRORS();
 
   fb.set_sc();
+  glViewport(0, 0, size.x, size.y);
   level->draw_fb(pos, proj * w2l, fb.fb_output_sc);
   updated = true;
 
