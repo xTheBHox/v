@@ -24,4 +24,7 @@ Music promoted by https://www.free-stock-music.com
 Attribution 4.0 International (CC BY 4.0)
 https://creativecommons.org/licenses/by/4.0/
 
+Copyright (c) 2011, Matthew Desmond (http://www.madtype.com | mattdesmond@gmail.com), with Reserved Font Name Abel.
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+
 This game was built with [NEST](NEST.md).
