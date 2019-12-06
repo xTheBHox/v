@@ -237,6 +237,10 @@ MenuMode::MenuMode(std::string connect_ip) {
         current->handle_reset(); SDL_SetRelativeMouseMode(SDL_TRUE);
       }
     };
+    pause_items.emplace_back("Controls");
+    pause_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_HELP;
+    };
     pause_items.emplace_back("Main Menu");
     pause_items.back().on_select = [&](Item const &){
       menu_stage = MENU_START;
@@ -244,6 +248,17 @@ MenuMode::MenuMode(std::string connect_ip) {
     pause_items.emplace_back("Quit");
     pause_items.back().on_select = [](Item const &){
       Mode::set_current(nullptr);
+    };
+  }
+  { // Help Menu
+    help_items.emplace_back("[[ CONTROLS ]]");
+    help_items.emplace_back("WASD to move");
+    help_items.emplace_back("Space to jump");
+    help_items.emplace_back("LCtrl to sprint");
+    help_items.emplace_back("Q to switch player (solo mode)");
+    help_items.emplace_back("Back");
+    help_items.back().on_select = [&](Item const &){
+      menu_stage = MENU_PAUSE;
     };
   }
 
@@ -517,7 +532,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
       		}
       	}
     		return false;
-      }*/ else { // pause menu
+      }*/ else if (menu_stage == MENU_PAUSE) {
         if (evt.type == SDL_KEYDOWN) {
           if (evt.key.keysym.sym == SDLK_ESCAPE){
             current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE);
@@ -539,12 +554,41 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
       		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
       			if (selected < pause_items.size() && pause_items[selected].on_select) {
       				pause_items[selected].on_select(pause_items[selected]);
+              if (selected == 3) selected = 5;
+              else selected = 1;
+              return true;
+      			}
+      		}
+      	}
+    		return false;
+      } else if (menu_stage == MENU_HELP) {
+        if (evt.type == SDL_KEYDOWN) {
+          if (evt.key.keysym.sym == SDLK_ESCAPE){
+            menu_stage = MENU_PAUSE;
+          }
+      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
+      			for (uint32_t i = selected - 1; i < help_items.size(); --i) {
+      				if (help_items[i].on_select) { //skip non-selectable items
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
+      			for (uint32_t i = selected + 1; i < help_items.size(); ++i) {
+      				if (help_items[i].on_select) {
+      					selected = i; break;
+      				}
+      			}
+      			return true;
+      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
+      			if (selected < help_items.size() && help_items[selected].on_select) {
+      				help_items[selected].on_select(help_items[selected]);
               selected = 1; return true;
       			}
       		}
       	}
     		return false;
-      }
+      } else return false;
     } else {
       current->handle_event(evt, window_size);
       // Reset if R is pressed
@@ -1057,7 +1101,8 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
       else if (menu_stage == MENU_START) draw_menu(drawable_size, start_items);
       else if (menu_stage == MENU_LEVEL) draw_menu(drawable_size, level_items);
       // else if (menu_stage == MENU_PLAYER) draw_menu(drawable_size, player_items);
-      else draw_menu(drawable_size, pause_items);
+      else if (menu_stage == MENU_PAUSE) draw_menu(drawable_size, pause_items);
+      else if (menu_stage == MENU_HELP) draw_menu(drawable_size, help_items);
     } else {
       // draw level
       current->draw(drawable_size);
@@ -1072,7 +1117,7 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
     else if (menu_stage == MENU_START) draw_menu(drawable_size, start_items);
     else if (menu_stage == MENU_LEVEL) draw_menu(drawable_size, level_items);
     else if (menu_stage == MENU_PLAYER) draw_menu(drawable_size, player_items);
-    else draw_menu(drawable_size, pause_items);
+    else if (menu_stage == MENU_PAUSE) draw_menu(drawable_size, pause_items);
   }
 
 	GL_ERRORS(); //PARANOIA: print errors just in case we did something wrong.
@@ -1108,5 +1153,6 @@ void MenuMode::layout_items(float gap) {
   layout_fn(level_items);
   layout_fn(player_items);
   layout_fn(pause_items);
+  layout_fn(help_items);
 
 }
