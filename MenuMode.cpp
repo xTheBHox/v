@@ -548,7 +548,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
         // Player is completed shift mode: check color wheel interaction
         if (evt.type == SDL_MOUSEBUTTONUP && evt.button.button == SDL_BUTTON_LEFT) {
           GameLevel::Standpoint *stpt = current->shift.sc->stpt;
-          glm::vec2 mpos = glm::vec2(evt.button.x, evt.button.y);
+          glm::vec2 mpos = glm::vec2(evt.button.x, window_size.y - evt.button.y);
           glm::vec3 center_clip = glm::vec3(current->shift.sc->stpt->movable_center_to_screen(), 1.0f);
 					view_to_drawable = glm::vec2(
 						window_size.x / (view_max.x - view_min.x),
@@ -560,7 +560,7 @@ bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
           glm::vec2 dist = mpos - center;
           if (glm::dot(dist, dist) < threshold * threshold) {
             // TODO: Make this work for multiple colors
-            float angle = glm::atan(dist.y, dist.x);
+            float angle = -glm::atan(dist.y, dist.x);
             if (angle < 0.0f) angle += 2.0f * 3.1415926f;
             float sector_angle = 2.0f * 3.1415926f / (float) stpt->move_pos.size();
             size_t index = (size_t) (angle / sector_angle);
@@ -711,7 +711,7 @@ void MenuMode::update(float elapsed) {
 	select_bounce_acc -= std::floor(select_bounce_acc);
 
 	if (!background_music || background_music->stopped){
-    // background_music = Sound::play(*music_ambient, 2.0f);
+    background_music = Sound::play(*music_ambient, 1.0f);
   }
 
 	if (current) {
@@ -728,7 +728,7 @@ void MenuMode::update(float elapsed) {
 		if ((current->we_reached_goal)&& (!we_just_reached_goal)){
 			win_sound = Sound::play(*sound_win, 2.0f);
 			we_just_reached_goal = true;
-		}else if (!current->we_reached_goal){
+		} else if (!current->we_reached_goal){
 			we_just_reached_goal = false;
 		}
 

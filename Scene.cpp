@@ -6,8 +6,16 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include <fstream>
+#include <iostream>
+#include <iomanip>
 
 //-------------------------
+
+void print_u8vec3(glm::u8vec3 const &v) {
+  std::cout << "X: " << (int)v.x << "\t";
+  std::cout << "Y: " << (int)v.y << "\t";
+  std::cout << "Z: " << (int)v.z << "\t";
+}
 
 glm::mat4 Scene::Transform::make_local_to_parent() const {
 	return glm::mat4( //translate
@@ -284,7 +292,7 @@ void Scene::load(std::string const &filename,
 			throw std::runtime_error("scene file '" + filename + "' contains lamp entry with invalid transform index (" + std::to_string(l.transform) + ")");
 		}
 		if (l.type == 'p') {
-			//good
+      //good
 		} else if (l.type == 'h') {
 			//fine
 		} else if (l.type == 's') {
@@ -301,6 +309,9 @@ void Scene::load(std::string const &filename,
     light->color = glm::vec3(l.color) / 255.0f;
 		light->energy = light->color * l.energy;
 		light->spot_fov = l.fov / 180.0f * 3.1415926f; //FOV is stored in degrees; convert to radians.
+
+		std::cout << light->transform->name << std::endl;
+    print_u8vec3(l.color); std::cout << std::endl;
 	}
 
 

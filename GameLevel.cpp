@@ -43,21 +43,30 @@ void print_mat4(glm::mat4 const &M) {
   }
 }
 
-void print_vec4(glm::vec4 const &v) {
+template< class X >
+void print_vec4(X const &v) {
   std::cout << std::setprecision(4);
-  for (int i = 0; i < 4; i++) {
-    std::cout << v[i] << "\t";
-  }
-  std::cout << std::endl;
+  std::cout << "X: " << v.x << "\t";
+  std::cout << "Y: " << v.y << "\t";
+  std::cout << "Z: " << v.z << "\t";
+  std::cout << "W: " << v.w << "\t";
 }
 
-void print_vec3(glm::vec3 const &v) {
+template< class X >
+void print_vec3(X const &v) {
   std::cout << std::setprecision(4);
-  for (int i = 0; i < 3; i++) {
-    std::cout << v[i] << "\t";
-  }
-  std::cout << std::endl;
+  std::cout << "X: " << v.x << "\t";
+  std::cout << "Y: " << v.y << "\t";
+  std::cout << "Z: " << v.z << "\t";
 }
+
+template< class X >
+void print_vec2(X const &v) {
+  std::cout << std::setprecision(4);
+  std::cout << "X: " << v.x << "\t";
+  std::cout << "Y: " << v.y << "\t";
+}
+
 
 //Helper: maintain a framebuffer to hold rendered geometry
 struct FB {
@@ -358,15 +367,12 @@ GameLevel::GameLevel(std::string level_name) {
         std::cout << "Matched " << xf_name << " to " << oc.transform->name << std::endl;
         standpoints.emplace_back(&oc, &m);
         Standpoint &stpt = standpoints.back();
-        std::cout << "\tTexture #" << stpt.tex << std::endl;
         std::list< Light >::iterator lit = lights.begin();
         while (lit != lights.end()) {
           std::string &mp_name = lit->transform->name;
           if (mp_name.substr(0, mp_name.size()-9) == oc.transform->name) {
             std::cout << "Matched " << mp_name << " to " << oc.transform->name << std::endl;
             stpt.move_pos.emplace_back(&(*lit));
-            print_vec3(stpt.move_pos.back().pos);
-            print_vec4(stpt.move_pos.back().color);
             lights.erase(lit++);
           } else {
             lit++;
@@ -453,7 +459,6 @@ void GameLevel::draw(
   glm::mat4 const &world_to_clip
 ) {
 
-  fb.resize_main(drawable_size);
 
   screens_standpoints_texture_update(eye);
   if (first_draw) {
@@ -471,6 +476,7 @@ void GameLevel::draw(
     }
   }
 
+  fb.resize_main(drawable_size);
   fb.set_main();
   draw_fb(eye, world_to_clip, 0);
 
@@ -485,7 +491,7 @@ void GameLevel::draw_fb(
   // Color drawing
 
   glBindFramebuffer(GL_FRAMEBUFFER, fb.fb_color);
-  GLfloat bg_color[4] = {0.95f, 0.95f, 1.0f, 1.0f};
+  GLfloat bg_color[4] = {0.93f, 0.93f, 1.0f, 1.0f};
   glClearBufferfv(GL_COLOR, 0, bg_color);
   glClear(GL_DEPTH_BUFFER_BIT);
 
@@ -574,8 +580,8 @@ GameLevel::Movable::Movable(Transform *transform_) : transform(transform_) {
   init_pos = transform->position;
   target_pos = init_pos;
   color = glm::vec4(1.0f);
-  print_vec3(target_pos);
-  print_vec4(color);
+  std::cout << "\tPosition: "; print_vec3(target_pos); std::cout << std::endl;
+  std::cout << "\tColor: "; print_vec4(color); std::cout << std::endl;
 
 }
 
@@ -598,8 +604,8 @@ void GameLevel::Movable::set_target_pos(glm::vec3 const &target, glm::vec4 const
   color = color_;
   target_pos = target;
   std::cout << "Set to:" << std::endl;
-  print_vec3(target_pos);
-  print_vec4(color);
+  std::cout << "\tPosition: "; print_vec3(target_pos); std::cout << std::endl;
+  std::cout << "\tColor: "; print_vec4(color); std::cout << std::endl;
 
 }
 
@@ -610,16 +616,20 @@ GameLevel::Standpoint::Standpoint(OrthoCam *cam_, Movable *movable_)
   axis = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
   if (axis != glm::vec3(0.0f)) axis = glm::normalize(axis);
 
-  std::cout << "Axis: " << axis.x << "\t" << axis.y << "\t" << axis.z << std::endl;
-
   // Get the transformed origin;
   pos = cam->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-  std::cout << "Position: " << pos.x << "\t" << pos.y << "\t" << pos.z << std::endl;
 
   glGenTextures(1, &tex);
   GL_ERRORS();
+
   resize_texture(glm::uvec2(640, 480));
 
+  std::cout << "Standpoint created!" << std::endl;
+  std::cout << "\tAxis: "; print_vec3(axis); std::cout << std::endl;
+  std::cout << "\tPosition: "; print_vec3(pos); std::cout << std::endl;
+  std::cout << "\tScale: " << cam->scale << std::endl;
+  std::cout << "\tNear plane: " << cam->clip_near << std::endl;
+  std::cout << "\tTexture #" << tex << std::endl;
 }
 
 void GameLevel::Standpoint::resize_texture(glm::uvec2 const &new_size) {
@@ -628,6 +638,7 @@ void GameLevel::Standpoint::resize_texture(glm::uvec2 const &new_size) {
   size = new_size;
 
   std::cout << "Resizing screen texture #" << tex << std::endl;
+  std::cout << "\tNew size: "; print_vec2(size); std::cout << std::endl;
 
   glBindTexture(GL_TEXTURE_2D, tex);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, size.x, size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -682,8 +693,10 @@ void GameLevel::Standpoint::move_to(size_t i) {
 
 GameLevel::Standpoint::MovePosition::MovePosition(Light *light) {
   transform = light->transform;
-  color = glm::vec4(light->color, 1.0f);
   pos = transform->position;
+  color = glm::vec4(light->color, 1.0f);
+  std::cout << "\tPosition:"; print_vec3(pos); std::cout << std::endl;
+  std::cout << "\tColor:"; print_vec4(color); std::cout << std::endl;
 }
 
 GameLevel::Screen::Screen(Transform *transform_, Drawable::Pipeline *pipeline_)

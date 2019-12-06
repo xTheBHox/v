@@ -157,6 +157,7 @@ def write_light(obj):
 		int(obj.data.color.g * 255),
 		int(obj.data.color.b * 255)
 		)
+	print("  Color:", obj.data.color.r, obj.data.color.g, obj.data.color.b)
 	print("  Energy: " + str(f*obj.data.energy))
 	lamp_data += struct.pack('f', f*obj.data.energy)
 	lamp_data += struct.pack('f', obj.data.distance)
