@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- example file containing base tags -->
+
+<game>
+	<title>V</title>
+	<release-date>6 Dec, 2019</release-date>
+	<website>https://lykospirit.itch.io/v</website>
+	<website-label>Website</website-label>
+	<based-in>Pittsburgh, Pennsylvania</based-in>
+
+	<press-contact>{cgay, zemingbh, zhaoxiz}@andrew</press-contact>
+	<!-- <phone>+00 (1) 22 33 44 55 66</phone> -->
+	<address>
+		<line>5000 Forbes Avenue</line>
+		<line>Pittsburgh, PA 15213</line>
+		<!-- <line>Address Line 3</line> -->
+	</address>
+
+	<platforms>
+		<platform>
+			<name>itch.io</name>
+			<link>https://lykospirit.itch.io/v</link>
+		</platform>
+		<!-- <platform>
+			<name>Steam</name>
+			<link>http://www.steampowered.com/</link>
+		</platform>
+		<platform>
+			<name>Apple App Store</name>
+			<link>http://www.itunes.com/</link>
+		</platform> -->
+	</platforms>
+
+	<!-- <socials>
+		<social>
+			<name>twitter.com/MyCompanyName</name>
+			<link>twitter.com/MyCompanyName</link>
+		</social>
+		<social>
+			<name>facebook.com/MyCompanyName</name>
+			<link>facebook.com/MyCompanyName</link>
+		</social>
+		<social>
+			<name>Skype</name>
+			<link>callto:MySkypeName</link>
+		</social>
+	</socials> -->
+
+	<description>
+		Navigate your way through a computer simulation where you have the power to manipulate platforms by finding the right perspective. Work solo or with a friend to find your way to the next level.
+	</description>
+
+	<histories>
+		<history>
+			<text>V began as a final project as part of 15-466: Computer Game Programming, a course at Carnegie Mellon University. The project started with the simple theme of an escape room game that involves perspective tricks inspired by the core mechanic behind &lt;a href=&apos;http&#58;&#47;&#47;the-witness.net&#47;&apos;&gt;The Witness&lt;&#47;a&gt;, and the team began work on a co-operative game that would require puzzle-solving and exploration. V aims to encourage players to communicate, be curious, and interact with the environment in an open-ended way, and have fun doing so.</text>
+		</history>
+	</histories>
+
+    <features>
+		<feature>Engage in co-operative online play with your friends.</feature>
+		<feature>Cross-platform support - Windows, Mac and Linux are all supported.</feature>
+        <feature>Rack your brain solving challenging levels of increasing difficulty.</feature>
+		<feature>Gorgeous 3D graphics with a bright, minimalist design.</feature>
+    </features>
+
+	<!-- <trailers>
+		<trailer>
+			<name>This video is nice</name>
+			<youtube>7jQbITg0MSk</youtube>
+		</trailer>
+		<trailer>
+			<name>This one too</name>
+			<youtube>0CevOaYrYDA</youtube>
+			<vimeo>12536488</vimeo>
+		</trailer>
+	</trailers> -->
+
+	<awards>
+		<award>
+			<description>Top 4 Games of 2019 from 15-466 F19.</description>
+			<info>Gates-Hillman Center, 3 December, 2019</info>
+		</award>
+	</awards>
+
+	<quotes>
+		<!-- <quote>
+			<description>Beautiful. Game of the year.</description>
+			<name>Random CMU Student</name>
+			<website>Website</website>
+			<link>https://www.youtube.com/watch?v=dQw4w9WgXcQ</link>
+		</quote> -->
+	</quotes>
+
+	<press-can-request-copy>TRUE</press-can-request-copy> <!-- can be true or false -->
+	<monetization-permission>monetize</monetization-permission> <!-- can be: 	false (no video allowed),
+																			 	ask (permission on case-per-case basis),
+																			 	non-commercial (no monetization allowed),
+																			 	monetize (full permission) -->
+	<additionals>
+		<!-- <additional>
+			<title>Company Link #1</title>
+			<description>This link is a link that might be useful. You can check it out at</description>
+			<link>http://somemusicsite.com/thislink</link>
+		</additional> -->
+	</additionals>
+
+	<credits>
+		<credit>
+			<person>Colin Gay, Benjamin Huang and Cliff Zhu</person>
+			<role>Programmer, Level Designer</role>
+		</credit>
+	</credits>
+
+	<contacts>
+		<contact>
+			<name>Inquiries</name>
+			<mail>{cgay, zemingbh, zhaoxiz}@andrew</mail>
+		</contact>
+		<contact>
+			<name>Web</name>
+			<link>https://github.com/xTheBHox/v</link>
+		</contact>
+	</contacts>
+</game>
