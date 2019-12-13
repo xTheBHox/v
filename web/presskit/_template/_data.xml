@@ -1,0 +1,163 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<game>
+	<title>V</title>
+	<release-date>6 Dec, 2019</release-date>
+	<website>http://graphics.cs.cmu.edu/courses/15-466-f19/</website>
+	<press-can-request-copy>TRUE</press-can-request-copy>
+
+	<platforms>
+		<platform>
+			<name>PC / Mac / Linux</name>
+			<link>http://graphics.cs.cmu.edu/courses/15-466-f19/</link>
+		</platform>
+		<!-- <platform>
+			<name>Steam</name>
+			<link>http://www.steampowered.com/</link>
+		</platform>
+		<platform>
+			<name>Apple App Store</name>
+			<link>http://www.itunes.com/</link>
+		</platform> -->
+	</platforms>
+
+	<prices>
+		<!-- <price>
+			<currency>USD</currency>
+			<value>$1.99</value>
+		</price>
+		<price>
+			<currency>EUR</currency>
+			<value>€1.59</value>
+		</price>
+		<price>
+			<currency>CAD</currency>
+			<value>$1.99</value>
+		</price>
+		<price>
+			<currency>GBP</currency>
+			<value>£1.29</value>
+		</price> -->
+        <price>
+            <currency>Any</currency>
+            <value>Free!</value>
+        </price>
+	</prices>
+
+	<description>
+    	V is a game about manipulating the environment by using the right perspective.
+	</description>
+
+	<history>
+    	V was created as part of 15-466: Computer Game Programming.
+	</history>
+
+	<features>
+		<feature>Two-player co-op play.</feature>
+		<feature>Gorgeous 3D graphics.</feature>
+		<feature>Bold, bright colors.</feature>
+		<feature>Challenging levels.</feature>
+        <feature>Sweet royalty-free music by Kevin MacLeod</feature>
+		<!-- <feature>Includes something really interesting about the game which players will love.</feature>
+		<feature>This feature line is about the 8-bit pixels that are no doubt featuring in this game.</feature>
+		<feature>Since it is unlikely that the audio isn't fucking amazing, say something about the audio, maybe?</feature>
+		<feature>Make sure to stress that everything about this game is absolutely fabulous.</feature>
+		<feature>Something to wrap up this 5-point feature list with a nice ring to it.</feature> -->
+	</features>
+
+	<trailers>
+		<trailer>
+			<name>Trailer</name>
+			<youtube>HzUIUTatyZI</youtube>
+		</trailer>
+		<!-- <trailer>
+			<name>Gameplay Video</name>
+			<youtube>7jQbITg0MSk</youtube>
+			<vimeo>23571681</vimeo>
+		</trailer> -->
+	</trailers>
+
+	<awards>
+		<award>
+			<description>Top 4 Games of 2019 from 15-466 F19.</description>
+			<info>Gates-Hillman Center, 3 December, 2019</info>
+		</award>
+		<!-- <award>
+			<description>Nomination for this prestigious award.</description>
+			<info>Award Ceremony, 4 December, 1991</info>
+		</award>
+		<award>
+			<description>Winner in this highly relevant contest.</description>
+			<info>Award Location, 20 October, 1989</info>
+		</award>
+		<award>
+			<description>Nomination for this prestigious award.</description>
+			<info>Award Ceremony, 4 December, 1991</info>
+		</award> -->
+	</awards>
+
+	<quotes>
+		<quote>
+			<description>Beautiful. Game of the year.</description>
+			<name>Random CMU Student</name>
+			<!-- <website>Website</website> -->
+			<!-- <link>http://</link> -->
+		</quote>
+		<!-- <quote>
+			<description>An extremely positive quote from a rather insignificant person. Also great.</description>
+			<name>Some Guy</name>
+			<website>This Page Is Visited By 12 Visitors A Month</website>
+			<link>http://</link>
+		</quote>
+		<quote>
+			<description>I pretend to love this game even though I do not actually understand it.</description>
+			<name>Pretentious Bastard</name>
+			<website>Artsy Page</website>
+			<link>http://</link>
+		</quote>
+		<quote>
+			<description>HOLY SHIT SO AMAZING</description>
+			<name>Caps Guy</name>
+			<website>Angry Review</website>
+			<link>http://</link>
+		</quote> -->
+	</quotes>
+
+	<additionals>
+		<additional>
+			<title>Soundtrack</title>
+			<description>Thank you Incompetech</description>
+			<link>http://incompetech.com/</link>
+		</additional>
+		<!-- <additional>
+			<title>Release Blog Post</title>
+			<description>The blog-post through which this game was released is available at</description>
+			<link>http://vlambeer.com/bloglink</link>
+		</additional> -->
+	</additionals>
+
+	<credits>
+		<credit>
+			<person>Colin Gay, Benjamin Huang and Cliff Zhu</person>
+			<role>Programmer, Level Designer</role>
+		</credit>
+		<!-- <credit>
+			<person>Jan Willem Nijman</person>
+			<role>Game Designer, Vlambeer</role>
+		</credit>
+		<credit>
+			<person>John Doe</person>
+			<role>Artist, Freelancer</role>
+		</credit>
+		<credit>
+			<person>Oliver Twist</person>
+			<website>www.olivertwist.com</website>
+			<role>Artist, Freelancer</role>
+		</credit>
+		<credit>
+			<person>Jane Doette</person>
+			<website>www.olivertwist.com</website>
+			<role>Music, Freelancer</role>
+		</credit> -->
+	</credits>
+</game>
