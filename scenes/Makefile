@@ -22,10 +22,10 @@ all : \
 
 
 ../dist/level1.scene : v.blend export-scene.py
-	$(BLENDER) --background --python export-scene.py -- v.blend:Level1 '$@'
+	$(BLENDER) --background --python export-scene.py -- v.blend:FM '$@'
 
 ../dist/level1.pnct : v.blend export-meshes.py
-	$(BLENDER) --background --python export-meshes.py -- v.blend:Level1 '$@'
+	$(BLENDER) --background --python export-meshes.py -- v.blend:FM '$@'
 
 ../dist/level2.scene : v.blend export-scene.py
 	$(BLENDER) --background --python export-scene.py -- v.blend:L2 '$@'
