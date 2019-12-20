@@ -5,22 +5,31 @@
 #include <iostream>
 #include <algorithm>
 
+template< class X >
+extern void print_vec4(X const& v);
+
 SinglePlayerMode::SinglePlayerMode(uint32_t level_num_) : PlayerMode(level_num_, 1) {
   player_set();
 }
 
+void SinglePlayerMode::level_reset() {
+  PlayerMode::level_reset();
+  player_num = 1;
+  player_set();
+}
+
 void SinglePlayerMode::player_set() {
+  PlayerMode::player_set();
   if (player_num == 1) {
-    pov.camera = level->cam_P1;
-    pov.body = level->body_P1_transform;
     other_pov.camera = level->cam_P2;
     other_pov.body = level->body_P2_transform;
   } else if (player_num == 2) {
-    pov.camera = level->cam_P2;
-    pov.body = level->body_P2_transform;
     other_pov.camera = level->cam_P1;
     other_pov.body = level->body_P1_transform;
   }
+  glm::vec4 cam_dir = other_pov.camera->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+  other_pov.azimuth = glm::atan(-cam_dir.x, cam_dir.y);
+  // Just to fulfill PlayerMode
   other_player = other_pov.body;
 }
 
@@ -57,14 +66,14 @@ void SinglePlayerMode::update_other_move(float elapsed) {
   glm::vec3 pl_vel = other_pov.vel;
 
   { // Gravitational accel
-    pl_vel += elapsed * gravity;
+    pl_vel += elapsed * Physics::gravity;
   }
 
   if (!other_pov.in_air) { // Movement forces
     glm::vec3 pl_vel_move = glm::vec3(0.0f);
 
-    pl_vel.x = glm::mix(pl_vel.x, pl_vel_move.x, std::pow(0.5f, elapsed / 0.01f));
-    pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / 0.01f));
+    pl_vel.x = glm::mix(pl_vel.x, pl_vel_move.x, std::pow(0.5f, elapsed / Physics::player_move_halflife));
+    pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / Physics::player_move_halflife));
   }
 
   // Compute collisions for normal contact force
@@ -156,7 +165,7 @@ void SinglePlayerMode::update_other_move(float elapsed) {
 
         // allow jumping if collision is with triangle with normal in positive z direction
         // glm::vec3 normal = glm::normalize(glm::cross(b-a, c-a));
-        if (collision_out.z > 0.0f) {
+        if (collision_out.z > Physics::player_jumpable_reset_angle_cos) {
           other_pov.in_air = false;
         }
         // Get intermediate position

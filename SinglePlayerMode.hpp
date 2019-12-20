@@ -6,6 +6,7 @@
 struct SinglePlayerMode : PlayerMode {
 	SinglePlayerMode(uint32_t level_num_);
 
+  void level_reset() override;
   void player_set() override;
   void player_switch();
   void handle_reset() override;

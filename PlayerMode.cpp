@@ -8,8 +8,8 @@
 #define PI 3.1415926f
 
 extern void print_mat4(glm::mat4 const &M);
-extern void print_vec4(glm::vec4 const &v);
-extern void print_vec3(glm::vec3 const &v);
+template< class X >
+extern void print_vec4(X const& v);
 
 PlayerMode::PlayerMode(uint32_t level_num_, uint32_t player_num_)
 : player_num(player_num_) {
@@ -78,6 +78,8 @@ void PlayerMode::player_set() {
     pov.body = level->body_P2_transform;
     other_player = level->body_P1_transform;
   }
+  glm::vec4 cam_dir = pov.camera->transform->make_local_to_world() * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+  pov.azimuth = glm::atan(-cam_dir.x, cam_dir.y);
 }
 
 void PlayerMode::handle_reset() {
@@ -231,14 +233,14 @@ void PlayerMode::update_me_move(float elapsed) {
   glm::vec3 pl_vel = pov.vel;
 
   { // Gravitational accel
-    pl_vel += elapsed * gravity;
+    pl_vel += elapsed * Physics::gravity;
   }
 
   { // Jumping force
     if (controls.jump) {
       if (!pov.in_air) {
         pov.in_air = true;
-        pl_vel += -0.3f * gravity; // jumping force, constant
+        pl_vel += -Physics::player_jump_sec * Physics::gravity; // jumping force, constant
       }
       controls.jump = false;
     }
@@ -256,13 +258,44 @@ void PlayerMode::update_me_move(float elapsed) {
       pl_vel_move =
         glm::vec3(pl_cosazi, pl_sinazi, 0.0f) * pl_vel_move.x +
         glm::vec3(-pl_sinazi, pl_cosazi, 0.0f) * pl_vel_move.y;
-      pl_vel_move *= 15.0f; // player movement velocity magnitude, constant
-      if (controls.sprint) pl_vel_move *= 2.0f; // sprint force multiplier, constant
+      pl_vel_move *= Physics::player_move_max_speed; // player movement velocity magnitude, constant
+      if (controls.sprint) pl_vel_move *= Physics::player_sprint_multiplier; // sprint force multiplier, constant
       //pl_vel += pl_vel_move;
     }
-    pl_vel.x = glm::mix(pl_vel.x, pl_vel_move.x, std::pow(0.5f, elapsed / 0.01f));
-    pl_vel.y = glm::mix(pl_vel.y, pl_vel_move.y, std::pow(0.5f, elapsed / 0.01f));
+    pl_vel.x = glm::mix(pl_vel_move.x, pl_vel.x, std::pow(0.5f, elapsed / Physics::player_move_halflife));
+    pl_vel.y = glm::mix(pl_vel_move.y, pl_vel.y, std::pow(0.5f, elapsed / Physics::player_move_halflife));
     // pov.vel *= std::pow(0.5f, elapsed / 0.01f); // friction
+  } else { // Air movement forces
+    glm::vec3 pl_vel_move = glm::vec3(0.0f);
+    if (controls.left) pl_vel_move.x -= 1.0f;
+    if (controls.right) pl_vel_move.x += 1.0f;
+    if (controls.backward) pl_vel_move.y -= 1.0f;
+    if (controls.forward) pl_vel_move.y += 1.0f;
+
+    if (pl_vel_move != glm::vec3(0.0f)) {
+      //pl_vel_move = glm::normalize(pl_vel_move);
+      glm::vec3 pl_vel_curr =
+        glm::vec3(pl_cosazi, -pl_sinazi, 0.0f) * pl_vel.x +
+        glm::vec3(pl_sinazi, pl_cosazi, 0.0f) * pl_vel.y;
+      if (pl_vel_move.x != 0.0f) {
+        float curr_speed = pl_vel_curr.x * pl_vel_move.x;
+        if (curr_speed < Physics::player_air_move_max_speed) {
+          curr_speed = glm::mix(Physics::player_air_move_max_speed, curr_speed, std::pow(0.5f, elapsed / Physics::player_air_move_halflife));
+          pl_vel_curr.x = curr_speed * pl_vel_move.x;
+        }
+      }
+      if (pl_vel_move.y != 0.0f) {
+        float curr_speed = pl_vel_curr.y * pl_vel_move.y;
+        if (curr_speed < Physics::player_air_move_max_speed) {
+          curr_speed = glm::mix(Physics::player_air_move_max_speed, curr_speed, std::pow(0.5f, elapsed / Physics::player_air_move_halflife));
+          pl_vel_curr.y = curr_speed * pl_vel_move.y;
+        }
+      }
+      pl_vel = glm::vec3(
+        glm::vec2(pl_cosazi, pl_sinazi) * pl_vel_curr.x +
+        glm::vec2(-pl_sinazi, pl_cosazi) * pl_vel_curr.y,
+        pl_vel.z);
+    }
   }
 
   // Compute collisions for normal contact force
@@ -381,7 +414,7 @@ void PlayerMode::update_me_move(float elapsed) {
 
         // allow jumping if collision is with triangle with normal in positive z direction
         // glm::vec3 normal = glm::normalize(glm::cross(b-a, c-a));
-        if (collision_out.z > 0.0f) {
+        if (collision_out.z > Physics::player_jumpable_reset_angle_cos) {
           pov.in_air = false;
         }
         // Get intermediate position

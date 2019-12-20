@@ -58,14 +58,13 @@ struct PlayerMode : Mode {
   uint32_t player_num;
   uint32_t level_num;
 
-  glm::vec3 gravity = glm::vec3(0.0f, 0.0f, -100.0f);
   // Player camera tracked using this structure:
   struct PlayerData {
     Scene::Camera *camera = nullptr;
     Scene::Transform *body = nullptr;
     glm::vec3 vel = glm::vec3(0.0f, 0.0f, 0.0f);
-    float azimuth = 90.0f;
-    float elevation = 30.0f / 180.0f * 3.1415926f;
+    float azimuth = 0.0f;
+    float elevation = 0.0f / 180.0f * 3.1415926f;
     bool in_air = false;
     GameLevel::Movable *on_movable = nullptr;
   };
@@ -92,5 +91,31 @@ struct PlayerMode : Mode {
   std::function<void(Connection *, Connection::Event)> callback_fn;
 
   GameLevel *level = nullptr;
+
+  struct Physics {
+    
+    // max speed for ground movement / walking
+    static constexpr float player_move_max_speed = 15.0f;
+    // interpolation half-life for ground movement
+    static constexpr float player_move_halflife = 0.02f;
+
+    // sprinting ground movement multiplier
+    static constexpr float player_sprint_multiplier = 2.0f;
+
+    // max speed for air movement
+    static constexpr float player_air_move_max_speed = 5.0f;
+    // interpolation half-life for air movement
+    static constexpr float player_air_move_halflife = 0.1f;
+
+    // Cosine of the max angle of the surface with respect to the horizontal
+    // plane that will reset jumping for the player.
+    static constexpr float player_jumpable_reset_angle_cos = 0.1f;
+
+    // gravitational acceleration vector
+    static constexpr glm::vec3 gravity = glm::vec3(0.0f, 0.0f, -100.0f);
+
+    // jumping force, in seconds (time from jumping start to peak height)
+    static constexpr float player_jump_sec = 0.3f;
+  };
 
 };
