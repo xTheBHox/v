@@ -17,21 +17,38 @@
 #include <vector>
 #include <functional>
 
+
 struct MenuMode : Mode {
+	struct Stage;
 	struct Item;
-  MenuMode(std::string connect_ip);
+  MenuMode();
 	virtual ~MenuMode();
 
-	static std::shared_ptr< PlayerMode > current;
-  static void set_current(std::shared_ptr< PlayerMode > const &);
-  static std::shared_ptr< PlayerMode > get_current();
+	static std::unique_ptr< PlayerMode > current;
+
+	void start_game(uint32_t level_num);
 
 	//functions called by main loop:
 	virtual bool handle_event(SDL_Event const &, glm::uvec2 const &window_size) override;
 	virtual void update(float elapsed) override;
-  virtual void draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> items);
+  virtual void draw_menu(glm::uvec2 const &drawable_size, Stage const &stage);
 	virtual void draw_ui(glm::uvec2 const &drawable_size);
 	virtual void draw(glm::uvec2 const &drawable_size) override;
+	
+	inline Stage& curr_stage() {
+		return stages[stage_name];
+	}
+	inline std::vector< Item >& curr_items() {
+		return stages[stage_name].items;
+	}
+	inline Item& curr_item() {
+		return stages[stage_name].items[stages[stage_name].selected];
+	};
+	inline uint32_t& curr_select() {
+		return stages[stage_name].selected;
+	};
+
+	Item *active_item = nullptr;
 
   //for drawing manually using vertex buffer
   struct Vertex {
@@ -51,41 +68,86 @@ struct MenuMode : Mode {
 
 	//----- menu state -----
 
+	enum MenuStage : uint32_t {
+		MENU_MAIN,
+		MENU_CONNECT,
+		MENU_IP,
+		MENU_START,
+		MENU_LEVEL,
+		MENU_PLAYER,
+		MENU_PAUSE,
+		MENU_HELP,
+		MENU_COUNT // the number of menu items. Not a menu!
+	};
+
+	enum MenuPlayer { MENU_PLAYER_SOLO, MENU_PLAYER_SERVER, MENU_PLAYER_CLIENT };
+
 	//Each menu item is an "Item":
 	struct Item {
+
 		Item(
 			std::string const &name_,
 			Sprite const *sprite_ = nullptr,
-			float scale_ = 1.0f,
-			glm::u8vec4 const &tint_ = glm::u8vec4(0xff),
-			std::function< void(Item const &) > const &on_select_ = nullptr,
-			glm::vec2 const &at_ = glm::vec2(0.0f)
-			) : name(name_), sprite(sprite_), scale(scale_), tint(tint_), selected_tint(tint_), on_select(on_select_), at(at_) {
-		}
+			std::function< bool(Item &, SDL_Event const &) > event_handler_ = nullptr,
+			std::function< void(Item &) > on_select_ = nullptr
+		) : name(name_), sprite(sprite_), event_handler(event_handler_), on_select(on_select_) { }
+
 		std::string name;
 		Sprite const *sprite; //sprite drawn for item
-		float scale; //scale for sprite
-		glm::u8vec4 tint; //tint for sprite (unselected)
-		glm::u8vec4 selected_tint; //tint for sprite (selected)
-		std::function< void(Item const &) > on_select; //if set, item is selectable
-		glm::vec2 at; //location to draw item
+		
+		std::function< bool(Item &, SDL_Event const &) > event_handler; // when focused, handle events
+		std::function< void(Item &) > on_select; //if set, item is selectable
+
+		float scale = 1.0f; //scale for sprite
+
+		glm::u8vec4 tint = glm::u8vec4(0xff); //tint for sprite (unselected)
+		glm::u8vec4 selected_tint = glm::u8vec4(0xff); //tint for sprite (selected)
+
+		glm::vec2 at = glm::vec2(0.0f); //location to draw item
+
+		static Item TextItem(std::string const &name_);
+		static Item TextButtonItem(std::string const &name_, std::function< void(Item const &) > on_select_);
+		static Item TextEntryItem(
+			std::string const &name_,
+			std::function< bool(SDL_Keycode) > validate_input
+		);
+
+		static Item NavigationButtonItem(
+			std::string const &name_,
+			MenuMode *menu, 
+			MenuStage stage_to,
+			std::function< void(Item &) > on_select = nullptr
+		); // add more params
+		static Item BackButtonItem(MenuMode *menu);
+		static Item ExitButtonItem();
+
 	};
-  enum MenuStage { MENU_MAIN, MENU_CONNECT, MENU_IP, MENU_START, MENU_LEVEL, MENU_PLAYER, MENU_PAUSE, MENU_HELP };
 
-  enum MenuPlayer { MENU_PLAYER_SOLO, MENU_PLAYER_SERVER, MENU_PLAYER_CLIENT };
-  MenuStage menu_stage = MENU_MAIN;
-  MenuPlayer menu_player = MENU_PLAYER_SOLO;
-  uint32_t menu_level = 1;
-	std::vector< Item > main_items;
-	std::vector< Item > connect_items;
-  std::vector< Item > ip_items;
-	std::vector< Item > start_items;
-	std::vector< Item > level_items;
-	std::vector< Item > player_items;
-  std::vector< Item > pause_items;
-  std::vector< Item > help_items;
-  std::string main_connect_ip = "";
+	struct Stage {
 
+		// All the items in the menu
+		std::vector< Item > items;
+
+		// The menu stage we came from
+		MenuStage stage_from = MENU_COUNT;
+		
+		// currently selected menu item
+		uint32_t selected = 0;
+
+		// the item to invoke when escape is pressed
+		// defaults to last selectable item
+		uint32_t escape = 0;
+
+		void set_items();
+		void set_items(uint32_t esc_item);
+
+	};
+
+	std::vector< Stage > stages = std::vector<Stage> (MENU_COUNT);
+
+	MenuStage stage_name = MENU_MAIN;
+	MenuPlayer menu_player = MENU_PLAYER_SOLO;
+	uint32_t selected_player = 1;
 	//call to arrange items in a centered list:
 	void layout_items(float gap = 0.0f);
 
@@ -124,9 +186,6 @@ struct MenuMode : Mode {
 	std::shared_ptr< Sound::PlayingSample > win_sound;
 
 	bool we_just_reached_goal = false;
-
-	Connection *connect_client = nullptr;
-	Connection *connect_server = nullptr;
 
 
 };

@@ -14,10 +14,9 @@ Load< SpriteAtlas > trade_font_atlas(LoadTagDefault, []() -> SpriteAtlas const *
 });
 
 std::shared_ptr< MenuMode > demo_menu;
-std::string connect_ip;
 
 Load< void > load_demo_menu(LoadTagDefault, [](){
-  demo_menu = std::make_shared< MenuMode >(connect_ip);
+  demo_menu = std::make_shared< MenuMode >();
 	demo_menu->atlas = trade_font_atlas;
 	demo_menu->selected = 1;
 	demo_menu->view_min = glm::vec2(0.0f, 0.0f);

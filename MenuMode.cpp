@@ -51,275 +51,156 @@ Load< Sound::Sample > sound_clonk(LoadTagDefault, []() -> Sound::Sample *{
 	return new Sound::Sample(data);
 });
 
-std::shared_ptr< PlayerMode > MenuMode::current;
+std::unique_ptr< PlayerMode > MenuMode::current;
 
-void MenuMode::set_current(std::shared_ptr< PlayerMode > const &new_current) {
-	current = new_current;
-}
-std::shared_ptr< PlayerMode > MenuMode::get_current() {
-	return current;
+void MenuMode::start_game(uint32_t level_num) {
+  if (menu_player == MENU_PLAYER_SOLO) {
+    current.reset(new SinglePlayerMode(level_num));
+  } else if (current && current->connect != nullptr) {
+    current->pause = false;
+    SDL_SetRelativeMouseMode(SDL_TRUE);
+    current->level_change(level_num);
+  } else if (menu_player == MENU_PLAYER_SERVER) {
+    current.reset(new ServerMode("12345", level_num, selected_player));
+  } else if (menu_player == MENU_PLAYER_CLIENT) {
+    current.reset(new ClientMode(stages[MENU_IP].items[1].name, "12345", level_num, selected_player));
+  }
+	
 }
 
-MenuMode::MenuMode(std::string connect_ip) {
-	/*//select first item which can be selected:
-	for (uint32_t i = 0; i < items.size(); ++i) {
-		if (items[i].on_select) {
-			selected = i; break;
-		}
-	} */
+MenuMode::MenuMode() {
+
   current = nullptr;
-  main_connect_ip = connect_ip;
 
   { // Main Menu
-    main_items.emplace_back("[[ V ]]");
-    main_items.emplace_back("Play Single Player");
-  	main_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_START; menu_player = MENU_PLAYER_SOLO;
-  	};
-    main_items.emplace_back("Play Cooperative Game");
-  	main_items.back().on_select = [&](Item const &){
-      if (current && current->connect != nullptr) { menu_stage = MENU_START; }
-      else { menu_stage = MENU_CONNECT; }
-  	};
-    main_items.emplace_back("Quit");
-  	main_items.back().on_select = [](Item const &){
-      Mode::set_current(nullptr);
-  	};
+    Stage &stage = stages[MENU_MAIN];
+    std::vector< Item > &items = stage.items;
+    items.emplace_back(Item::TextItem("[[ V ]]"));
+    items.emplace_back(Item::NavigationButtonItem("Play Solo", this, MENU_START));
+    items.emplace_back(Item::NavigationButtonItem("Play Co-op", this, MENU_CONNECT));
+    items.emplace_back(Item::ExitButtonItem());
+    stage.set_items();
   }
   { // Connect Menu
-    connect_items.emplace_back("[[ Co-op ]]");
-    connect_items.emplace_back("Create Game");
-  	connect_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_START; menu_player = MENU_PLAYER_SERVER;
-  	};
-    connect_items.emplace_back("Join Game");
-  	connect_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_IP;
-  	};
-    connect_items.emplace_back("Back");
-  	connect_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_MAIN;
-  	};
+    Stage &stage = stages[MENU_CONNECT];
+    std::vector< Item > &items = stage.items;
+    items.emplace_back(Item::TextItem("[[ Co-op ]]"));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Create Game", this, MENU_PLAYER,
+      [this](Item const &) {
+        menu_player = MENU_PLAYER_SERVER;
+      }
+    ));
+    items.emplace_back(Item::NavigationButtonItem("Join Game", this, MENU_IP));
+    items.emplace_back(Item::BackButtonItem(this));
+    stage.set_items();
   }
   { // IP Menu
-    ip_items.emplace_back("Enter IP address:");
-    ip_items.emplace_back("localhost");
-  	ip_items.back().on_select = [&](Item const &){
-      /// TODO
-      menu_stage = MENU_START; menu_player = MENU_PLAYER_CLIENT;
-  	};
-    ip_items.emplace_back("Back");
-  	ip_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_CONNECT;
-  	};
-  }
-  { // Start Menu
-    start_items.emplace_back("[[ V ]]");
-    start_items.emplace_back("Start Game");
-  	start_items.back().on_select = [&](Item const &){
-      menu_level = 1;
-      if (menu_player == MENU_PLAYER_SOLO) {
-        menu_stage = MENU_PAUSE;
-        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-      } else if (current && current->connect != nullptr) {
-        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1);
-      } else { menu_stage = MENU_PLAYER; }
-  	};
-    start_items.emplace_back("Select Level");
-  	start_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_LEVEL;
-  	};
-    start_items.emplace_back("Back");
-  	start_items.back().on_select = [&](Item const &){
-      if (menu_player == MENU_PLAYER_SOLO || (current && current->connect != nullptr)) { menu_stage = MENU_MAIN; }
-      else { menu_stage = MENU_CONNECT; }
-  	};
-  }
-  { // Level Menu
-    level_items.emplace_back("[[ SELECT LEVEL ]]");
-    level_items.emplace_back("Level 1");
-  	level_items.back().on_select = [&](Item const &){
-      menu_level = 1;
-      if (menu_player == MENU_PLAYER_SOLO) {
-        menu_stage = MENU_PAUSE;
-        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-      } else if (current && current->connect != nullptr) {
-        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1);
-      } else { menu_stage = MENU_PLAYER; }
-  	};
-    level_items.emplace_back("Level 2");
-  	level_items.back().on_select = [&](Item const &){
-      menu_level = 2;
-      if (menu_player == MENU_PLAYER_SOLO) {
-        menu_stage = MENU_PAUSE;
-        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-      } else if (current && current->connect != nullptr) {
-        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(2);
-      } else { menu_stage = MENU_PLAYER; }
-  	};
-    level_items.emplace_back("Level 3");
-  	level_items.back().on_select = [&](Item const &){
-      menu_level = 3;
-      if (menu_player == MENU_PLAYER_SOLO) {
-        menu_stage = MENU_PAUSE;
-        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-      } else if (current && current->connect != nullptr) {
-        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(3);
-      } else { menu_stage = MENU_PLAYER; }
-  	};
-    level_items.emplace_back("Level 4");
-  	level_items.back().on_select = [&](Item const &){
-      menu_level = 4;
-      if (menu_player == MENU_PLAYER_SOLO) {
-        menu_stage = MENU_PAUSE;
-        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-      } else if (current && current->connect != nullptr) {
-        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(4);
-      } else { menu_stage = MENU_PLAYER; }
-  	};
-    level_items.emplace_back("Level 5");
-  	level_items.back().on_select = [&](Item const &){
-      menu_level = 5;
-      if (menu_player == MENU_PLAYER_SOLO) {
-        menu_stage = MENU_PAUSE;
-        MenuMode::set_current(std::make_shared< SinglePlayerMode >(menu_level));
-        SDL_SetRelativeMouseMode(SDL_TRUE);
-      } else if (current && current->connect != nullptr) {
-        menu_stage = MENU_PAUSE; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(5);
-      } else { menu_stage = MENU_PLAYER; }
-  	};
-    level_items.emplace_back("Back");
-  	level_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_START;
-  	};
+    Stage &stage = stages[MENU_IP];
+    std::vector< Item > &items = stage.items;
+    items.emplace_back(Item::TextItem("[[ Join Network Game ]]"));
+    items.emplace_back(Item::TextItem("Enter IP Address:"));
+    items.emplace_back(Item::TextEntryItem(
+      "localhost",
+      [](SDL_Keycode keysym) {
+        return keysym == SDLK_PERIOD || keysym >= SDLK_0 && keysym <= SDLK_9;
+      }
+    ));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Connect", this, MENU_PLAYER,
+      [](Item const &) {
+        
+      }
+    ));
+    items.emplace_back(Item::BackButtonItem(this));
+    stage.set_items();
   }
   { // Player Menu
-    player_items.emplace_back("[[ Select Player ]]");
-    player_items.emplace_back("Player 1");
-    player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
-      menu_stage = MENU_PAUSE;
-      if (menu_player == MENU_PLAYER_SERVER) {
-        MenuMode::set_current(std::make_shared< ServerMode >("12345", menu_level, 1));
-      } else if (menu_player == MENU_PLAYER_CLIENT) {
-        MenuMode::set_current(std::make_shared< ClientMode >(ip_items[1].name, "12345", menu_level, 1));
+    Stage &stage = stages[MENU_PLAYER];
+    std::vector< Item > &items = stage.items;
+    items.emplace_back(Item::TextItem("[[ Select Player ]]"));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Player 1", this, MENU_START,
+      [this](Item const &) {
+        selected_player = 1;
       }
-    };
-    player_items.emplace_back("Player 2");
-    player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
-      menu_stage = MENU_PAUSE;
-      if (menu_player == MENU_PLAYER_SERVER) {
-        MenuMode::set_current(std::make_shared< ServerMode >("12345", menu_level, 2));
-      } else if (menu_player == MENU_PLAYER_CLIENT) {
-        MenuMode::set_current(std::make_shared< ClientMode >(ip_items[1].name, "12345", menu_level, 2));
-      }
-    };
-    player_items.emplace_back("Back");
-    player_items.back().on_select = [&](MenuMode::Item const &){
-      menu_stage = MENU_START;
-    };
+    ));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Player 2", this, MENU_START,
+      [this](Item const &) {
+      selected_player = 2;
+    }
+    ));
+    items.emplace_back(Item::BackButtonItem(this));
+    stage.set_items();
+  }
+  { // Start Menu
+    Stage &stage = stages[MENU_START];
+    std::vector< Item > &items = stage.items;
+    items.emplace_back(Item::TextItem("[[ Game Menu ]]"));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Start Game", this, MENU_PAUSE, [this](Item const &) { start_game(1); }
+    ));
+    items.emplace_back(Item::NavigationButtonItem("Select Level", this, MENU_LEVEL));
+    items.emplace_back(Item::BackButtonItem(this));
+    stage.set_items();
+  }
+  { // Level Menu
+    Stage &stage = stages[MENU_LEVEL];
+    std::vector< Item > &items = stage.items;
+    items.emplace_back(Item::TextItem("[[ Level Selection ]]"));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Level 1", this, MENU_PAUSE, [this](Item const &) { start_game(1); }
+    ));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Level 2", this, MENU_PAUSE, [this](Item const &) { start_game(2); }
+    ));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Level 3", this, MENU_PAUSE, [this](Item const &) { start_game(3); }
+    ));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Level 4", this, MENU_PAUSE, [this](Item const &) { start_game(4); }
+    ));
+    items.emplace_back(Item::NavigationButtonItem(
+      "Level 5", this, MENU_PAUSE, [this](Item const &) { start_game(5); }
+    ));
+    items.emplace_back(Item::BackButtonItem(this));
+    stage.set_items();
   }
   { // Pause Menu
-    pause_items.emplace_back("[[ PAUSED ]]");
-    pause_items.emplace_back("Resume");
-    pause_items.back().on_select = [&](Item const &){
+    Stage &stage = stages[MENU_PAUSE];
+    std::vector< Item > &items = stage.items;
+    items.emplace_back("[[ PAUSED ]]");
+    items.emplace_back("Resume");
+    items.back().on_select = [&](Item const &){
       if (current) {
-        current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE);
+        current->pause = false;
+        SDL_SetRelativeMouseMode(SDL_TRUE);
       }
     };
-    pause_items.emplace_back("Reset");
-    pause_items.back().on_select = [&](Item const &){
+    items.emplace_back("Reset");
+    items.back().on_select = [&](Item const &){
       if (current) {
-        current->handle_reset(); SDL_SetRelativeMouseMode(SDL_TRUE);
+        current->handle_reset();
+        SDL_SetRelativeMouseMode(SDL_TRUE);
       }
     };
-    pause_items.emplace_back("Controls");
-    pause_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_HELP;
-    };
-    pause_items.emplace_back("Main Menu");
-    pause_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_START;
-    };
-    pause_items.emplace_back("Quit");
-    pause_items.back().on_select = [](Item const &){
-      Mode::set_current(nullptr);
-    };
+    items.emplace_back(Item::NavigationButtonItem("Controls", this, MENU_HELP));
+    items.emplace_back(Item::NavigationButtonItem("Main Menu", this, MENU_START));
+    items.emplace_back(Item::ExitButtonItem());
+    stage.set_items(1);
   }
   { // Help Menu
-    help_items.emplace_back("[[ CONTROLS ]]");
-    help_items.emplace_back("WASD to move");
-    help_items.emplace_back("Space to jump");
-    help_items.emplace_back("LCtrl to sprint");
-    help_items.emplace_back("Q to switch player (solo mode)");
-    help_items.emplace_back("Back");
-    help_items.back().on_select = [&](Item const &){
-      menu_stage = MENU_PAUSE;
-    };
+    Stage &stage = stages[MENU_HELP];
+    std::vector< Item > &items = stage.items;
+    items.emplace_back(Item::TextItem("[[ CONTROLS ]]"));
+    items.emplace_back(Item::TextItem("WASD to move"));
+    items.emplace_back(Item::TextItem("Space to jump"));
+    items.emplace_back(Item::TextItem("LCtrl to sprint"));
+    items.emplace_back(Item::TextItem("Q to switch player (solo mode)"));
+    items.emplace_back(Item::BackButtonItem(this));
+    stage.set_items();
   }
-
-  /* main_items.emplace_back("[[ V ]]");
-  main_items.emplace_back("New Game");
-	main_items.back().on_select = [&](Item const &){
-    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1); }
-    else { main_mode = 2; main_level = 1; }
-	};
-  main_items.emplace_back("Select Level");
-	main_items.back().on_select = [&](Item const &){
-    main_mode = 1;
-	};
-  main_items.emplace_back("Quit");
-	main_items.back().on_select = [](Item const &){
-    Mode::set_current(nullptr);
-	};
-
-  player_items.emplace_back("[[ Select Player ]]");
-  player_items.emplace_back("Solo");
-  player_items.back().on_select = [&](MenuMode::Item const &){
-		MenuMode::set_current(std::make_shared< SinglePlayerMode >(main_level));
-  };
-  player_items.emplace_back("Player 1");
-  player_items.back().on_select = [&](MenuMode::Item const &){
-		MenuMode::set_current(std::make_shared< ServerMode >("12345", main_level));
-  };
-  player_items.emplace_back("Player 2");
-  player_items.back().on_select = [&,connect_ip](MenuMode::Item const &){
-    MenuMode::set_current(std::make_shared< ClientMode >(connect_ip, "12345", main_level));
-  };
-	player_items.emplace_back("Back");
-	player_items.back().on_select = [&](MenuMode::Item const &){
-		main_mode = 0;
-	};
-
-  level_items.emplace_back("[[ SELECT LEVEL ]]");
-  level_items.emplace_back("Level 1");
-	level_items.back().on_select = [&](Item const &){
-    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(1); }
-    else { main_mode = 2; main_level = 1; }
-	};
-  level_items.emplace_back("Level 2");
-	level_items.back().on_select = [&](Item const &){
-    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(2); }
-    else { main_mode = 2; main_level = 2; }
-	};
-  level_items.emplace_back("Level 3");
-	level_items.back().on_select = [&](Item const &){
-    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(3); }
-    else { main_mode = 2; main_level = 3; }
-	};
-  level_items.emplace_back("Level 4");
-	level_items.back().on_select = [&](Item const &){
-    if (current) { main_mode = 3; current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE); current->level_change(4); }
-    else { main_mode = 2; main_level = 4; }
-	};
-  level_items.emplace_back("Back");
-	level_items.back().on_select = [&](Item const &){
-    main_mode = 0;
-	}; */
 
 	//----- allocate OpenGL resources -----
 	{ //vertex buffer:
@@ -404,395 +285,80 @@ MenuMode::~MenuMode() {
 }
 
 bool MenuMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
-	if (current) {
-    if (current->pause) {
-      // we're on the pause menu or the main menu
-      if (menu_stage == MENU_MAIN) {
-      	if (evt.type == SDL_KEYDOWN) {
-          if (evt.key.keysym.sym == SDLK_ESCAPE){ Mode::set_current(nullptr); }
-      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-      			for (uint32_t i = selected - 1; i < main_items.size(); --i) {
-      				if (main_items[i].on_select) { //skip non-selectable items
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-      			for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
-      				if (main_items[i].on_select) {
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-      			if (selected < main_items.size() && main_items[selected].on_select) {
-      				main_items[selected].on_select(main_items[selected]);
-              selected = 1; return true;
-      			}
-      		}
-      	}
-    		return false;
-      }/* else if (menu_stage == MENU_CONNECT) {
-      	if (evt.type == SDL_KEYDOWN) {
-          if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_MAIN; }
-      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-      			for (uint32_t i = selected - 1; i < connect_items.size(); --i) {
-      				if (connect_items[i].on_select) { //skip non-selectable items
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-      			for (uint32_t i = selected + 1; i < connect_items.size(); ++i) {
-      				if (connect_items[i].on_select) {
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-      			if (selected < connect_items.size() && connect_items[selected].on_select) {
-      				connect_items[selected].on_select(connect_items[selected]);
-              selected = 1; return true;
-      			}
-      		}
-      	}
-    		return false;
-      }*/ else if (menu_stage == MENU_START) {
-      	if (evt.type == SDL_KEYDOWN) {
-          if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_MAIN; }
-      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-      			for (uint32_t i = selected - 1; i < start_items.size(); --i) {
-      				if (start_items[i].on_select) { //skip non-selectable items
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-      			for (uint32_t i = selected + 1; i < start_items.size(); ++i) {
-      				if (start_items[i].on_select) {
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-      			if (selected < start_items.size() && start_items[selected].on_select) {
-      				start_items[selected].on_select(start_items[selected]);
-              selected = 1; return true;
-      			}
-      		}
-      	}
-    		return false;
-      } else if (menu_stage == MENU_LEVEL) {
-      	if (evt.type == SDL_KEYDOWN) {
-          if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_START; }
-      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-      			for (uint32_t i = selected - 1; i < level_items.size(); --i) {
-      				if (level_items[i].on_select) { //skip non-selectable items
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-      			for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
-      				if (level_items[i].on_select) {
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-      			if (selected < level_items.size() && level_items[selected].on_select) {
-      				level_items[selected].on_select(level_items[selected]);
-              selected = 1; return true;
-      			}
-      		}
-      	}
-    		return false;
-      }/* else if (menu_stage == MENU_PLAYER) {
-      	if (evt.type == SDL_KEYDOWN) {
-          if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_START; }
-      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-      			for (uint32_t i = selected - 1; i < player_items.size(); --i) {
-      				if (player_items[i].on_select) { //skip non-selectable items
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-      			for (uint32_t i = selected + 1; i < player_items.size(); ++i) {
-      				if (player_items[i].on_select) {
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-      			if (selected < player_items.size() && player_items[selected].on_select) {
-      				player_items[selected].on_select(player_items[selected]);
-              selected = 1; return true;
-      			}
-      		}
-      	}
-    		return false;
-      }*/ else if (menu_stage == MENU_PAUSE) {
-        if (evt.type == SDL_KEYDOWN) {
-          if (evt.key.keysym.sym == SDLK_ESCAPE){
-            current->pause = false; SDL_SetRelativeMouseMode(SDL_TRUE);
-          }
-      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-      			for (uint32_t i = selected - 1; i < pause_items.size(); --i) {
-      				if (pause_items[i].on_select) { //skip non-selectable items
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-      			for (uint32_t i = selected + 1; i < pause_items.size(); ++i) {
-      				if (pause_items[i].on_select) {
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-      			if (selected < pause_items.size() && pause_items[selected].on_select) {
-      				pause_items[selected].on_select(pause_items[selected]);
-              if (selected == 3) selected = 5;
-              else selected = 1;
-              return true;
-      			}
-      		}
-      	}
-    		return false;
-      } else if (menu_stage == MENU_HELP) {
-        if (evt.type == SDL_KEYDOWN) {
-          if (evt.key.keysym.sym == SDLK_ESCAPE){
-            menu_stage = MENU_PAUSE;
-          }
-      		if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-      			for (uint32_t i = selected - 1; i < help_items.size(); --i) {
-      				if (help_items[i].on_select) { //skip non-selectable items
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-      			for (uint32_t i = selected + 1; i < help_items.size(); ++i) {
-      				if (help_items[i].on_select) {
-      					selected = i; break;
-      				}
-      			}
-      			return true;
-      		} else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-      			if (selected < help_items.size() && help_items[selected].on_select) {
-      				help_items[selected].on_select(help_items[selected]);
-              selected = 1; return true;
-      			}
-      		}
-      	}
-    		return false;
-      } else return false;
-    } else {
-      current->handle_event(evt, window_size);
-      // Reset if R is pressed
-      if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_R) {
-        if (current) {
-          current->handle_reset();
-          SDL_SetRelativeMouseMode(SDL_TRUE);
-        }
+
+  if (current && !current->pause) {
+
+    // Reset if R is pressed
+    if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_R) {
+      if (current) {
+        current->handle_reset();
+        SDL_SetRelativeMouseMode(SDL_TRUE);
       }
-      // Check UI elements:
-      // TODO: find a way to not keep calling screen_get? Same issue in draw_ui.
+    }
+    // Check UI elements:
+    // TODO: find a way to not keep calling screen_get? Same issue in draw_ui.
+    else if (evt.type == SDL_MOUSEBUTTONUP && evt.button.button == SDL_BUTTON_LEFT) {
       if (current->shift.progress == 1.0f) {
-        // Player is completed shift mode: check color wheel interaction
-        if (evt.type == SDL_MOUSEBUTTONUP && evt.button.button == SDL_BUTTON_LEFT) {
-          GameLevel::Standpoint *stpt = current->shift.sc->stpt;
-          glm::vec2 mpos = glm::vec2(evt.button.x, window_size.y - evt.button.y);
-          glm::vec3 center_clip = glm::vec3(current->shift.sc->stpt->movable_center_to_screen(), 1.0f);
-					view_to_drawable = glm::vec2(
-						window_size.x / (view_max.x - view_min.x),
-						window_size.y / (view_max.y - view_min.y)
-					);
-          glm::vec2 center = view_to_drawable * (clip_to_court * center_clip);
-					// TODO: Make this a function of wheel_radius
-          float threshold = window_size.y / 15.0f;
-          glm::vec2 dist = mpos - center;
-          if (glm::dot(dist, dist) < threshold * threshold) {
-            // TODO: Make this work for multiple colors
-            float angle = -glm::atan(dist.y, dist.x);
-            if (angle < 0.0f) angle += 2.0f * 3.1415926f;
-            float sector_angle = 2.0f * 3.1415926f / (float) stpt->move_pos.size();
-            size_t index = (size_t) (angle / sector_angle);
-            stpt->move_to(index);
-            current->currently_moving.emplace_back(stpt->movable->index);
-          }
+      // Player is completed shift mode: check color wheel interaction
+        GameLevel::Standpoint *stpt = current->shift.sc->stpt;
+        glm::vec2 mpos = glm::vec2(evt.button.x, window_size.y - evt.button.y);
+        glm::vec3 center_clip = glm::vec3(current->shift.sc->stpt->movable_center_to_screen(), 1.0f);
+        view_to_drawable = glm::vec2(
+          window_size.x / (view_max.x - view_min.x),
+          window_size.y / (view_max.y - view_min.y)
+        );
+        glm::vec2 center = view_to_drawable * (clip_to_court * center_clip);
+        // TODO: Make this a function of wheel_radius
+        float threshold = window_size.y / 15.0f;
+        glm::vec2 dist = mpos - center;
+        if (glm::dot(dist, dist) < threshold * threshold) {
+          // TODO: Make this work for multiple colors
+          float angle = -glm::atan(dist.y, dist.x);
+          if (angle < 0.0f) angle += 2.0f * 3.1415926f;
+          float sector_angle = 2.0f * 3.1415926f / (float) stpt->move_pos.size();
+          size_t index = (size_t) (angle / sector_angle);
+          stpt->move_to(index);
+          current->currently_moving.emplace_back(stpt->movable->index);
         }
       }
-      return false;
-    }
-	} else { // we're on the first encounter with the main menu
-    if (menu_stage == MENU_MAIN) {
-      if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){ Mode::set_current(nullptr); }
+    } else if (current->handle_event(evt, window_size)) {
+    } else return false;
+  } else {
+    if (evt.type == SDL_KEYDOWN) {
+      if (active_item) {
+        if (evt.key.keysym.sym == SDLK_ESCAPE) {
+          active_item = nullptr;
+        } else if (active_item->event_handler(*active_item, evt)) {
+        } else return false;
+      } else {
         if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-          for (uint32_t i = selected - 1; i < main_items.size(); --i) {
-            if (main_items[i].on_select) { //skip non-selectable items
-              selected = i; break;
+          for (uint32_t i = curr_select() - 1; i < curr_items().size(); --i) {
+            if (curr_items()[i].on_select || curr_items()[i].event_handler) { //skip non-selectable items
+              curr_select() = i; break;
             }
           }
-          return true;
         } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-          for (uint32_t i = selected + 1; i < main_items.size(); ++i) {
-            if (main_items[i].on_select) {
-              selected = i; break;
+          for (uint32_t i = curr_select() + 1; i < curr_items().size(); ++i) {
+            if (curr_items()[i].on_select || curr_items()[i].event_handler) {
+              curr_select() = i; break;
             }
           }
-          return true;
         } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-          if (selected < main_items.size() && main_items[selected].on_select) {
-            main_items[selected].on_select(main_items[selected]);
-            selected = 1; return true;
+          if (curr_item().on_select) {
+            curr_item().on_select(curr_item());
+          } else if (curr_item().event_handler) {
+            active_item = &curr_item();
           }
-        }
+        } else if (evt.key.keysym.sym == SDLK_ESCAPE) {
+          Item &it = curr_items()[curr_stage().escape];
+          it.on_select(it);
+        } else return false;
       }
-      return false;
-    } else if (menu_stage == MENU_CONNECT) {
-      if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_MAIN; }
-        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-          for (uint32_t i = selected - 1; i < connect_items.size(); --i) {
-            if (connect_items[i].on_select) { //skip non-selectable items
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-          for (uint32_t i = selected + 1; i < connect_items.size(); ++i) {
-            if (connect_items[i].on_select) {
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-          if (selected < connect_items.size() && connect_items[selected].on_select) {
-            connect_items[selected].on_select(connect_items[selected]);
-            selected = 1; return true;
-          }
-        }
-      }
-      return false;
-    }  else if (menu_stage == MENU_IP) {
-      if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_CONNECT; }
-        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-          for (uint32_t i = selected - 1; i < ip_items.size(); --i) {
-            if (ip_items[i].on_select) { //skip non-selectable items
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-          for (uint32_t i = selected + 1; i < ip_items.size(); ++i) {
-            if (ip_items[i].on_select) {
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-          if (selected < ip_items.size() && ip_items[selected].on_select) {
-            ip_items[selected].on_select(ip_items[selected]);
-            selected = 1; return true;
-          }
-        } else if (selected == 1) {
-          if (evt.key.keysym.sym == SDLK_PERIOD ||
-            (evt.key.keysym.sym >= SDLK_0 && evt.key.keysym.sym <= SDLK_9)) {
-            ip_items[1].name.push_back(evt.key.keysym.sym);
-            return true;
-          } else if (evt.key.keysym.sym == SDLK_BACKSPACE) {
-            if (!ip_items[1].name.empty()) ip_items[1].name.pop_back();
-            return true;
-          }
-        }
-      }
-      return false;
-    } else if (menu_stage == MENU_START) {
-      if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){
-          if (menu_player == MENU_PLAYER_SOLO) { menu_stage = MENU_MAIN; }
-          else { menu_stage = MENU_CONNECT; }
-        }
-        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-          for (uint32_t i = selected - 1; i < start_items.size(); --i) {
-            if (start_items[i].on_select) { //skip non-selectable items
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-          for (uint32_t i = selected + 1; i < start_items.size(); ++i) {
-            if (start_items[i].on_select) {
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-          if (selected < start_items.size() && start_items[selected].on_select) {
-            start_items[selected].on_select(start_items[selected]);
-            selected = 1; return true;
-          }
-        }
-      }
-      return false;
-    } else if (menu_stage == MENU_LEVEL) {
-      if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_START; }
-        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-          for (uint32_t i = selected - 1; i < level_items.size(); --i) {
-            if (level_items[i].on_select) { //skip non-selectable items
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-          for (uint32_t i = selected + 1; i < level_items.size(); ++i) {
-            if (level_items[i].on_select) {
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-          if (selected < level_items.size() && level_items[selected].on_select) {
-            level_items[selected].on_select(level_items[selected]);
-            selected = 1; return true;
-          }
-        }
-      }
-      return false;
-    } else if (menu_stage == MENU_PLAYER) {
-      if (evt.type == SDL_KEYDOWN) {
-        if (evt.key.keysym.sym == SDLK_ESCAPE){ menu_stage = MENU_START; }
-        if (evt.key.keysym.sym == SDLK_UP || evt.key.keysym.scancode == SDL_SCANCODE_W) {
-          for (uint32_t i = selected - 1; i < player_items.size(); --i) {
-            if (player_items[i].on_select) { //skip non-selectable items
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_DOWN || evt.key.keysym.scancode == SDL_SCANCODE_S) {
-          for (uint32_t i = selected + 1; i < player_items.size(); ++i) {
-            if (player_items[i].on_select) {
-              selected = i; break;
-            }
-          }
-          return true;
-        } else if (evt.key.keysym.sym == SDLK_RETURN || evt.key.keysym.sym == SDLK_SPACE) {
-          if (selected < player_items.size() && player_items[selected].on_select) {
-            player_items[selected].on_select(player_items[selected]);
-            selected = 1; return true;
-          }
-        }
-      }
-      return false;
-    }
-    return false;
-	}
+    } else return false;
+  }
+
+  return true;
+  
 }
 
 void MenuMode::update(float elapsed) {
@@ -833,10 +399,10 @@ void MenuMode::update(float elapsed) {
   }
 }
 
-void MenuMode::draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> items) {
+void MenuMode::draw_menu(glm::uvec2 const &drawable_size, MenuMode::Stage const &stage) {
 
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glClearColor(0.5f, 0.5f, 0.5f, 0.0f);
+  glClearColor(0.5f, 0.5f, 1.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	//use alpha blending:
@@ -851,8 +417,9 @@ void MenuMode::draw_menu(glm::uvec2 const &drawable_size, std::vector<Item> item
 		assert(atlas && "it is an error to try to draw a menu without an atlas");
 		DrawSprites draw_sprites(*atlas, view_min, view_max, drawable_size, DrawSprites::AlignPixelPerfect);
 
-		for (auto const &item : items) {
-			bool is_selected = (&item == &items[0] + selected);
+		for (uint32_t i = 0; i < stage.items.size(); i++) {
+      MenuMode::Item const &item = stage.items[i];
+			bool is_selected = i == stage.selected;
 			glm::u8vec4 color = (is_selected ? item.selected_tint : item.tint);
 			float left, right;
 			if (!item.sprite) {
@@ -1096,13 +663,7 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 		std::shared_ptr< Mode > hold_me = shared_from_this();
     if (current->pause) {
       // draw menu
-      if (menu_stage == MENU_MAIN) draw_menu(drawable_size, main_items);
-      // else if (menu_stage == MENU_CONNECT) draw_menu(drawable_size, connect_items);
-      else if (menu_stage == MENU_START) draw_menu(drawable_size, start_items);
-      else if (menu_stage == MENU_LEVEL) draw_menu(drawable_size, level_items);
-      // else if (menu_stage == MENU_PLAYER) draw_menu(drawable_size, player_items);
-      else if (menu_stage == MENU_PAUSE) draw_menu(drawable_size, pause_items);
-      else if (menu_stage == MENU_HELP) draw_menu(drawable_size, help_items);
+      draw_menu(drawable_size, curr_stage());
     } else {
       // draw level
       current->draw(drawable_size);
@@ -1111,23 +672,23 @@ void MenuMode::draw(glm::uvec2 const &drawable_size) {
 		//it is an error to remove the last reference to this object in current->draw():
 		assert(hold_me.use_count() > 1);
 	} else {
-    if (menu_stage == MENU_MAIN) draw_menu(drawable_size, main_items);
-    else if (menu_stage == MENU_CONNECT) draw_menu(drawable_size, connect_items);
-    else if (menu_stage == MENU_IP) draw_menu(drawable_size, ip_items);
-    else if (menu_stage == MENU_START) draw_menu(drawable_size, start_items);
-    else if (menu_stage == MENU_LEVEL) draw_menu(drawable_size, level_items);
-    else if (menu_stage == MENU_PLAYER) draw_menu(drawable_size, player_items);
-    else if (menu_stage == MENU_PAUSE) draw_menu(drawable_size, pause_items);
+    draw_menu(drawable_size, curr_stage());
   }
 
 	GL_ERRORS(); //PARANOIA: print errors just in case we did something wrong.
 }
 
 void MenuMode::layout_items(float gap) {
-	DrawSprites temp(*atlas, view_min, view_max, view_max - view_min, DrawSprites::AlignPixelPerfect); //<-- doesn't actually draw
-  auto layout_fn = [this, &temp, gap](std::vector< Item >&items){
-    float y = view_max.y;
+	//DrawSprites temp(*atlas, view_min, view_max, view_max - view_min, DrawSprites::AlignPixelPerfect); //<-- doesn't actually draw
+  
+  for (uint32_t stg = 0; stg < MENU_COUNT; stg++) {
+    std::vector< Item > &items = stages[stg].items;
+    float y = view_max.y - 50;
   	for (auto &item : items) {
+      y -= 15;
+      item.at.y = y;
+      item.at.x = 50;
+      /*
   		glm::vec2 min, max;
   		if (item.sprite) {
   			min = item.scale * (item.sprite->min_px - item.sprite->anchor_px);
@@ -1139,20 +700,104 @@ void MenuMode::layout_items(float gap) {
   		item.at.x = 0.5f * (view_max.x + view_min.x) - 0.5f * (max.x + min.x);
   		y = y - (max.y - min.y) - gap;
   	}
-  	float ofs = -0.5f * y;
-  	for (auto &item : items) {
-  		item.at.y += ofs;
-  	}
+  	//float ofs = -0.5f * y;
+  	//for (auto &item : items) {
+  		//item.at.y += ofs;
+  	//} */
+    }
+  }
+
+}
+
+void MenuMode::Stage::set_items() {
+  for (uint32_t last_item = (uint32_t) items.size() - 1; last_item < items.size(); last_item--) {
+    if (items[last_item].on_select) {
+      set_items(last_item);
+      break;
+    }
+  }
+}
+
+void MenuMode::Stage::set_items(uint32_t esc_item) {
+
+  for (uint32_t first_item = 0; first_item < items.size(); first_item++) {
+    if (items[first_item].on_select || items[first_item].event_handler) {
+      selected = first_item;
+      break;
+    }
+  }
+
+  if (items[esc_item].on_select) escape = esc_item;
+  else set_items();
+
+}
+
+MenuMode::Item MenuMode::Item::TextItem(std::string const& name_) {
+  return MenuMode::Item(name_, nullptr, nullptr, nullptr);
+}
+
+MenuMode::Item MenuMode::Item::TextButtonItem(
+  std::string const& name_,
+  std::function< void(Item const&) > on_select_
+) {
+  return MenuMode::Item(name_, nullptr, nullptr, on_select_);
+}
+
+MenuMode::Item MenuMode::Item::TextEntryItem(
+  std::string const& name_,
+  std::function< bool(SDL_Keycode) > validate_input
+) {
+
+  auto event_handler = [validate_input](Item &item, SDL_Event const &evt) {
+
+    if (validate_input(evt.key.keysym.sym)) {
+      item.name.push_back((char)evt.key.keysym.sym);
+      return true;
+    } else if (evt.key.keysym.sym == SDLK_BACKSPACE) {
+      if (!item.name.empty()) item.name.pop_back();
+      return true;
+    }
+    return false;
+
   };
 
-  // layout for main menu items
-  layout_fn(main_items);
-  layout_fn(connect_items);
-  layout_fn(ip_items);
-  layout_fn(start_items);
-  layout_fn(level_items);
-  layout_fn(player_items);
-  layout_fn(pause_items);
-  layout_fn(help_items);
+  return MenuMode::Item(name_, nullptr, event_handler, nullptr);
+}
+
+MenuMode::Item MenuMode::Item::NavigationButtonItem(
+  std::string const& name_,
+  MenuMode *menu,
+  MenuStage stage_to,
+  std::function< void(Item &) > on_select
+) {
+
+  std::function< void(Item &) > select_fn = [menu, stage_to, on_select](Item &item) {
+    if (on_select) on_select(item);
+    menu->stages[stage_to].stage_from = menu->stage_name;
+    menu->stage_name = stage_to;
+  };
+
+  return MenuMode::Item(name_, nullptr, nullptr, select_fn);
+
+}
+
+MenuMode::Item MenuMode::Item::BackButtonItem(MenuMode *menu) {
+
+  auto on_select = [menu](Item &item) {
+    std::cout << menu->curr_stage().stage_from << std::endl;
+    menu->stage_name = menu->curr_stage().stage_from;
+  };
+
+  return MenuMode::Item("Back", nullptr, nullptr, on_select);
+
+}
+
+MenuMode::Item MenuMode::Item::ExitButtonItem() {
+
+  auto on_select = [](Item &item) {
+    Mode::set_current(nullptr);
+  };
+
+  return MenuMode::Item("Exit Game", nullptr, nullptr, on_select);
 
 }

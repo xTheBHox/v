@@ -302,7 +302,7 @@ GameLevel::GameLevel(std::string level_name) {
 
       pipeline.smooth_id = 3.0;
       glm::vec4 tmp_color = p1_color;
-      pipeline.set_uniforms = [tmp_color](){
+      pipeline.set_uniforms = [=](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
         glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
 
@@ -312,7 +312,7 @@ GameLevel::GameLevel(std::string level_name) {
 
       pipeline.smooth_id = 4.0;
       glm::vec4 tmp_color = p2_color;
-      pipeline.set_uniforms = [tmp_color](){
+      pipeline.set_uniforms = [=](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
         glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
       };
@@ -322,7 +322,7 @@ GameLevel::GameLevel(std::string level_name) {
 
       pipeline.smooth_id = 1.0f;
       glm::vec4 tmp_color = p1_color;
-      pipeline.set_uniforms = [tmp_color](){
+      pipeline.set_uniforms = [=](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
         glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
       };
@@ -332,7 +332,7 @@ GameLevel::GameLevel(std::string level_name) {
 
       pipeline.smooth_id = 2.0f;
       glm::vec4 tmp_color = p2_color;
-      pipeline.set_uniforms = [tmp_color](){
+      pipeline.set_uniforms = [=](){
         glUniform1ui(flat_program->USE_TEX_uint, FlatProgram::USE_COL);
         glUniform4fv(flat_program->UNIFORM_COLOR_vec4, 1, glm::value_ptr(tmp_color));
       };

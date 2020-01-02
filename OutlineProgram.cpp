@@ -40,7 +40,7 @@ FlatProgram::FlatProgram() {
 	,
 		//fragment shader:
 		"#version 330\n"
-		"uniform usampler2D TEX;\n"
+		"uniform sampler2D TEX;\n"
     "uniform uint USE_TEX;\n"
     "uniform vec4 UNIFORM_COLOR;\n"
 		"in vec4 color;\n"
